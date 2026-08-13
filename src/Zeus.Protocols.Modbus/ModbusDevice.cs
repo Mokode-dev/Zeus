@@ -67,6 +67,10 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IAsyncDisposa
     public Task WriteMultipleRegistersAsync(ushort address, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
         => _client.WriteMultipleRegistersAsync(UnitId, address, values, cancellationToken);
 
+    /// <summary>按 AND / OR 掩码修改单个保持寄存器（功能码 0x16）。</summary>
+    public Task MaskWriteRegisterAsync(ushort address, ushort andMask, ushort orMask, CancellationToken cancellationToken = default)
+        => _client.MaskWriteRegisterAsync(UnitId, address, andMask, orMask, cancellationToken);
+
     /// <summary>写单个线圈。</summary>
     public Task WriteSingleCoilAsync(ushort address, bool value, CancellationToken cancellationToken = default)
         => _client.WriteSingleCoilAsync(UnitId, address, value, cancellationToken);

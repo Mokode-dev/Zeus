@@ -158,6 +158,23 @@ public sealed class ModbusClient : IAsyncDisposable
         }
     }
 
+    /// <summary>按 AND / OR 掩码修改单个保持寄存器。</summary>
+    public async Task MaskWriteRegisterAsync(
+        byte unitId,
+        ushort address,
+        ushort andMask,
+        ushort orMask,
+        CancellationToken cancellationToken = default)
+    {
+        var pdu = new byte[7];
+        pdu[0] = ModbusFunction.MaskWriteRegister;
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(1, 2), address);
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(3, 2), andMask);
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(5, 2), orMask);
+        var response = await ExecuteAsync(unitId, pdu, cancellationToken).ConfigureAwait(false);
+        EnsureEcho(pdu, response, "掩码写寄存器");
+    }
+
     /// <summary>写单个线圈。</summary>
     public async Task WriteSingleCoilAsync(byte unitId, ushort address, bool value, CancellationToken cancellationToken = default)
     {

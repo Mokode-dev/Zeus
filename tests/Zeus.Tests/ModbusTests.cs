@@ -80,6 +80,29 @@ public sealed class ModbusTests
     }
 
     /// <summary>
+    /// 功能码 0x16 应能用 AND / OR 掩码修改单个保持寄存器。
+    /// </summary>
+    [Fact]
+    public async Task RtuDevice_MaskWritesHoldingRegister()
+    {
+        var memory = new ModbusSlaveMemory();
+        memory.HoldingRegisters[7] = 0xAACC;
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddVirtualChannel("bus", new ModbusSlaveResponder(1, ModbusTransport.Rtu, memory));
+            builder.AddModbusRtu("meter", "bus");
+        });
+
+        await host.StartAsync();
+        var meter = host.Devices.Get<ModbusDevice>("meter");
+        await meter.MaskWriteRegisterAsync(7, andMask: 0xFFF0, orMask: 0x0005);
+
+        Assert.Equal((ushort)0xAAC5, memory.HoldingRegisters[7]);
+        var read = await meter.ReadHoldingRegistersAsync(7, 1);
+        Assert.Equal((ushort)0xAAC5, read[0]);
+    }
+
+    /// <summary>
     /// 越界地址必须变成可识别的 <see cref="ModbusException"/>。
     /// </summary>
     [Fact]

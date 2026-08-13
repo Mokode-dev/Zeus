@@ -5,7 +5,7 @@ namespace Zeus;
 /// </summary>
 public enum ModbusTable
 {
-    /// <summary>保持寄存器，功能码 03 / 06 / 10。</summary>
+    /// <summary>保持寄存器，功能码 03 / 06 / 10 / 16。</summary>
     HoldingRegister = 0,
 
     /// <summary>输入寄存器，功能码 04。</summary>

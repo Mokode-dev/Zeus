@@ -68,6 +68,7 @@ public sealed class ModbusSlaveResponder : IVirtualResponder
             ModbusFunction.WriteSingleRegister => WriteSingleRegister(pdu),
             ModbusFunction.WriteMultipleCoils => WriteMultipleCoils(pdu),
             ModbusFunction.WriteMultipleRegisters => WriteMultipleRegisters(pdu),
+            ModbusFunction.MaskWriteRegister => MaskWriteRegister(pdu),
             _ => throw new ModbusException(_unitId, pdu[0], ModbusExceptionCode.IllegalFunction)
         };
     }
@@ -193,6 +194,23 @@ public sealed class ModbusSlaveResponder : IVirtualResponder
         ModbusCodec.WriteUInt16BigEndian(response.AsSpan(1, 2), address);
         ModbusCodec.WriteUInt16BigEndian(response.AsSpan(3, 2), quantity);
         return response;
+    }
+
+    private byte[] MaskWriteRegister(byte[] pdu)
+    {
+        if (pdu.Length < 7)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.MaskWriteRegister, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        var address = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(1, 2));
+        var andMask = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(3, 2));
+        var orMask = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(5, 2));
+        EnsureRange(address, 1, _memory.HoldingRegisters.Length, ModbusFunction.MaskWriteRegister);
+
+        var current = _memory.HoldingRegisters[address];
+        _memory.HoldingRegisters[address] = (ushort)((current & andMask) | (orMask & ~andMask));
+        return pdu.ToArray();
     }
 
     private (ushort Address, ushort Quantity) ReadAddressQuantity(byte[] pdu)
