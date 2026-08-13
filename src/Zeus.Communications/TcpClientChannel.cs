@@ -26,9 +26,12 @@ public sealed class TcpClientChannel : ChannelBase
         ArgumentNullException.ThrowIfNull(options);
         _options = new TcpClientOptions
         {
-            Host = options.Host,
-            Port = options.Port,
-            ConnectTimeoutMilliseconds = options.ConnectTimeoutMilliseconds
+            Host = CommunicationOptionGuard.Host(options.Host, Name, "TCP"),
+            Port = CommunicationOptionGuard.RemotePort(options.Port, Name, "TCP"),
+            ConnectTimeoutMilliseconds = CommunicationOptionGuard.PositiveMilliseconds(
+                options.ConnectTimeoutMilliseconds,
+                Name,
+                nameof(TcpClientOptions.ConnectTimeoutMilliseconds))
         };
     }
 

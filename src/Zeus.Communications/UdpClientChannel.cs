@@ -25,10 +25,13 @@ public sealed class UdpClientChannel : ChannelBase
         ArgumentNullException.ThrowIfNull(options);
         _options = new UdpClientOptions
         {
-            Host = options.Host,
-            Port = options.Port,
-            LocalPort = options.LocalPort,
-            ReceiveBufferSize = options.ReceiveBufferSize
+            Host = CommunicationOptionGuard.Host(options.Host, Name, "UDP"),
+            Port = CommunicationOptionGuard.RemotePort(options.Port, Name, "UDP"),
+            LocalPort = CommunicationOptionGuard.LocalPort(options.LocalPort, Name, "UDP"),
+            ReceiveBufferSize = CommunicationOptionGuard.NonNegativeBytes(
+                options.ReceiveBufferSize,
+                Name,
+                nameof(UdpClientOptions.ReceiveBufferSize))
         };
     }
 
