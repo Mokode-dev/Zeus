@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- WPF 快速上手：演示 AttachZeus、BindTo 与 AsBindingSource。 -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Zeus.Samples.Wpf.QuickStart</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Zeus.Communications\Zeus.Communications.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Presentation.Wpf\Zeus.Presentation.Wpf.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 自定义帧：粘包拆包、长度域、校验与请求-响应匹配。不依赖具体串口或套接字类型。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Zeus</RootNamespace>
+    <AssemblyName>Zeus.Protocols.Framing</AssemblyName>
+    <Description>Zeus 自定义帧：粘包拆包、长度域、校验与请求-响应会话。</Description>
+    <PackageDescription>Zeus 自定义帧：粘包拆包、长度域、校验与请求-响应会话。</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Zeus.Abstractions\Zeus.Abstractions.csproj" />
+    <ProjectReference Include="..\Zeus.Core\Zeus.Core.csproj" />
+    <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+</Project>

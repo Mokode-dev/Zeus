@@ -1,0 +1,13 @@
+# 构建产物
+**/bin/
+**/obj/
+**/TestResults/
+artifacts/
+
+# IDE 与系统
+.vs/
+.idea/
+*.user
+*.suo
+.DS_Store
+Thumbs.db

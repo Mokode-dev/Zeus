@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 内核与传输层的单元测试。虚拟通道是脱离硬件验证行为的第一公民。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Zeus.Tests</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Zeus.Abstractions\Zeus.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Configuration\Zeus.Configuration.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Communications\Zeus.Communications.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Core\Zeus.Core.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Hosting\Zeus.Hosting.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Presentation.Abstractions\Zeus.Presentation.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Protocols.Framing\Zeus.Protocols.Framing.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Protocols.Modbus\Zeus.Protocols.Modbus.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

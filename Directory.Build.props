@@ -1,0 +1,25 @@
+<Project>
+  <!--
+    解决方案级编译约定。
+    统一可空引用、文档生成与程序集元数据，避免各项目各自漂移。
+  -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Authors>Zeus Contributors</Authors>
+    <Company>Zeus</Company>
+    <Product>Zeus</Product>
+    <Description>面向 .NET 的 UI 无关上位机开发框架。把复杂留给 Zeus，把简单留给用户。</Description>
+    <Copyright>Copyright © Zeus</Copyright>
+    <Version>0.1.0-preview</Version>
+    <NeutralLanguage>zh-Hans</NeutralLanguage>
+    <IsPackable>false</IsPackable>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageTags>zeus;host;modbus;serial;tcp;winforms;wpf;industrial;scada</PackageTags>
+    <PackageReleaseNotes>0.1.0-preview：宿主、串口/TCP/虚拟通道、自定义帧、Modbus、点表采集、JSON 配置、WinForms/WPF 适配器。</PackageReleaseNotes>
+  </PropertyGroup>
+</Project>
+

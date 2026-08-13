@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 稳定契约层：仅包含接口与值类型，禁止引用 UI 或具体传输实现。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Zeus</RootNamespace>
+    <AssemblyName>Zeus.Abstractions</AssemblyName>
+    <Description>Zeus 稳定契约：通道、设备、点表与宿主接口。不引用任何 UI 或传输实现。</Description>
+    <PackageDescription>Zeus 稳定契约：通道、设备、点表与宿主接口。不引用任何 UI 或传输实现。</PackageDescription>
+  </PropertyGroup>
+
+</Project>

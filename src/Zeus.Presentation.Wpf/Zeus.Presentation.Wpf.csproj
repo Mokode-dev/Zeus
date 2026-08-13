@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- WPF 适配器：Dispatcher 封送、TextBlock 绑定与可绑定源。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Zeus</RootNamespace>
+    <AssemblyName>Zeus.Presentation.Wpf</AssemblyName>
+    <Description>Zeus WPF 适配器：AttachZeus、BindTo、AsBindingSource 与 Dispatcher 封送。</Description>
+    <PackageDescription>Zeus WPF 适配器：AttachZeus、BindTo、AsBindingSource 与 Dispatcher 封送。</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
+    <ProjectReference Include="..\Zeus.Presentation.Abstractions\Zeus.Presentation.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

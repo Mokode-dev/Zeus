@@ -1,0 +1,27 @@
+{
+  "acquisition": {
+    "intervalMilliseconds": 200,
+    "pollImmediately": true
+  },
+  "channels": [
+    {
+      "name": "bus",
+      "type": "virtual",
+      "responder": "modbus",
+      "unitId": 1,
+      "transport": "rtu"
+    }
+  ],
+  "devices": [
+    {
+      "name": "oven",
+      "channel": "bus",
+      "type": "modbus-rtu",
+      "unitId": 1,
+      "points": [
+        { "name": "temperature", "table": "holding", "address": 0, "scale": 0.1 },
+        { "name": "heater", "table": "coil", "address": 2 }
+      ]
+    }
+  ]
+}

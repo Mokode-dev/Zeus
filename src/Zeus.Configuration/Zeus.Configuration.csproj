@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- JSON 工程配置：装载通道/设备/采集，并监视文件热更新采集间隔。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Zeus</RootNamespace>
+    <AssemblyName>Zeus.Configuration</AssemblyName>
+    <Description>Zeus JSON 工程配置：装载通道/设备/点表，并热更新采集间隔。</Description>
+    <PackageDescription>Zeus JSON 工程配置：装载通道/设备/点表，并热更新采集间隔。</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Zeus.Abstractions\Zeus.Abstractions.csproj" />
+    <ProjectReference Include="..\Zeus.Communications\Zeus.Communications.csproj" />
+    <ProjectReference Include="..\Zeus.Core\Zeus.Core.csproj" />
+    <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
+    <ProjectReference Include="..\Zeus.Protocols.Modbus\Zeus.Protocols.Modbus.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- UI 无关的界面契约：调度器、绑定源与文本格式。禁止引用 WinForms / WPF。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Zeus</RootNamespace>
+    <AssemblyName>Zeus.Presentation.Abstractions</AssemblyName>
+    <Description>Zeus 界面契约：调度器、绑定源与点表文本绑定。不引用 WinForms / WPF。</Description>
+    <PackageDescription>Zeus 界面契约：调度器、绑定源与点表文本绑定。不引用 WinForms / WPF。</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Zeus.Abstractions\Zeus.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

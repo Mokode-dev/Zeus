@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- WinForms 适配器：只负责线程封送与控件 Text 绑定，不含协议逻辑。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>Zeus</RootNamespace>
+    <AssemblyName>Zeus.Presentation.WinForms</AssemblyName>
+    <Description>Zeus WinForms 适配器：AttachZeus、BindTo 与 UI 线程封送。</Description>
+    <PackageDescription>Zeus WinForms 适配器：AttachZeus、BindTo 与 UI 线程封送。</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
+    <ProjectReference Include="..\Zeus.Presentation.Abstractions\Zeus.Presentation.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>
