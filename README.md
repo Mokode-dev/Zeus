@@ -1,10 +1,34 @@
-# Zeus
+<p align="center">
+  <img src="Zeus.png" alt="Zeus" width="160" />
+</p>
 
-**居于奥林匹斯，统御每一台设备。**
+<h1 align="center">Zeus</h1>
 
-Zeus 是面向 .NET 的上位机开发框架。通信、协议、采集和生命周期由框架处理；WinForms、WPF 和控制台都可以作为界面。
+<p align="center">
+  <strong>居于奥林匹斯，统御每一台设备。</strong>
+</p>
 
-> 把复杂留给 Zeus，把简单留给用户。
+<p align="center">
+  面向 .NET 的上位机开发框架。<br />
+  通信、协议、采集和生命周期由框架处理；WinForms、WPF 和控制台都可以作为界面。
+</p>
+
+<p align="center">
+  <em>把复杂留给 Zeus，把简单留给用户。</em>
+</p>
+
+---
+
+## ✨ 特性
+
+- 🔌 **通道** — 串口、TCP、虚拟通道，同一套 API
+- 📡 **协议** — 自定义帧、Modbus RTU / TCP，可挂虚拟从站
+- 📊 **采集** — 声明点表后按间隔自动轮询
+- 🖥️ **界面无关** — 业务代码不绑死 WinForms 或 WPF
+- 🧾 **JSON 配置** — 现场改端口和从站地址，不必重新编译
+- 🧪 **可先不接硬件** — 虚拟通道与真实设备用法相同
+
+## 🚀 快速开始
 
 ```csharp
 await using var app = ZeusHost.Create(builder =>
@@ -19,7 +43,7 @@ meter.DataReceived += (_, e) => { /* 把数据交给界面 */ };
 await meter.WriteAsync("PING"u8.ToArray());
 ```
 
-桌面应用用适配器绑定控件即可，通道声明不用改：
+桌面应用只需换绑定层，通道声明不用改：
 
 ```csharp
 this.AttachZeus(builder => builder.AddVirtualChannel("meter"));
@@ -27,29 +51,20 @@ meter.BindTo(echoLabel);
 app.Points.BindTo("temperature", temperatureLabel);
 ```
 
-## 目录
+## 📦 程序集
 
-| 路径 | 内容 |
+| 程序集 | 用途 |
 | --- | --- |
-| `src/` | 框架程序集 |
-| `samples/` | 控制台、WinForms、WPF 示例 |
-| `tests/` | 单元测试 |
+| `Zeus.Hosting` | 宿主与采集循环 |
+| `Zeus.Communications` | 串口 / TCP / 虚拟通道 |
+| `Zeus.Protocols.Framing` | 自定义帧 |
+| `Zeus.Protocols.Modbus` | Modbus RTU / TCP |
+| `Zeus.Configuration` | JSON 工程配置 |
+| `Zeus.Presentation.WinForms` | WinForms 绑定 |
+| `Zeus.Presentation.Wpf` | WPF 绑定 |
 
-## 运行示例
+当前版本为 `0.1.0-preview`。
 
-```bash
-dotnet test Zeus.sln
-dotnet run --project samples/Zeus.Samples.Console.Headless
-dotnet run --project samples/Zeus.Samples.WinForms.QuickStart
-dotnet run --project samples/Zeus.Samples.Wpf.QuickStart
-dotnet run --project samples/Zeus.Samples.Console.Modbus
-dotnet run --project samples/Zeus.Samples.Console.Config
-```
+## 📄 许可证
 
-生成 NuGet 预览包（输出到 `artifacts/nuget`）：
-
-```powershell
-.\pack.ps1
-```
-
-当前版本为 `0.1.0-preview`，安装时请加上 `--prerelease`。
+[MIT](LICENSE)
