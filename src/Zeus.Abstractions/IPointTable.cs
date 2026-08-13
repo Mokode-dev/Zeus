@@ -32,4 +32,10 @@ public interface IPointTable
     /// <param name="name">点名或限定名。</param>
     /// <param name="value">成功时的值。</param>
     bool TryGet<T>(string name, out T? value);
+
+    /// <summary>
+    /// 读取指定点最近的成功采样历史，顺序从旧到新。错误采集不会写入历史。
+    /// </summary>
+    /// <param name="name">点名或限定名。</param>
+    IReadOnlyList<PointSnapshot> GetHistory(string name);
 }

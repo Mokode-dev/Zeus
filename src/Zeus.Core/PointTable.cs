@@ -7,11 +7,32 @@ namespace Zeus;
 /// </summary>
 public sealed class PointTable : IPointTable, IPointTableWriter
 {
+    private const int DefaultHistoryCapacity = 128;
+
     private readonly object _gate = new();
+    private readonly int _historyCapacity;
     private readonly List<string> _order = [];
     private readonly Dictionary<string, PointSnapshot> _byQualified = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<PointSnapshot>> _history = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _shortToQualified = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _ambiguousShortNames = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 创建点表。
+    /// </summary>
+    /// <param name="historyCapacity">每个点保留的最近成功采样数。设为 0 可关闭历史缓冲。</param>
+    public PointTable(int historyCapacity = DefaultHistoryCapacity)
+    {
+        if (historyCapacity < 0)
+        {
+            throw new ZeusException("点表历史容量不能为负数。");
+        }
+
+        _historyCapacity = historyCapacity;
+    }
+
+    /// <summary>每个点最多保留的最近成功采样数。</summary>
+    public int HistoryCapacity => _historyCapacity;
 
     /// <inheritdoc />
     public event EventHandler<PointChangedEventArgs>? Changed;
@@ -71,6 +92,22 @@ public sealed class PointTable : IPointTable, IPointTableWriter
     }
 
     /// <inheritdoc />
+    public IReadOnlyList<PointSnapshot> GetHistory(string name)
+    {
+        if (!TryResolveQualifiedName(name, out var qualifiedName) || qualifiedName is null)
+        {
+            throw CreateMissingException(name);
+        }
+
+        lock (_gate)
+        {
+            return _history.TryGetValue(qualifiedName, out var items)
+                ? items.ToArray()
+                : Array.Empty<PointSnapshot>();
+        }
+    }
+
+    /// <inheritdoc />
     public void Register(PointDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -83,6 +120,7 @@ public sealed class PointTable : IPointTable, IPointTableWriter
             }
 
             _byQualified[definition.QualifiedName] = new PointSnapshot(definition, null, null, null);
+            _history[definition.QualifiedName] = [];
             _order.Add(definition.QualifiedName);
 
             if (_ambiguousShortNames.Contains(definition.Name))
@@ -122,6 +160,7 @@ public sealed class PointTable : IPointTable, IPointTableWriter
             previous = existing;
             current = new PointSnapshot(existing.Definition, value, DateTimeOffset.Now, null);
             _byQualified[qualifiedName] = current;
+            AddHistory(current);
         }
 
         Changed?.Invoke(this, new PointChangedEventArgs(previous, current));
@@ -157,9 +196,43 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         Changed?.Invoke(this, new PointChangedEventArgs(previous, current));
     }
 
+    private void AddHistory(PointSnapshot snapshot)
+    {
+        if (_historyCapacity == 0)
+        {
+            return;
+        }
+
+        if (!_history.TryGetValue(snapshot.QualifiedName, out var items))
+        {
+            items = [];
+            _history[snapshot.QualifiedName] = items;
+        }
+
+        items.Add(snapshot);
+        if (items.Count > _historyCapacity)
+        {
+            items.RemoveRange(0, items.Count - _historyCapacity);
+        }
+    }
+
     private bool TryGetSnapshot(string name, out PointSnapshot? snapshot)
     {
         snapshot = null;
+        if (!TryResolveQualifiedName(name, out var qualifiedName) || qualifiedName is null)
+        {
+            return false;
+        }
+
+        lock (_gate)
+        {
+            return _byQualified.TryGetValue(qualifiedName, out snapshot);
+        }
+    }
+
+    private bool TryResolveQualifiedName(string name, out string? qualifiedName)
+    {
+        qualifiedName = null;
         if (string.IsNullOrWhiteSpace(name))
         {
             return false;
@@ -168,8 +241,9 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         var key = name.Trim();
         lock (_gate)
         {
-            if (_byQualified.TryGetValue(key, out snapshot))
+            if (_byQualified.ContainsKey(key))
             {
+                qualifiedName = key;
                 return true;
             }
 
@@ -180,8 +254,9 @@ public sealed class PointTable : IPointTable, IPointTableWriter
             }
 
             if (_shortToQualified.TryGetValue(key, out var qualified)
-                && _byQualified.TryGetValue(qualified, out snapshot))
+                && _byQualified.ContainsKey(qualified))
             {
+                qualifiedName = qualified;
                 return true;
             }
         }
