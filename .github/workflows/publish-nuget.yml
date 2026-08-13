@@ -1,0 +1,77 @@
+# 通过 nuget.org Trusted Publishing 发布预览包，不使用长期 API 密钥。
+# 首次发布前，在 https://www.nuget.org/account/TrustedPublishing 为下列包各建一条策略：
+#   Zeus.Abstractions, Zeus.Core, Zeus.Hosting, Zeus.Communications,
+#   Zeus.Configuration, Zeus.Presentation.Abstractions,
+#   Zeus.Presentation.WinForms, Zeus.Presentation.Wpf,
+#   Zeus.Protocols.Framing, Zeus.Protocols.Modbus
+# 策略填写：
+#   Repository owner = Mokode-dev
+#   Repository = Zeus
+#   Workflow = publish-nuget.yml
+# nuget.org 用户名写入仓库变量 NUGET_USERNAME，或在手动运行时填写。
+
+name: Publish NuGet
+
+on:
+  workflow_dispatch:
+    inputs:
+      nuget_username:
+        description: nuget.org 用户名（已设置仓库变量 NUGET_USERNAME 时可留空）
+        required: false
+        type: string
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test Zeus.sln --configuration Release --nologo
+
+      - name: Pack
+        env:
+          CI: true
+        run: dotnet pack Zeus.sln --configuration Release --nologo --output artifacts/nuget
+
+      - name: Resolve nuget.org username
+        id: user
+        shell: pwsh
+        run: |
+          $name = "${{ inputs.nuget_username }}"
+          if ([string]::IsNullOrWhiteSpace($name)) {
+            $name = "${{ vars.NUGET_USERNAME }}"
+          }
+          if ([string]::IsNullOrWhiteSpace($name)) {
+            throw "请设置仓库变量 NUGET_USERNAME，或在手动运行工作流时填写 nuget.org 用户名。"
+          }
+          "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ steps.user.outputs.name }}
+
+      - name: Push
+        shell: pwsh
+        run: |
+          Get-ChildItem artifacts/nuget -Filter *.nupkg | ForEach-Object {
+            dotnet nuget push $_.FullName `
+              --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" `
+              --source https://api.nuget.org/v3/index.json `
+              --skip-duplicate
+            if ($LASTEXITCODE -ne 0) { throw "推送 $($_.Name) 失败。" }
+          }
