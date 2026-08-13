@@ -12,6 +12,18 @@ public sealed class PointDefinition
     /// <param name="deviceName">所属设备名。</param>
     /// <param name="kind">值类型。</param>
     public PointDefinition(string name, string deviceName, PointValueKind kind)
+        : this(name, deviceName, kind, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建带报警限的点定义。
+    /// </summary>
+    /// <param name="name">点名，在设备内唯一。</param>
+    /// <param name="deviceName">所属设备名。</param>
+    /// <param name="kind">值类型。</param>
+    /// <param name="alarmLimits">报警限。</param>
+    public PointDefinition(string name, string deviceName, PointValueKind kind, PointAlarmLimits? alarmLimits)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -26,6 +38,7 @@ public sealed class PointDefinition
         Name = name.Trim();
         DeviceName = deviceName.Trim();
         Kind = kind;
+        AlarmLimits = alarmLimits;
     }
 
     /// <summary>点名，不含设备前缀。</summary>
@@ -36,6 +49,9 @@ public sealed class PointDefinition
 
     /// <summary>值类型。</summary>
     public PointValueKind Kind { get; }
+
+    /// <summary>可选报警限。仅数值点会得到确定的报警状态。</summary>
+    public PointAlarmLimits? AlarmLimits { get; }
 
     /// <summary>限定名，格式为 <c>设备.点</c>，在整个宿主内唯一。</summary>
     public string QualifiedName => DeviceName + "." + Name;

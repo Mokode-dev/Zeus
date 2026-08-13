@@ -17,7 +17,16 @@ public sealed class ModbusPointMap
     /// <param name="name">点名。</param>
     /// <param name="address">0 基地址。</param>
     public ModbusPointMap HoldingRegister(string name, ushort address)
-        => AddRegister(name, ModbusTable.HoldingRegister, address, PointValueKind.UInt16, null);
+        => AddRegister(name, ModbusTable.HoldingRegister, address, PointValueKind.UInt16, null, null);
+
+    /// <summary>
+    /// 声明一个带报警限的保持寄存器点，值为原始 <see cref="ushort"/>。
+    /// </summary>
+    /// <param name="name">点名。</param>
+    /// <param name="address">0 基地址。</param>
+    /// <param name="alarmLimits">报警限。</param>
+    public ModbusPointMap HoldingRegister(string name, ushort address, PointAlarmLimits alarmLimits)
+        => AddRegister(name, ModbusTable.HoldingRegister, address, PointValueKind.UInt16, null, alarmLimits);
 
     /// <summary>
     /// 声明一个保持寄存器点，并用换算函数得到工程值。
@@ -26,7 +35,21 @@ public sealed class ModbusPointMap
     /// <param name="address">0 基地址。</param>
     /// <param name="convert">例如 <c>raw =&gt; raw * 0.1</c>。</param>
     public ModbusPointMap HoldingRegister(string name, ushort address, Func<ushort, double> convert)
-        => AddRegister(name, ModbusTable.HoldingRegister, address, PointValueKind.Double, raw => convert(raw));
+        => AddRegister(name, ModbusTable.HoldingRegister, address, PointValueKind.Double, raw => convert(raw), null);
+
+    /// <summary>
+    /// 声明一个带报警限的保持寄存器点，并用换算函数得到工程值。
+    /// </summary>
+    /// <param name="name">点名。</param>
+    /// <param name="address">0 基地址。</param>
+    /// <param name="convert">例如 <c>raw =&gt; raw * 0.1</c>。</param>
+    /// <param name="alarmLimits">报警限，按换算后的工程值判断。</param>
+    public ModbusPointMap HoldingRegister(
+        string name,
+        ushort address,
+        Func<ushort, double> convert,
+        PointAlarmLimits alarmLimits)
+        => AddRegister(name, ModbusTable.HoldingRegister, address, PointValueKind.Double, raw => convert(raw), alarmLimits);
 
     /// <summary>
     /// 声明一个输入寄存器点。
@@ -34,7 +57,16 @@ public sealed class ModbusPointMap
     /// <param name="name">点名。</param>
     /// <param name="address">0 基地址。</param>
     public ModbusPointMap InputRegister(string name, ushort address)
-        => AddRegister(name, ModbusTable.InputRegister, address, PointValueKind.UInt16, null);
+        => AddRegister(name, ModbusTable.InputRegister, address, PointValueKind.UInt16, null, null);
+
+    /// <summary>
+    /// 声明一个带报警限的输入寄存器点。
+    /// </summary>
+    /// <param name="name">点名。</param>
+    /// <param name="address">0 基地址。</param>
+    /// <param name="alarmLimits">报警限。</param>
+    public ModbusPointMap InputRegister(string name, ushort address, PointAlarmLimits alarmLimits)
+        => AddRegister(name, ModbusTable.InputRegister, address, PointValueKind.UInt16, null, alarmLimits);
 
     /// <summary>
     /// 声明一个带换算的输入寄存器点。
@@ -43,7 +75,21 @@ public sealed class ModbusPointMap
     /// <param name="address">0 基地址。</param>
     /// <param name="convert">工程值换算。</param>
     public ModbusPointMap InputRegister(string name, ushort address, Func<ushort, double> convert)
-        => AddRegister(name, ModbusTable.InputRegister, address, PointValueKind.Double, raw => convert(raw));
+        => AddRegister(name, ModbusTable.InputRegister, address, PointValueKind.Double, raw => convert(raw), null);
+
+    /// <summary>
+    /// 声明一个带报警限的输入寄存器点，并用换算函数得到工程值。
+    /// </summary>
+    /// <param name="name">点名。</param>
+    /// <param name="address">0 基地址。</param>
+    /// <param name="convert">工程值换算。</param>
+    /// <param name="alarmLimits">报警限，按换算后的工程值判断。</param>
+    public ModbusPointMap InputRegister(
+        string name,
+        ushort address,
+        Func<ushort, double> convert,
+        PointAlarmLimits alarmLimits)
+        => AddRegister(name, ModbusTable.InputRegister, address, PointValueKind.Double, raw => convert(raw), alarmLimits);
 
     /// <summary>
     /// 声明一个线圈点。
@@ -61,20 +107,50 @@ public sealed class ModbusPointMap
     public ModbusPointMap DiscreteInput(string name, ushort address)
         => AddBit(name, ModbusTable.DiscreteInput, address);
 
+    /// <summary>
+    /// 为已经声明的数值点设置或替换报警限。
+    /// </summary>
+    /// <param name="name">点名。</param>
+    /// <param name="low">低报阈值。</param>
+    /// <param name="high">高报阈值。</param>
+    public ModbusPointMap WithAlarmLimits(string name, double? low = null, double? high = null)
+    {
+        var normalized = Normalize(name);
+        for (var i = 0; i < _points.Count; i++)
+        {
+            var point = _points[i];
+            if (!string.Equals(point.Name, normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (point.Kind == PointValueKind.Boolean)
+            {
+                throw new ZeusException($"点 {normalized} 是布尔点，不能配置数值报警限。");
+            }
+
+            _points[i] = point.WithAlarmLimits(new PointAlarmLimits(low, high));
+            return this;
+        }
+
+        throw new ZeusException($"找不到点 {normalized}，请先声明该点再配置报警限。");
+    }
+
     private ModbusPointMap AddRegister(
         string name,
         ModbusTable table,
         ushort address,
         PointValueKind kind,
-        Func<ushort, object>? convert)
+        Func<ushort, object>? convert,
+        PointAlarmLimits? alarmLimits)
     {
-        Add(new ModbusPointSpec(Normalize(name), table, address, kind, convert));
+        Add(new ModbusPointSpec(Normalize(name), table, address, kind, convert, alarmLimits));
         return this;
     }
 
     private ModbusPointMap AddBit(string name, ModbusTable table, ushort address)
     {
-        Add(new ModbusPointSpec(Normalize(name), table, address, PointValueKind.Boolean, null));
+        Add(new ModbusPointSpec(Normalize(name), table, address, PointValueKind.Boolean, null, null));
         return this;
     }
 

@@ -18,6 +18,7 @@ public sealed class PointSnapshot
         Value = value;
         UpdatedAt = updatedAt;
         Error = error;
+        AlarmState = definition.AlarmLimits?.Evaluate(value) ?? PointAlarmState.Disabled;
     }
 
     /// <summary>静态定义。</summary>
@@ -31,6 +32,12 @@ public sealed class PointSnapshot
 
     /// <summary>最近一次失败原因；成功时为 <c>null</c>。</summary>
     public string? Error { get; }
+
+    /// <summary>当前值相对于报警限的状态。采集失败时仍按保留的上一次成功值计算。</summary>
+    public PointAlarmState AlarmState { get; }
+
+    /// <summary>当前快照是否处于高报或低报。</summary>
+    public bool IsAlarmed => AlarmState is PointAlarmState.Low or PointAlarmState.High;
 
     /// <summary>限定名，便于日志与绑定。</summary>
     public string QualifiedName => Definition.QualifiedName;

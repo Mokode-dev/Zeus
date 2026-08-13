@@ -110,6 +110,66 @@ public sealed class AcquisitionTests
     }
 
     /// <summary>
+    /// 点定义配置报警限后，快照应随当前值给出低报、正常或高报状态。
+    /// </summary>
+    [Fact]
+    public void PointTable_EvaluatesAlarmLimits()
+    {
+        var table = new PointTable();
+        table.Register(new PointDefinition(
+            "pv",
+            "oven",
+            PointValueKind.Double,
+            new PointAlarmLimits(low: 10, high: 80)));
+
+        Assert.Equal(PointAlarmState.Unknown, table.Get("pv").AlarmState);
+
+        table.Publish("oven.pv", 8d);
+        Assert.Equal(PointAlarmState.Low, table.Get("pv").AlarmState);
+        Assert.True(table.Get("pv").IsAlarmed);
+
+        table.Publish("oven.pv", 40d);
+        Assert.Equal(PointAlarmState.Normal, table.Get("pv").AlarmState);
+        Assert.False(table.Get("pv").IsAlarmed);
+
+        table.Publish("oven.pv", 90d);
+        table.PublishError("oven.pv", "从站超时");
+        var snapshot = table.Get("pv");
+        Assert.Equal(PointAlarmState.High, snapshot.AlarmState);
+        Assert.True(snapshot.IsAlarmed);
+        Assert.Equal("从站超时", snapshot.Error);
+    }
+
+    /// <summary>
+    /// Modbus 点报警限应按寄存器换算后的工程值判断，而不是原始寄存器值。
+    /// </summary>
+    [Fact]
+    public async Task ModbusPointMap_AlarmLimitsUseConvertedValue()
+    {
+        var memory = new ModbusSlaveMemory();
+        memory.HoldingRegisters[0] = 185;
+
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddAcquisition(TimeSpan.FromMilliseconds(100));
+            builder.AddVirtualChannel("bus", new ModbusSlaveResponder(1, ModbusTransport.Rtu, memory));
+            builder.AddModbusRtu("oven", "bus", points: map =>
+            {
+                map.HoldingRegister(
+                    "temperature",
+                    0,
+                    raw => raw * 0.1,
+                    new PointAlarmLimits(high: 18));
+            });
+        });
+
+        Assert.Equal(18.5, await WaitForPointAsync<double>(host, "temperature"), 3);
+        var snapshot = host.Points.Get("temperature");
+        Assert.Equal(PointAlarmState.High, snapshot.AlarmState);
+        Assert.True(snapshot.IsAlarmed);
+    }
+
+    /// <summary>
     /// 点表历史只保留成功采样，并按容量裁剪旧样本。
     /// </summary>
     [Fact]

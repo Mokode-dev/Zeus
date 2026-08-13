@@ -150,6 +150,7 @@ public static class ZeusHostBuilderConfigurationExtensions
         foreach (var point in points)
         {
             var table = ZeusConfigurationLoader.Normalize(point.Table);
+            var alarmLimits = CreateAlarmLimits(point);
             switch (table)
             {
                 case "holding" or "holdingregister":
@@ -162,6 +163,8 @@ public static class ZeusHostBuilderConfigurationExtensions
                         map.HoldingRegister(point.Name, point.Address);
                     }
 
+                    ApplyAlarmLimits(map, point, alarmLimits);
+
                     break;
                 case "input" or "inputregister":
                     if (point.Scale is { } inputScale)
@@ -173,6 +176,8 @@ public static class ZeusHostBuilderConfigurationExtensions
                         map.InputRegister(point.Name, point.Address);
                     }
 
+                    ApplyAlarmLimits(map, point, alarmLimits);
+
                     break;
                 case "coil":
                     map.Coil(point.Name, point.Address);
@@ -181,6 +186,19 @@ public static class ZeusHostBuilderConfigurationExtensions
                     map.DiscreteInput(point.Name, point.Address);
                     break;
             }
+        }
+    }
+
+    private static PointAlarmLimits? CreateAlarmLimits(PointConfiguration point)
+        => point.LowAlarmLimit is not null || point.HighAlarmLimit is not null
+            ? new PointAlarmLimits(point.LowAlarmLimit, point.HighAlarmLimit)
+            : null;
+
+    private static void ApplyAlarmLimits(ModbusPointMap map, PointConfiguration point, PointAlarmLimits? alarmLimits)
+    {
+        if (alarmLimits is not null)
+        {
+            map.WithAlarmLimits(point.Name, alarmLimits.Low, alarmLimits.High);
         }
     }
 }

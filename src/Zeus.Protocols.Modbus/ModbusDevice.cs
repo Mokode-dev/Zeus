@@ -33,7 +33,7 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IAsyncDisposa
         _client = new ModbusClient(channel, transport, timeout);
         _specs = pointMap?.Points.ToArray() ?? [];
         _points = _specs
-            .Select(spec => new PointDefinition(spec.Name, Name, spec.Kind))
+            .Select(spec => new PointDefinition(spec.Name, Name, spec.Kind, spec.AlarmLimits))
             .ToArray();
     }
 

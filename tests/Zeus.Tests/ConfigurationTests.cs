@@ -20,8 +20,8 @@ public sealed class ConfigurationTests
               "channel": "bus",
               "type": "modbus-rtu",
               "unitId": 1,
-              "points": [
-                { "name": "temperature", "table": "holding", "address": 0, "scale": 0.1 },
+                "points": [
+                { "name": "temperature", "table": "holding", "address": 0, "scale": 0.1, "lowAlarmLimit": 10, "highAlarmLimit": 80 },
                 { "name": "heater", "table": "coil", "address": 2 }
               ]
             }
@@ -54,7 +54,35 @@ public sealed class ConfigurationTests
         }
 
         Assert.Equal(0d, temperature);
+        Assert.Equal(PointAlarmState.Low, host.Points.Get("temperature").AlarmState);
         Assert.Equal(TimeSpan.FromMilliseconds(200), host.Services.GetRequiredService<AcquisitionOptions>().Interval);
+    }
+
+    /// <summary>
+    /// JSON 报警限必须保持低限不高于高限。
+    /// </summary>
+    [Fact]
+    public void PointAlarmLimitRange_FailsAtLoad()
+    {
+        const string json = """
+            {
+              "channels": [ { "name": "bus", "type": "virtual" } ],
+              "devices": [
+                {
+                  "name": "oven",
+                  "channel": "bus",
+                  "type": "modbus-rtu",
+                  "points": [
+                    { "name": "temperature", "table": "holding", "address": 0, "lowAlarmLimit": 90, "highAlarmLimit": 80 }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        var error = Assert.Throws<ZeusException>(() => ZeusConfigurationLoader.LoadJson(json, "报警配置"));
+        Assert.Contains("lowAlarmLimit", error.Message, StringComparison.Ordinal);
+        Assert.Contains("highAlarmLimit", error.Message, StringComparison.Ordinal);
     }
 
     /// <summary>

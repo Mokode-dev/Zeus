@@ -116,4 +116,10 @@ public sealed class PointConfiguration
     /// </summary>
     [JsonPropertyName("scale")]
     public double? Scale { get; set; }
+
+    /// <summary>可选低报阈值。仅寄存器点支持，按换算后的值判断。</summary>
+    public double? LowAlarmLimit { get; set; }
+
+    /// <summary>可选高报阈值。仅寄存器点支持，按换算后的值判断。</summary>
+    public double? HighAlarmLimit { get; set; }
 }

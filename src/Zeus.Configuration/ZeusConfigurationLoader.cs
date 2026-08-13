@@ -220,6 +220,27 @@ public static class ZeusConfigurationLoader
             {
                 throw new ZeusException($"{path}.scale 必须大于 0。");
             }
+
+            ValidateAlarmLimit(point.LowAlarmLimit, $"{path}.lowAlarmLimit");
+            ValidateAlarmLimit(point.HighAlarmLimit, $"{path}.highAlarmLimit");
+            if (point.LowAlarmLimit > point.HighAlarmLimit)
+            {
+                throw new ZeusException($"{path}.lowAlarmLimit 不能高于 highAlarmLimit。");
+            }
+
+            if ((point.LowAlarmLimit is not null || point.HighAlarmLimit is not null)
+                && table is "coil" or "discrete" or "discreteinput")
+            {
+                throw new ZeusException($"{path} 是布尔点，不能配置 lowAlarmLimit 或 highAlarmLimit。");
+            }
+        }
+    }
+
+    private static void ValidateAlarmLimit(double? value, string path)
+    {
+        if (value is { } number && !double.IsFinite(number))
+        {
+            throw new ZeusException($"{path} 必须是有限数值。");
         }
     }
 
