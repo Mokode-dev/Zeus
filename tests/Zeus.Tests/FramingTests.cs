@@ -84,4 +84,43 @@ public sealed class FramingTests
         var reply = await session.RequestAsync(new byte[] { 0xDE, 0xAD });
         Assert.Equal(new byte[] { 0xDE, 0xAD }, reply);
     }
+
+    /// <summary>
+    /// 会话带匹配器时，应跳过序号不一致的完整帧，继续等待本次请求的应答。
+    /// </summary>
+    [Fact]
+    public async Task FrameSession_RequestCanMatchResponseBySequence()
+    {
+        await using var host = ZeusHost.Create(builder => builder.AddVirtualChannel("bus", new SequencedResponder()));
+        await using var session = host.CreateFrameSession("bus");
+        await host.StartAsync();
+
+        var sequence = (byte)0x34;
+        var reply = await session.RequestAsync(
+            new byte[] { 0x10, sequence },
+            response => response.Length >= 2 && response.Span[0] == 0x90 && response.Span[1] == sequence);
+
+        Assert.Equal(new byte[] { 0x90, sequence, 0x01 }, reply);
+    }
+
+    private sealed class SequencedResponder : IVirtualResponder
+    {
+        private readonly LengthHeaderFrameCodec _codec = new();
+
+        public ReadOnlyMemory<byte>? Respond(ReadOnlyMemory<byte> request)
+        {
+            _codec.Append(request.Span);
+            if (!_codec.TryDecode(out var payload) || payload.Length < 2)
+            {
+                return null;
+            }
+
+            var command = (byte)(payload[0] | 0x80);
+            var sequence = payload[1];
+            var wrongSequence = (byte)(sequence + 1);
+            var wrongReply = _codec.Encode([command, wrongSequence, 0x00]);
+            var expectedReply = _codec.Encode([command, sequence, 0x01]);
+            return wrongReply.Concat(expectedReply).ToArray();
+        }
+    }
 }
