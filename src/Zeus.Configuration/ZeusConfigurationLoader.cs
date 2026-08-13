@@ -117,20 +117,19 @@ public static class ZeusConfigurationLoader
 
                     break;
                 case "tcp":
-                    if (string.IsNullOrWhiteSpace(channel.Host))
+                    ValidateNetworkChannel(channel, path, "tcp");
+                    break;
+                case "udp":
+                    ValidateNetworkChannel(channel, path, "udp");
+                    if (channel.LocalPort is < 0 or > 65535)
                     {
-                        throw new ZeusException($"{path} 类型为 tcp 时必须提供 host。");
-                    }
-
-                    if (channel.Port is <= 0 or > 65535)
-                    {
-                        throw new ZeusException($"{path}.port 必须介于 1 与 65535 之间。");
+                        throw new ZeusException($"{path}.localPort 必须介于 0 与 65535 之间，0 表示自动分配。");
                     }
 
                     break;
                 default:
                     throw new ZeusException(
-                        $"{path}.type「{channel.Type}」不受支持。可选 virtual、serial、tcp。");
+                        $"{path}.type「{channel.Type}」不受支持。可选 virtual、serial、tcp、udp。");
             }
         }
 
@@ -182,6 +181,19 @@ public static class ZeusConfigurationLoader
         if (transport is not ("rtu" or "tcp"))
         {
             throw new ZeusException($"{path}.transport「{channel.Transport}」不受支持。可选 rtu、tcp。");
+        }
+    }
+
+    private static void ValidateNetworkChannel(ChannelConfiguration channel, string path, string type)
+    {
+        if (string.IsNullOrWhiteSpace(channel.Host))
+        {
+            throw new ZeusException($"{path} 类型为 {type} 时必须提供 host。");
+        }
+
+        if (channel.Port is <= 0 or > 65535)
+        {
+            throw new ZeusException($"{path}.port 必须介于 1 与 65535 之间。");
         }
     }
 

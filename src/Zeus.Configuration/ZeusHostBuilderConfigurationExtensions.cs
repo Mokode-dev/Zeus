@@ -102,6 +102,14 @@ public static class ZeusHostBuilderConfigurationExtensions
             case "tcp":
                 builder.AddTcpClient(name, channel.Host!, channel.Port);
                 break;
+            case "udp":
+                builder.AddUdpClient(name, options =>
+                {
+                    options.Host = channel.Host!;
+                    options.Port = channel.Port;
+                    options.LocalPort = channel.LocalPort;
+                });
+                break;
         }
     }
 

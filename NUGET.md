@@ -20,7 +20,7 @@ await app.StartAsync();
 | 包 | 用途 |
 | --- | --- |
 | `Zeus.Hosting` | 宿主与采集循环 |
-| `Zeus.Communications` | 串口 / TCP / 虚拟通道 |
+| `Zeus.Communications` | 串口 / TCP / UDP / 虚拟通道 |
 | `Zeus.Protocols.Framing` | 自定义帧 |
 | `Zeus.Protocols.Modbus` | Modbus RTU/TCP |
 | `Zeus.Configuration` | JSON 工程配置 |

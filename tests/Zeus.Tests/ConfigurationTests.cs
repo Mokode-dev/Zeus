@@ -103,6 +103,24 @@ public sealed class ConfigurationTests
     }
 
     /// <summary>
+    /// JSON 配置可声明 UDP 通道，并保留本地端口选项。
+    /// </summary>
+    [Fact]
+    public async Task AddJson_CreatesUdpChannel()
+    {
+        const string json = """
+            {
+              "channels": [
+                { "name": "wireless", "type": "udp", "host": "127.0.0.1", "port": 1502, "localPort": 0 }
+              ]
+            }
+            """;
+
+        await using var host = ZeusHost.Create(builder => builder.AddJson(json, "UDP 配置"));
+        Assert.IsType<UdpClientChannel>(host.Channels.Get("wireless"));
+    }
+
+    /// <summary>
     /// ReloadAcquisition 只更新间隔，不重建设备。
     /// </summary>
     [Fact]

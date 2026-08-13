@@ -39,7 +39,7 @@ public sealed class ChannelConfiguration
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// 类型：<c>virtual</c>、<c>serial</c>、<c>tcp</c>。
+    /// 类型：<c>virtual</c>、<c>serial</c>、<c>tcp</c>、<c>udp</c>。
     /// </summary>
     public string Type { get; set; } = "virtual";
 
@@ -49,11 +49,14 @@ public sealed class ChannelConfiguration
     /// <summary>波特率，默认 115200。仅 serial。</summary>
     public int BaudRate { get; set; } = 115200;
 
-    /// <summary>TCP 主机。仅 tcp。</summary>
+    /// <summary>TCP/UDP 主机。仅 tcp、udp。</summary>
     public string? Host { get; set; }
 
-    /// <summary>TCP 端口，默认 502。仅 tcp。</summary>
+    /// <summary>TCP/UDP 端口，默认 502。仅 tcp、udp。</summary>
     public int Port { get; set; } = 502;
+
+    /// <summary>UDP 本地绑定端口，0 表示自动分配。仅 udp。</summary>
+    public int LocalPort { get; set; }
 
     /// <summary>
     /// 虚拟通道挂接的从站。当前仅支持 <c>modbus</c>。

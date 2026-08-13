@@ -121,4 +121,48 @@ public static class ZeusHostBuilderCommunicationExtensions
 
         return builder;
     }
+
+    /// <summary>
+    /// 注册 UDP 客户端通道。
+    /// </summary>
+    /// <param name="builder">宿主构建器。</param>
+    /// <param name="name">通道名。</param>
+    /// <param name="host">对端主机名或 IP。</param>
+    /// <param name="port">对端端口。</param>
+    /// <returns>同一构建器。</returns>
+    public static ZeusHostBuilder AddUdpClient(this ZeusHostBuilder builder, string name, string host, int port)
+    {
+        return builder.AddUdpClient(name, options =>
+        {
+            options.Host = host;
+            options.Port = port;
+        });
+    }
+
+    /// <summary>
+    /// 以选项回调注册 UDP 客户端。
+    /// </summary>
+    /// <param name="builder">宿主构建器。</param>
+    /// <param name="name">通道名。</param>
+    /// <param name="configure">配置端点与本地端口。</param>
+    /// <returns>同一构建器。</returns>
+    public static ZeusHostBuilder AddUdpClient(
+        this ZeusHostBuilder builder,
+        string name,
+        Action<UdpClientOptions> configure)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var options = new UdpClientOptions();
+        configure(options);
+
+        builder.Register((services, channels, _) =>
+        {
+            var logger = services.GetService<ILogger<UdpClientChannel>>();
+            channels.Add(new UdpClientChannel(name, options, logger));
+        });
+
+        return builder;
+    }
 }

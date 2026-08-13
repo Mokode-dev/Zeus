@@ -21,7 +21,7 @@
 
 ## ✨ 特性
 
-- 🔌 **通道** — 串口、TCP、虚拟通道，同一套 API
+- 🔌 **通道** — 串口、TCP、UDP、虚拟通道，同一套 API
 - 📡 **协议** — 自定义帧、Modbus RTU / TCP，可挂虚拟从站
 - 📊 **采集** — 声明点表后按间隔自动轮询
 - 🖥️ **界面无关** — 业务代码不绑死 WinForms 或 WPF
@@ -56,7 +56,7 @@ app.Points.BindTo("temperature", temperatureLabel);
 | 程序集 | 用途 |
 | --- | --- |
 | `Zeus.Hosting` | 宿主与采集循环 |
-| `Zeus.Communications` | 串口 / TCP / 虚拟通道 |
+| `Zeus.Communications` | 串口 / TCP / UDP / 虚拟通道 |
 | `Zeus.Protocols.Framing` | 自定义帧 |
 | `Zeus.Protocols.Modbus` | Modbus RTU / TCP |
 | `Zeus.Configuration` | JSON 工程配置 |
