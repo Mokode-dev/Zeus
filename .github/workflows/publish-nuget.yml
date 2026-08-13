@@ -1,6 +1,6 @@
 # 通过 nuget.org Trusted Publishing 发布预览包，不使用长期 API 密钥。
 # 首次发布前，在 https://www.nuget.org/account/TrustedPublishing 为下列包各建一条策略：
-#   Zeus.Abstractions, Zeus.Core, Zeus.Hosting, Zeus.Communications,
+#   Zeus.Abstractions, Zeus.Runtime, Zeus.Hosting, Zeus.Communications,
 #   Zeus.Configuration, Zeus.Presentation.Abstractions,
 #   Zeus.Presentation.WinForms, Zeus.Presentation.Wpf,
 #   Zeus.Protocols.Framing, Zeus.Protocols.Modbus

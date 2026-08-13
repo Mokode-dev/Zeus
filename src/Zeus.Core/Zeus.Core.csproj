@@ -5,8 +5,9 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Zeus</RootNamespace>
     <AssemblyName>Zeus.Core</AssemblyName>
+    <PackageId>Zeus.Runtime</PackageId>
     <Description>Zeus 运行时内核：通道状态机、设备基类与点表。UI 无关。</Description>
-    <PackageDescription>Zeus 运行时内核：通道状态机、设备基类与点表。UI 无关。</PackageDescription>
+    <PackageDescription>Zeus 运行时内核：通道状态机、设备基类与点表。UI 无关。包标识为 Zeus.Runtime，因 nuget.org 上 Zeus.Core 已被占用。</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
