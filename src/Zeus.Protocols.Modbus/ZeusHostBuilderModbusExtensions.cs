@@ -47,6 +47,32 @@ public static class ZeusHostBuilderModbusExtensions
             new ModbusDevice(name, channel, unitId, ModbusTransport.Tcp, timeout, BuildMap(points)));
     }
 
+    /// <summary>
+    /// 在已构建的宿主上登记一台 Modbus RTU 设备。采集循环会在下一轮纳入其点表。
+    /// </summary>
+    public static ModbusDevice AddModbusRtu(
+        this IZeusHost host,
+        string deviceName,
+        string channelName,
+        byte unitId = 1,
+        TimeSpan? timeout = null,
+        Action<ModbusPointMap>? points = null)
+        => host.AddDevice(deviceName, channelName, (name, channel) =>
+            new ModbusDevice(name, channel, unitId, ModbusTransport.Rtu, timeout, BuildMap(points)));
+
+    /// <summary>
+    /// 在已构建的宿主上登记一台 Modbus TCP 设备。
+    /// </summary>
+    public static ModbusDevice AddModbusTcp(
+        this IZeusHost host,
+        string deviceName,
+        string channelName,
+        byte unitId = 1,
+        TimeSpan? timeout = null,
+        Action<ModbusPointMap>? points = null)
+        => host.AddDevice(deviceName, channelName, (name, channel) =>
+            new ModbusDevice(name, channel, unitId, ModbusTransport.Tcp, timeout, BuildMap(points)));
+
     private static ModbusPointMap? BuildMap(Action<ModbusPointMap>? configure)
     {
         if (configure is null)
