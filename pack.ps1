@@ -1,4 +1,4 @@
-# Pack all src libraries as 0.1.0 into artifacts/nuget.
+# Pack all src libraries as 0.2.0 into artifacts/nuget.
 # Run from the code directory: .\pack.ps1
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
