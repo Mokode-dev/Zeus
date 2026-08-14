@@ -31,6 +31,7 @@ public sealed class VirtualChannel : ChannelBase
     protected override Task WriteCoreAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        PublishPacketTrace(ChannelTraceDirection.Sent, buffer.Span);
         if (_responder is null)
         {
             PublishData(buffer.Span);

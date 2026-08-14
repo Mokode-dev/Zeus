@@ -98,6 +98,7 @@ public sealed class TcpClientChannel : ChannelBase
         var stream = _stream ?? throw new ZeusChannelException(Name, $"通道 {Name} 的套接字已丢失，请重新启动宿主。");
         await stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+        PublishPacketTrace(ChannelTraceDirection.Sent, buffer.Span);
     }
 
     private async Task ReceiveLoopAsync(CancellationToken cancellationToken)

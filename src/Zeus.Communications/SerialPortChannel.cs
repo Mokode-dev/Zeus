@@ -101,6 +101,7 @@ public sealed class SerialPortChannel : ChannelBase
         cancellationToken.ThrowIfCancellationRequested();
         var payload = buffer.ToArray();
         port.Write(payload, 0, payload.Length);
+        PublishPacketTrace(ChannelTraceDirection.Sent, payload);
         return Task.CompletedTask;
     }
 

@@ -37,6 +37,9 @@ public abstract class ChannelBase : IChannel
     public event EventHandler<ChannelDataReceivedEventArgs>? DataReceived;
 
     /// <inheritdoc />
+    public event EventHandler<ChannelTraceEventArgs>? PacketTraced;
+
+    /// <inheritdoc />
     public async Task OpenAsync(CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
@@ -173,7 +176,24 @@ public abstract class ChannelBase : IChannel
         }
 
         var copy = data.ToArray();
+        PublishPacketTrace(ChannelTraceDirection.Received, copy);
         DataReceived?.Invoke(this, new ChannelDataReceivedEventArgs(copy));
+    }
+
+    /// <summary>
+    /// 发布通道报文追踪事件。具体传输在确认写入已提交后调用；接收方向由 <see cref="PublishData"/> 统一处理。
+    /// </summary>
+    /// <param name="direction">报文方向。</param>
+    /// <param name="data">报文字节。</param>
+    protected void PublishPacketTrace(ChannelTraceDirection direction, ReadOnlySpan<byte> data)
+    {
+        if (data.IsEmpty)
+        {
+            return;
+        }
+
+        var copy = data.ToArray();
+        PacketTraced?.Invoke(this, new ChannelTraceEventArgs(direction, copy, DateTimeOffset.UtcNow));
     }
 
     /// <summary>

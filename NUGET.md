@@ -29,4 +29,6 @@ await app.StartAsync();
 
 点表支持最近成功采样历史与报警限状态，适合在界面上直接显示当前值、采集错误和高低报。
 
+通道支持 `PacketTraced` 报文追踪事件与 `ChannelTraceBuffer` 滚动内存记录器，可直接接入通信诊断窗口或现场故障快照。
+
 当前版本为 `0.1.0-preview`，安装时请加上 `--prerelease`。

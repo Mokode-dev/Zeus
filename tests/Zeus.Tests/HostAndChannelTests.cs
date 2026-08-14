@@ -33,6 +33,84 @@ public sealed class HostAndChannelTests
     }
 
     /// <summary>
+    /// 虚拟通道应为写入和回显各发布一条报文追踪记录。
+    /// </summary>
+    [Fact]
+    public async Task VirtualChannel_EmitsPacketTraceForSentAndReceivedBytes()
+    {
+        await using var host = ZeusHost.Create(builder => builder.AddVirtualChannel("loop"));
+        var channel = host.Channels.Get("loop");
+        var trace = new List<(ChannelTraceDirection Direction, byte[] Data, string Hex)>();
+        channel.PacketTraced += (_, e) => trace.Add((e.Direction, e.Data.ToArray(), e.Hex));
+
+        await host.StartAsync();
+        var payload = Encoding.ASCII.GetBytes("PING");
+        await channel.WriteAsync(payload);
+
+        Assert.Collection(
+            trace,
+            sent =>
+            {
+                Assert.Equal(ChannelTraceDirection.Sent, sent.Direction);
+                Assert.Equal(payload, sent.Data);
+                Assert.Equal("50494E47", sent.Hex);
+            },
+            received =>
+            {
+                Assert.Equal(ChannelTraceDirection.Received, received.Direction);
+                Assert.Equal(payload, received.Data);
+                Assert.Equal("50494E47", received.Hex);
+            });
+    }
+
+    /// <summary>
+    /// 滚动记录器只保留最近 N 条报文，并保持从旧到新的顺序。
+    /// </summary>
+    [Fact]
+    public async Task ChannelTraceBuffer_KeepsMostRecentEntries()
+    {
+        await using var host = ZeusHost.Create(builder => builder.AddVirtualChannel("loop"));
+        var channel = host.Channels.Get("loop");
+        using var trace = new ChannelTraceBuffer(channel, capacity: 2);
+
+        await host.StartAsync();
+        await channel.WriteAsync(new byte[] { 0x01 });
+        await channel.WriteAsync(new byte[] { 0x02 });
+
+        var entries = trace.Entries;
+        Assert.Collection(
+            entries,
+            sent =>
+            {
+                Assert.Equal("loop", sent.ChannelName);
+                Assert.Equal(ChannelTraceDirection.Sent, sent.Direction);
+                Assert.Equal(new byte[] { 0x02 }, sent.Data.ToArray());
+                Assert.Equal("02", sent.Hex);
+            },
+            received =>
+            {
+                Assert.Equal("loop", received.ChannelName);
+                Assert.Equal(ChannelTraceDirection.Received, received.Direction);
+                Assert.Equal(new byte[] { 0x02 }, received.Data.ToArray());
+                Assert.Equal("02", received.Hex);
+            });
+
+        trace.Clear();
+        Assert.Empty(trace.Entries);
+    }
+
+    /// <summary>
+    /// 滚动记录容量必须为正数，避免静默丢失所有报文。
+    /// </summary>
+    [Fact]
+    public void ChannelTraceBuffer_InvalidCapacity_Throws()
+    {
+        var channel = new VirtualChannel("loop");
+        var error = Assert.Throws<ArgumentOutOfRangeException>(() => new ChannelTraceBuffer(channel, capacity: 0));
+        Assert.Equal("capacity", error.ParamName);
+    }
+
+    /// <summary>
     /// 重复打开已打开的通道必须幂等，不能再次触发 Opening 迁移。
     /// </summary>
     [Fact]

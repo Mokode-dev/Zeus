@@ -19,6 +19,11 @@ public interface IChannel : IAsyncDisposable
     event EventHandler<ChannelDataReceivedEventArgs>? DataReceived;
 
     /// <summary>
+    /// 通道收发原始报文时触发。适合接入滚动日志、通信诊断窗口或现场故障快照。
+    /// </summary>
+    event EventHandler<ChannelTraceEventArgs>? PacketTraced;
+
+    /// <summary>
     /// 打开通道。对已打开的通道重复调用是幂等的。
     /// </summary>
     /// <param name="cancellationToken">取消打开过程。</param>

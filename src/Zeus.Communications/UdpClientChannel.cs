@@ -103,6 +103,7 @@ public sealed class UdpClientChannel : ChannelBase
     {
         var client = _client ?? throw new ZeusChannelException(Name, $"通道 {Name} 的 UDP 套接字已丢失，请重新启动宿主。");
         await client.SendAsync(buffer, cancellationToken).ConfigureAwait(false);
+        PublishPacketTrace(ChannelTraceDirection.Sent, buffer.Span);
     }
 
     private async Task ReceiveLoopAsync(UdpClient client, CancellationToken cancellationToken)
