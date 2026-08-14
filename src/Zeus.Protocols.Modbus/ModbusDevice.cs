@@ -1,10 +1,13 @@
+using System.Globalization;
+
 namespace Zeus;
 
 /// <summary>
 /// 面向业务的 Modbus 设备：绑定通道、从站地址与传输类型，暴露读写寄存器/线圈。
-/// 声明了点表后实现 <see cref="IAcquisitionSource"/>，由宿主采集循环自动轮询。
+/// 声明了点表后实现 <see cref="IAcquisitionSource"/>，由宿主采集循环自动轮询；
+/// 标为可写的点实现 <see cref="IPointWriter"/>，可通过点表按名称下发。
 /// </summary>
-public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IAsyncDisposable
+public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IPointWriter, IAsyncDisposable
 {
     private readonly ModbusClient _client;
     private readonly IReadOnlyList<ModbusPointSpec> _specs;
@@ -33,7 +36,7 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IAsyncDisposa
         _client = new ModbusClient(channel, transport, timeout);
         _specs = pointMap?.Points.ToArray() ?? [];
         _points = _specs
-            .Select(spec => new PointDefinition(spec.Name, Name, spec.Kind, spec.AlarmLimits))
+            .Select(spec => new PointDefinition(spec.Name, Name, spec.Kind, spec.AlarmLimits, spec.Writable))
             .ToArray();
     }
 
@@ -81,6 +84,33 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IAsyncDisposa
 
     /// <inheritdoc />
     public IReadOnlyList<PointDefinition> Points => _points;
+
+    /// <inheritdoc />
+    public async Task WriteAsync(
+        string pointName,
+        object value,
+        IPointTableWriter table,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(table);
+        var spec = FindSpec(pointName);
+        var qualified = Name + "." + spec.Name;
+        try
+        {
+            var published = await WriteSpecAsync(spec, value, cancellationToken).ConfigureAwait(false);
+            table.Publish(qualified, published);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            table.PublishError(qualified, ex.Message);
+            throw;
+        }
+    }
 
     /// <inheritdoc />
     public async Task PollAsync(IPointTableWriter table, CancellationToken cancellationToken = default)
@@ -135,6 +165,147 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IAsyncDisposa
         foreach (var spec in group)
         {
             table.Publish(Name + "." + spec.Name, bits[spec.Address - first.Address]);
+        }
+    }
+
+    /// <summary>
+    /// 按点描述把工程值写到从站，并返回应写入点表的值（与采集换算一致）。
+    /// </summary>
+    private async Task<object> WriteSpecAsync(ModbusPointSpec spec, object value, CancellationToken cancellationToken)
+    {
+        if (!spec.Writable)
+        {
+            throw new ZeusException($"点 {Name}.{spec.Name} 未标为可写。");
+        }
+
+        if (spec.Table == ModbusTable.Coil)
+        {
+            var bit = ConvertToBoolean(value, spec.Name);
+            await WriteSingleCoilAsync(spec.Address, bit, cancellationToken).ConfigureAwait(false);
+            return bit;
+        }
+
+        if (spec.Table != ModbusTable.HoldingRegister)
+        {
+            throw new ZeusException($"点 {Name}.{spec.Name} 位于只读数据区，不能写回。");
+        }
+
+        var raw = ConvertToRegister(spec, value);
+        await WriteSingleRegisterAsync(spec.Address, raw, cancellationToken).ConfigureAwait(false);
+        return spec.Convert is null ? raw : spec.Convert(raw);
+    }
+
+    /// <summary>
+    /// 按短名查找点描述。
+    /// </summary>
+    private ModbusPointSpec FindSpec(string pointName)
+    {
+        if (string.IsNullOrWhiteSpace(pointName))
+        {
+            throw new ZeusException("写回点名不能为空。");
+        }
+
+        var key = pointName.Trim();
+        foreach (var spec in _specs)
+        {
+            if (string.Equals(spec.Name, key, StringComparison.OrdinalIgnoreCase))
+            {
+                return spec;
+            }
+        }
+
+        throw new ZeusException($"设备 {Name} 上找不到点 {key}。");
+    }
+
+    /// <summary>
+    /// 把工程值换成保持寄存器原始值。带 scale 时先反除再四舍五入。
+    /// </summary>
+    private ushort ConvertToRegister(ModbusPointSpec spec, object value)
+    {
+        if (spec.Scale is { } scale)
+        {
+            var engineering = ConvertToDouble(value, spec.Name);
+            var raw = engineering / scale;
+            if (!double.IsFinite(raw))
+            {
+                throw new ZeusException($"点 {Name}.{spec.Name} 的工程值 {engineering} 无法按 scale={scale} 反算。");
+            }
+
+            var rounded = Math.Round(raw, MidpointRounding.AwayFromZero);
+            if (rounded is < ushort.MinValue or > ushort.MaxValue)
+            {
+                throw new ZeusException(
+                    $"点 {Name}.{spec.Name} 的工程值 {engineering} 反算为 {rounded}，超出保持寄存器 0–65535。");
+            }
+
+            return (ushort)rounded;
+        }
+
+        return ConvertToUInt16(value, spec.Name);
+    }
+
+    private static bool ConvertToBoolean(object value, string pointName)
+    {
+        if (value is bool bit)
+        {
+            return bit;
+        }
+
+        if (value is string text)
+        {
+            if (bool.TryParse(text, out var parsed))
+            {
+                return parsed;
+            }
+
+            if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
+            {
+                return number != 0;
+            }
+        }
+
+        try
+        {
+            return Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+        }
+        catch (Exception ex)
+        {
+            throw new ZeusException($"点 {pointName} 需要布尔值，无法把 {value}（{value.GetType().Name}）写回。", ex);
+        }
+    }
+
+    private static double ConvertToDouble(object value, string pointName)
+    {
+        try
+        {
+            return Convert.ToDouble(value, CultureInfo.InvariantCulture);
+        }
+        catch (Exception ex)
+        {
+            throw new ZeusException($"点 {pointName} 需要数值，无法把 {value}（{value.GetType().Name}）写回。", ex);
+        }
+    }
+
+    private static ushort ConvertToUInt16(object value, string pointName)
+    {
+        try
+        {
+            var number = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+            var rounded = Math.Round(number, MidpointRounding.AwayFromZero);
+            if (rounded is < ushort.MinValue or > ushort.MaxValue)
+            {
+                throw new ZeusException($"点 {pointName} 的值 {value} 超出保持寄存器 0–65535。");
+            }
+
+            return (ushort)rounded;
+        }
+        catch (ZeusException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new ZeusException($"点 {pointName} 需要 0–65535 的整数，无法把 {value}（{value.GetType().Name}）写回。", ex);
         }
     }
 

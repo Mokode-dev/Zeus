@@ -17,7 +17,7 @@ namespace Zeus
         public System.Threading.Tasks.Task WriteSingleCoilAsync(byte unitId, ushort address, bool value, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteSingleRegisterAsync(byte unitId, ushort address, ushort value, System.Threading.CancellationToken cancellationToken = default) { }
     }
-    public sealed class ModbusDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource
+    public sealed class ModbusDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
     {
         public ModbusDevice(string name, Zeus.IChannel channel, byte unitId, Zeus.ModbusTransport transport, System.TimeSpan? timeout = default, Zeus.ModbusPointMap? pointMap = null) { }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
@@ -30,6 +30,7 @@ namespace Zeus
         public System.Threading.Tasks.Task<bool[]> ReadDiscreteInputsAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadHoldingRegistersAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadInputRegistersAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteMultipleCoilsAsync(ushort address, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteMultipleRegistersAsync(ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteSingleCoilAsync(ushort address, bool value, System.Threading.CancellationToken cancellationToken = default) { }
@@ -67,14 +68,19 @@ namespace Zeus
         public Zeus.ModbusPointMap Coil(string name, ushort address) { }
         public Zeus.ModbusPointMap DiscreteInput(string name, ushort address) { }
         public Zeus.ModbusPointMap HoldingRegister(string name, ushort address) { }
+        public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, double scale) { }
         public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, System.Func<ushort, double> convert) { }
         public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, double scale, Zeus.PointAlarmLimits alarmLimits) { }
         public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, System.Func<ushort, double> convert, Zeus.PointAlarmLimits alarmLimits) { }
         public Zeus.ModbusPointMap InputRegister(string name, ushort address) { }
+        public Zeus.ModbusPointMap InputRegister(string name, ushort address, double scale) { }
         public Zeus.ModbusPointMap InputRegister(string name, ushort address, System.Func<ushort, double> convert) { }
         public Zeus.ModbusPointMap InputRegister(string name, ushort address, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.ModbusPointMap InputRegister(string name, ushort address, double scale, Zeus.PointAlarmLimits alarmLimits) { }
         public Zeus.ModbusPointMap InputRegister(string name, ushort address, System.Func<ushort, double> convert, Zeus.PointAlarmLimits alarmLimits) { }
         public Zeus.ModbusPointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
+        public Zeus.ModbusPointMap Writable(string name) { }
     }
     public sealed class ModbusPointSpec
     {
@@ -83,7 +89,9 @@ namespace Zeus
         public System.Func<ushort, object>? Convert { get; }
         public Zeus.PointValueKind Kind { get; }
         public string Name { get; }
+        public double? Scale { get; }
         public Zeus.ModbusTable Table { get; }
+        public bool Writable { get; }
     }
     public sealed class ModbusSlaveMemory
     {

@@ -3,7 +3,7 @@ using System.Globalization;
 namespace Zeus;
 
 /// <summary>
-/// 线程安全的内存点表。采集循环写入，业务与界面只读查找。
+/// 线程安全的内存点表。采集循环写入快照；业务与界面按名称读取，也可按名称写回设备。
 /// </summary>
 public sealed class PointTable : IPointTable, IPointTableWriter
 {
@@ -11,6 +11,7 @@ public sealed class PointTable : IPointTable, IPointTableWriter
 
     private readonly object _gate = new();
     private readonly int _historyCapacity;
+    private readonly IDeviceRegistry? _devices;
     private readonly List<string> _order = [];
     private readonly Dictionary<string, PointSnapshot> _byQualified = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<PointSnapshot>> _history = new(StringComparer.OrdinalIgnoreCase);
@@ -18,16 +19,27 @@ public sealed class PointTable : IPointTable, IPointTableWriter
     private readonly HashSet<string> _ambiguousShortNames = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 创建点表。
+    /// 创建未连接设备目录的点表。可以读写快照，但不能 <see cref="WriteAsync"/>。
     /// </summary>
     /// <param name="historyCapacity">每个点保留的最近成功采样数。设为 0 可关闭历史缓冲。</param>
     public PointTable(int historyCapacity = DefaultHistoryCapacity)
+        : this(null, historyCapacity)
+    {
+    }
+
+    /// <summary>
+    /// 创建连接到设备目录的点表。宿主通过本构造函数注入目录，以便按点名路由写回。
+    /// </summary>
+    /// <param name="devices">设备目录。为 <c>null</c> 时禁止写回。</param>
+    /// <param name="historyCapacity">每个点保留的最近成功采样数。设为 0 可关闭历史缓冲。</param>
+    public PointTable(IDeviceRegistry? devices, int historyCapacity = DefaultHistoryCapacity)
     {
         if (historyCapacity < 0)
         {
             throw new ZeusException("点表历史容量不能为负数。");
         }
 
+        _devices = devices;
         _historyCapacity = historyCapacity;
     }
 
@@ -346,6 +358,65 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         }
 
         return false;
+    }
+
+    /// <inheritdoc />
+    public async Task WriteAsync(string name, object value, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (!TryResolveQualifiedName(name, out var qualifiedName) || qualifiedName is null)
+        {
+            throw CreateMissingException(name);
+        }
+
+        PointSnapshot snapshot;
+        lock (_gate)
+        {
+            snapshot = _byQualified[qualifiedName];
+        }
+
+        var definition = snapshot.Definition;
+        if (!definition.Writable)
+        {
+            throw new ZeusException(
+                $"点 {definition.QualifiedName} 是只读点，不能写回。请在声明时把该点标为可写，例如 HoldingRegister(\"{definition.Name}\", address, writable: true)。");
+        }
+
+        if (_devices is null)
+        {
+            throw new ZeusException(
+                $"点表未连接到设备目录，无法写回 {definition.QualifiedName}。请通过 ZeusHost 使用点表，而不是单独 new PointTable。");
+        }
+
+        if (!_devices.TryGet<IDevice>(definition.DeviceName, out var device) || device is null)
+        {
+            throw new ZeusException($"点 {definition.QualifiedName} 所属设备 {definition.DeviceName} 已不存在。");
+        }
+
+        if (device is not IPointWriter writer)
+        {
+            throw new ZeusException(
+                $"设备 {device.Name}（{device.GetType().Name}）未实现 IPointWriter，不能按点名写回。自定义设备请实现该接口。");
+        }
+
+        try
+        {
+            await writer.WriteAsync(definition.Name, value, this, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (ZeusException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // 设备未按约定写入错误快照时，点表仍补上 Error，避免界面只看到异常、看不到点状态。
+            PublishError(definition.QualifiedName, ex.Message);
+            throw;
+        }
     }
 
     private ZeusException CreateMissingException(string name)

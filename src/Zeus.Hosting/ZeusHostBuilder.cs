@@ -31,7 +31,7 @@ public sealed class ZeusHostBuilder
         Services.AddSingleton(Reconnect);
         Services.AddSingleton<HostRunState>();
         Services.AddSingleton<ZeusHostAccessor>();
-        Services.AddSingleton<PointTable>();
+        Services.AddSingleton(sp => new PointTable(sp.GetRequiredService<DeviceRegistry>()));
         Services.AddSingleton<IPointTable>(sp => sp.GetRequiredService<PointTable>());
         Services.AddSingleton<IPointTableWriter>(sp => sp.GetRequiredService<PointTable>());
         Services.AddHostedService<ChannelLifecycleService>();

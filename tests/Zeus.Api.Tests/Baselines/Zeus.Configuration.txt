@@ -40,6 +40,7 @@ namespace Zeus
         [System.Text.Json.Serialization.JsonPropertyName("scale")]
         public double? Scale { get; set; }
         public string Table { get; set; }
+        public bool Writable { get; set; }
     }
     public sealed class ReconnectConfiguration
     {

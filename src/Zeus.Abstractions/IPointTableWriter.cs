@@ -1,7 +1,7 @@
 namespace Zeus;
 
 /// <summary>
-/// 采集循环写入点表的窄接口。业务代码应使用 <see cref="IPointTable"/>，不要直接写点。
+/// 采集循环与点表写回更新快照的窄接口。业务代码应使用 <see cref="IPointTable"/>，不要直接 Publish。
 /// </summary>
 public interface IPointTableWriter
 {

@@ -234,6 +234,126 @@ public sealed class AcquisitionTests
     }
 
     /// <summary>
+    /// 可写点应按名称把工程值写回从站，并立刻更新点表。
+    /// </summary>
+    [Fact]
+    public async Task PointTable_WriteAsync_WritesHoldingRegisterAndCoil()
+    {
+        var memory = new ModbusSlaveMemory();
+        memory.HoldingRegisters[1] = 30;
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddAcquisition(TimeSpan.FromHours(1));
+            builder.AddVirtualChannel("bus", new ModbusSlaveResponder(1, ModbusTransport.Rtu, memory));
+            builder.AddModbusRtu("oven", "bus", points: map =>
+            {
+                map.HoldingRegister("setpoint", 1, 0.1).Writable("setpoint");
+                map.Coil("heater", 2).Writable("heater");
+            });
+        });
+
+        await host.StartAsync();
+        await host.Points.WriteAsync("setpoint", 80.0);
+        await host.Points.WriteAsync("heater", true);
+
+        Assert.Equal((ushort)800, memory.HoldingRegisters[1]);
+        Assert.True(memory.Coils[2]);
+        Assert.Equal(80.0, host.Points.Get<double>("setpoint"), 3);
+        Assert.True(host.Points.Get<bool>("heater"));
+        Assert.Null(host.Points.Get("setpoint").Error);
+    }
+
+    /// <summary>
+    /// 只读点写回应失败，且不改从站映像。
+    /// </summary>
+    [Fact]
+    public async Task PointTable_WriteAsync_RejectsReadOnlyPoint()
+    {
+        var memory = new ModbusSlaveMemory();
+        memory.HoldingRegisters[0] = 185;
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddAcquisition(options =>
+            {
+                options.PollImmediately = false;
+                options.Interval = TimeSpan.FromHours(1);
+            });
+            builder.AddVirtualChannel("bus", new ModbusSlaveResponder(1, ModbusTransport.Rtu, memory));
+            builder.AddModbusRtu("oven", "bus", points: map =>
+            {
+                map.HoldingRegister("temperature", 0, 0.1);
+            });
+        });
+
+        await host.StartAsync();
+        var error = await Assert.ThrowsAsync<ZeusException>(() => host.Points.WriteAsync("temperature", 20.0));
+        Assert.Contains("只读", error.Message, StringComparison.Ordinal);
+        Assert.Equal((ushort)185, memory.HoldingRegisters[0]);
+    }
+
+    /// <summary>
+    /// 自定义换算函数没有 scale 时，不能标为可写。
+    /// </summary>
+    [Fact]
+    public void ModbusPointMap_CustomConvertCannotBeWritable()
+    {
+        var map = new ModbusPointMap();
+        map.HoldingRegister("temperature", 0, raw => raw * 0.1);
+        var error = Assert.Throws<ZeusException>(() => map.Writable("temperature"));
+        Assert.Contains("自定义换算", error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// 输入寄存器不能标为可写。
+    /// </summary>
+    [Fact]
+    public void ModbusPointMap_InputRegisterCannotBeWritable()
+    {
+        var map = new ModbusPointMap();
+        map.InputRegister("status", 0);
+        var error = Assert.Throws<ZeusException>(() => map.Writable("status"));
+        Assert.Contains("只读", error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// 写回失败应把错误记到点快照，并重新抛出。
+    /// </summary>
+    [Fact]
+    public async Task PointTable_WriteAsync_RecordsErrorWhenDeviceRejects()
+    {
+        var memory = new ModbusSlaveMemory(holdingRegisters: 1);
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddAcquisition(options =>
+            {
+                options.PollImmediately = false;
+                options.Interval = TimeSpan.FromHours(1);
+            });
+            builder.AddVirtualChannel("bus", new ModbusSlaveResponder(1, ModbusTransport.Rtu, memory));
+            builder.AddModbusRtu("oven", "bus", points: map =>
+            {
+                map.HoldingRegister("setpoint", 200).Writable("setpoint");
+            });
+        });
+
+        await host.StartAsync();
+        await Assert.ThrowsAsync<ModbusException>(() => host.Points.WriteAsync("setpoint", (ushort)1));
+        Assert.False(string.IsNullOrWhiteSpace(host.Points.Get("setpoint").Error));
+    }
+
+    /// <summary>
+    /// 未连接设备目录的点表不能写回。
+    /// </summary>
+    [Fact]
+    public async Task PointTable_WriteAsync_RequiresDeviceRegistry()
+    {
+        var table = new PointTable();
+        table.Register(new PointDefinition("setpoint", "oven", PointValueKind.UInt16, null, writable: true));
+        var error = await Assert.ThrowsAsync<ZeusException>(() => table.WriteAsync("setpoint", (ushort)1));
+        Assert.Contains("设备目录", error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// BindText 应在点变化时更新，释放后不再接收。
     /// </summary>
     [Fact]
