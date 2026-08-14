@@ -30,9 +30,9 @@ await app.StartAsync();
 | `Zeus.Presentation.WinForms` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg)](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | WinForms 绑定 |
 | `Zeus.Presentation.Wpf` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Wpf.svg)](https://www.nuget.org/packages/Zeus.Presentation.Wpf) | WPF 绑定 |
 
-点表支持最近成功采样历史与报警限状态，适合在界面上直接显示当前值、采集错误和高低报。
+点表支持最近成功采样历史、报警限，以及按点名写回可写点，适合在界面上直接显示当前值、采集错误和高低报，并下发设定值。
 
-0.2 起宿主停止后可再次启动；通道故障默认自动重连；运行中可增删通道与设备；JSON 监视会同步拓扑。
+0.3 起可写点走 `Points.WriteAsync`；0.2 起宿主停止后可再次启动，通道故障默认自动重连，运行中可增删通道与设备，JSON 监视会同步拓扑。
 
 通道支持 `PacketTraced` 报文追踪事件与 `ChannelTraceBuffer` 滚动内存记录器，可直接接入通信诊断窗口或现场故障快照。
 
