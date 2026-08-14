@@ -46,6 +46,8 @@ internal static class ModbusCodec
                 5 + CoilByteCount(ReadUInt16BigEndian(requestPdu.Slice(3, 2))),
             ModbusFunction.ReadHoldingRegisters or ModbusFunction.ReadInputRegisters when requestPdu.Length >= 5 =>
                 5 + (ReadUInt16BigEndian(requestPdu.Slice(3, 2)) * 2),
+            ModbusFunction.ReadWriteMultipleRegisters when requestPdu.Length >= 5 =>
+                5 + (ReadUInt16BigEndian(requestPdu.Slice(3, 2)) * 2),
             ModbusFunction.MaskWriteRegister => 10,
             _ => 8
         };

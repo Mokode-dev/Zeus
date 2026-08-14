@@ -103,6 +103,35 @@ public sealed class ModbusTests
     }
 
     /// <summary>
+    /// 功能码 0x17 应先写入保持寄存器，再返回读取区间。
+    /// </summary>
+    [Fact]
+    public async Task RtuDevice_ReadWriteMultipleRegisters()
+    {
+        var memory = new ModbusSlaveMemory();
+        memory.HoldingRegisters[1] = 10;
+        memory.HoldingRegisters[2] = 20;
+        memory.HoldingRegisters[3] = 30;
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddVirtualChannel("bus", new ModbusSlaveResponder(1, ModbusTransport.Rtu, memory));
+            builder.AddModbusRtu("meter", "bus");
+        });
+
+        await host.StartAsync();
+        var meter = host.Devices.Get<ModbusDevice>("meter");
+        var read = await meter.ReadWriteMultipleRegistersAsync(
+            readAddress: 1,
+            readQuantity: 3,
+            writeAddress: 2,
+            writeValues: [200, 300]);
+
+        Assert.Equal(new ushort[] { 10, 200, 300 }, read);
+        Assert.Equal((ushort)200, memory.HoldingRegisters[2]);
+        Assert.Equal((ushort)300, memory.HoldingRegisters[3]);
+    }
+
+    /// <summary>
     /// 越界地址必须变成可识别的 <see cref="ModbusException"/>。
     /// </summary>
     [Fact]

@@ -74,6 +74,15 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IPointWriter,
     public Task MaskWriteRegisterAsync(ushort address, ushort andMask, ushort orMask, CancellationToken cancellationToken = default)
         => _client.MaskWriteRegisterAsync(UnitId, address, andMask, orMask, cancellationToken);
 
+    /// <summary>读写多个保持寄存器（功能码 0x17）。写操作先执行，再返回读取区间。</summary>
+    public Task<ushort[]> ReadWriteMultipleRegistersAsync(
+        ushort readAddress,
+        ushort readQuantity,
+        ushort writeAddress,
+        IReadOnlyList<ushort> writeValues,
+        CancellationToken cancellationToken = default)
+        => _client.ReadWriteMultipleRegistersAsync(UnitId, readAddress, readQuantity, writeAddress, writeValues, cancellationToken);
+
     /// <summary>写单个线圈。</summary>
     public Task WriteSingleCoilAsync(ushort address, bool value, CancellationToken cancellationToken = default)
         => _client.WriteSingleCoilAsync(UnitId, address, value, cancellationToken);

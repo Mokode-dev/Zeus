@@ -69,6 +69,7 @@ public sealed class ModbusSlaveResponder : IVirtualResponder
             ModbusFunction.WriteMultipleCoils => WriteMultipleCoils(pdu),
             ModbusFunction.WriteMultipleRegisters => WriteMultipleRegisters(pdu),
             ModbusFunction.MaskWriteRegister => MaskWriteRegister(pdu),
+            ModbusFunction.ReadWriteMultipleRegisters => ReadWriteMultipleRegisters(pdu),
             _ => throw new ModbusException(_unitId, pdu[0], ModbusExceptionCode.IllegalFunction)
         };
     }
@@ -211,6 +212,45 @@ public sealed class ModbusSlaveResponder : IVirtualResponder
         var current = _memory.HoldingRegisters[address];
         _memory.HoldingRegisters[address] = (ushort)((current & andMask) | (orMask & ~andMask));
         return pdu.ToArray();
+    }
+
+    private byte[] ReadWriteMultipleRegisters(byte[] pdu)
+    {
+        if (pdu.Length < 10)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.ReadWriteMultipleRegisters, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        var readAddress = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(1, 2));
+        var readQuantity = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(3, 2));
+        var writeAddress = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(5, 2));
+        var writeQuantity = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(7, 2));
+        var byteCount = pdu[9];
+        if (readQuantity is < 1 or > 125
+            || writeQuantity is < 1 or > 121
+            || byteCount != writeQuantity * 2
+            || pdu.Length < 10 + byteCount)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.ReadWriteMultipleRegisters, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        EnsureRange(writeAddress, writeQuantity, _memory.HoldingRegisters.Length, ModbusFunction.ReadWriteMultipleRegisters);
+        EnsureRange(readAddress, readQuantity, _memory.HoldingRegisters.Length, ModbusFunction.ReadWriteMultipleRegisters);
+
+        for (var i = 0; i < writeQuantity; i++)
+        {
+            _memory.HoldingRegisters[writeAddress + i] = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(10 + (i * 2), 2));
+        }
+
+        var response = new byte[2 + (readQuantity * 2)];
+        response[0] = ModbusFunction.ReadWriteMultipleRegisters;
+        response[1] = (byte)(readQuantity * 2);
+        for (var i = 0; i < readQuantity; i++)
+        {
+            ModbusCodec.WriteUInt16BigEndian(response.AsSpan(2 + (i * 2), 2), _memory.HoldingRegisters[readAddress + i]);
+        }
+
+        return response;
     }
 
     private (ushort Address, ushort Quantity) ReadAddressQuantity(byte[] pdu)

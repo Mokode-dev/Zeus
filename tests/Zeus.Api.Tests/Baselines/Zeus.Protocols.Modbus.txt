@@ -12,6 +12,7 @@ namespace Zeus
         public System.Threading.Tasks.Task<bool[]> ReadDiscreteInputsAsync(byte unitId, ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadWriteMultipleRegistersAsync(byte unitId, ushort readAddress, ushort readQuantity, ushort writeAddress, System.Collections.Generic.IReadOnlyList<ushort> writeValues, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteMultipleCoilsAsync(byte unitId, ushort address, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteMultipleRegistersAsync(byte unitId, ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteSingleCoilAsync(byte unitId, ushort address, bool value, System.Threading.CancellationToken cancellationToken = default) { }
@@ -30,6 +31,7 @@ namespace Zeus
         public System.Threading.Tasks.Task<bool[]> ReadDiscreteInputsAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadHoldingRegistersAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadInputRegistersAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadWriteMultipleRegistersAsync(ushort readAddress, ushort readQuantity, ushort writeAddress, System.Collections.Generic.IReadOnlyList<ushort> writeValues, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteMultipleCoilsAsync(ushort address, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteMultipleRegistersAsync(ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
@@ -57,6 +59,7 @@ namespace Zeus
         public const byte ReadDiscreteInputs = 2;
         public const byte ReadHoldingRegisters = 3;
         public const byte ReadInputRegisters = 4;
+        public const byte ReadWriteMultipleRegisters = 23;
         public const byte WriteMultipleCoils = 15;
         public const byte WriteMultipleRegisters = 16;
         public const byte WriteSingleCoil = 5;

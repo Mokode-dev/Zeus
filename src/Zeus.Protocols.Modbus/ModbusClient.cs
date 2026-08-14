@@ -175,6 +175,51 @@ public sealed class ModbusClient : IAsyncDisposable
         EnsureEcho(pdu, response, "掩码写寄存器");
     }
 
+    /// <summary>读写多个保持寄存器（功能码 0x17）。写操作先执行，再返回读取区间。</summary>
+    public async Task<ushort[]> ReadWriteMultipleRegistersAsync(
+        byte unitId,
+        ushort readAddress,
+        ushort readQuantity,
+        ushort writeAddress,
+        IReadOnlyList<ushort> writeValues,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(writeValues);
+        EnsureQuantity(readQuantity, 125, "读取寄存器");
+        if (writeValues.Count == 0 || writeValues.Count > 121)
+        {
+            throw new ZeusProtocolException("一次读写事务写入的保持寄存器数量必须在 1 到 121 之间。");
+        }
+
+        var pdu = new byte[10 + (writeValues.Count * 2)];
+        pdu[0] = ModbusFunction.ReadWriteMultipleRegisters;
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(1, 2), readAddress);
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(3, 2), readQuantity);
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(5, 2), writeAddress);
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(7, 2), (ushort)writeValues.Count);
+        pdu[9] = (byte)(writeValues.Count * 2);
+        for (var i = 0; i < writeValues.Count; i++)
+        {
+            ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(10 + (i * 2), 2), writeValues[i]);
+        }
+
+        var response = await ExecuteAsync(unitId, pdu, cancellationToken).ConfigureAwait(false);
+        if (response.Length < 2 + (readQuantity * 2)
+            || response[0] != ModbusFunction.ReadWriteMultipleRegisters
+            || response[1] != readQuantity * 2)
+        {
+            throw new ZeusProtocolException("读写多个寄存器的响应长度异常。请核对从站功能码 0x17 实现。");
+        }
+
+        var values = new ushort[readQuantity];
+        for (var i = 0; i < readQuantity; i++)
+        {
+            values[i] = ModbusCodec.ReadUInt16BigEndian(response.AsSpan(2 + (i * 2), 2));
+        }
+
+        return values;
+    }
+
     /// <summary>写单个线圈。</summary>
     public async Task WriteSingleCoilAsync(byte unitId, ushort address, bool value, CancellationToken cancellationToken = default)
     {

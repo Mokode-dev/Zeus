@@ -31,4 +31,7 @@ public static class ModbusFunction
 
     /// <summary>掩码写保持寄存器。</summary>
     public const byte MaskWriteRegister = 0x16;
+
+    /// <summary>读写多个保持寄存器。</summary>
+    public const byte ReadWriteMultipleRegisters = 0x17;
 }
