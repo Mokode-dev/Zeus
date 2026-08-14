@@ -29,8 +29,10 @@ namespace Zeus
     {
         public ChannelRegistry() { }
         public System.Collections.Generic.IReadOnlyList<Zeus.IChannel> All { get; }
+        public event System.EventHandler<Zeus.ChannelRegistryChangedEventArgs>? Changed;
         public void Add(Zeus.IChannel channel) { }
         public Zeus.IChannel Get(string name) { }
+        public System.Threading.Tasks.Task RemoveAsync(string name, System.Threading.CancellationToken cancellationToken = default) { }
         public bool TryGet(string name, out Zeus.IChannel? channel) { }
     }
     public abstract class DeviceBase : Zeus.IDevice
@@ -43,8 +45,12 @@ namespace Zeus
     {
         public DeviceRegistry() { }
         public System.Collections.Generic.IReadOnlyList<Zeus.IDevice> All { get; }
+        public event System.EventHandler<Zeus.DeviceRegistryChangedEventArgs>? Changed;
         public void Add(Zeus.IDevice device) { }
         public TDevice Get<TDevice>(string name)
+            where TDevice :  class, Zeus.IDevice { }
+        public System.Threading.Tasks.Task RemoveAsync(string name, System.Threading.CancellationToken cancellationToken = default) { }
+        public bool TryGet<TDevice>(string name, out TDevice? device)
             where TDevice :  class, Zeus.IDevice { }
     }
     public sealed class PointTable : Zeus.IPointTable, Zeus.IPointTableWriter
@@ -60,5 +66,7 @@ namespace Zeus
         public void PublishError(string qualifiedName, string error) { }
         public void Register(Zeus.PointDefinition definition) { }
         public bool TryGet<T>(string name, out T? value) { }
+        public void Unregister(string qualifiedName) { }
+        public void UnregisterDevice(string deviceName) { }
     }
 }

@@ -34,4 +34,33 @@ public static class ZeusHostBuilderAcquisitionExtensions
 
         return builder;
     }
+
+    /// <summary>
+    /// 配置通道故障后的自动重连。未调用时默认开启，首次等待 1 秒，上限 30 秒。
+    /// </summary>
+    /// <param name="builder">宿主构建器。</param>
+    /// <param name="configure">修改是否启用、初始等待与退避上限。</param>
+    /// <returns>同一构建器。</returns>
+    public static ZeusHostBuilder AddReconnect(this ZeusHostBuilder builder, Action<ChannelReconnectOptions> configure)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(configure);
+        configure(builder.Reconnect);
+        if (builder.Reconnect.InitialDelay < TimeSpan.Zero)
+        {
+            throw new ZeusException("自动重连的首次等待不能为负数。");
+        }
+
+        if (builder.Reconnect.MaxDelay < TimeSpan.Zero)
+        {
+            throw new ZeusException("自动重连的等待上限不能为负数。");
+        }
+
+        if (builder.Reconnect.BackoffMultiplier < 1)
+        {
+            throw new ZeusException("自动重连的退避系数必须大于或等于 1。");
+        }
+
+        return builder;
+    }
 }

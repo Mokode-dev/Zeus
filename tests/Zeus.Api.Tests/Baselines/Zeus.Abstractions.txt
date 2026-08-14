@@ -5,6 +5,25 @@ namespace Zeus
         public ChannelDataReceivedEventArgs(System.ReadOnlyMemory<byte> data) { }
         public System.ReadOnlyMemory<byte> Data { get; }
     }
+    public sealed class ChannelReconnectOptions
+    {
+        public ChannelReconnectOptions() { }
+        public double BackoffMultiplier { get; set; }
+        public bool Enabled { get; set; }
+        public System.TimeSpan InitialDelay { get; set; }
+        public System.TimeSpan MaxDelay { get; set; }
+    }
+    public enum ChannelRegistryChange
+    {
+        Added = 0,
+        Removed = 1,
+    }
+    public sealed class ChannelRegistryChangedEventArgs : System.EventArgs
+    {
+        public ChannelRegistryChangedEventArgs(Zeus.ChannelRegistryChange change, Zeus.IChannel channel) { }
+        public Zeus.ChannelRegistryChange Change { get; }
+        public Zeus.IChannel Channel { get; }
+    }
     public enum ChannelState
     {
         Created = 0,
@@ -58,6 +77,17 @@ namespace Zeus
         public void Dispose() { }
         public static string FormatLine(Zeus.ChannelTraceEntry entry) { }
     }
+    public enum DeviceRegistryChange
+    {
+        Added = 0,
+        Removed = 1,
+    }
+    public sealed class DeviceRegistryChangedEventArgs : System.EventArgs
+    {
+        public DeviceRegistryChangedEventArgs(Zeus.DeviceRegistryChange change, Zeus.IDevice device) { }
+        public Zeus.DeviceRegistryChange Change { get; }
+        public Zeus.IDevice Device { get; }
+    }
     public interface IAcquisitionSource
     {
         string Name { get; }
@@ -78,17 +108,26 @@ namespace Zeus
     public interface IChannelRegistry
     {
         System.Collections.Generic.IReadOnlyList<Zeus.IChannel> All { get; }
+        event System.EventHandler<Zeus.ChannelRegistryChangedEventArgs>? Changed;
+        void Add(Zeus.IChannel channel);
         Zeus.IChannel Get(string name);
+        System.Threading.Tasks.Task RemoveAsync(string name, System.Threading.CancellationToken cancellationToken = default);
         bool TryGet(string name, out Zeus.IChannel? channel);
     }
     public interface IDevice
     {
+        Zeus.IChannel Channel { get; }
         string Name { get; }
     }
     public interface IDeviceRegistry
     {
         System.Collections.Generic.IReadOnlyList<Zeus.IDevice> All { get; }
+        event System.EventHandler<Zeus.DeviceRegistryChangedEventArgs>? Changed;
+        void Add(Zeus.IDevice device);
         TDevice Get<TDevice>(string name)
+            where TDevice :  class, Zeus.IDevice;
+        System.Threading.Tasks.Task RemoveAsync(string name, System.Threading.CancellationToken cancellationToken = default);
+        bool TryGet<TDevice>(string name, out TDevice? device)
             where TDevice :  class, Zeus.IDevice;
     }
     public interface IPointTable
@@ -105,6 +144,8 @@ namespace Zeus
         void Publish(string qualifiedName, object? value);
         void PublishError(string qualifiedName, string error);
         void Register(Zeus.PointDefinition definition);
+        void Unregister(string qualifiedName);
+        void UnregisterDevice(string deviceName);
     }
     public interface IVirtualResponder
     {
@@ -114,6 +155,7 @@ namespace Zeus
     {
         Zeus.IChannelRegistry Channels { get; }
         Zeus.IDeviceRegistry Devices { get; }
+        bool IsRunning { get; }
         Zeus.IPointTable Points { get; }
         System.IServiceProvider Services { get; }
         System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = default);

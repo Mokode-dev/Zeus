@@ -165,4 +165,138 @@ public static class ZeusHostBuilderCommunicationExtensions
 
         return builder;
     }
+
+    /// <summary>
+    /// 在已构建的宿主上登记串口通道。宿主运行中会立即打开。
+    /// </summary>
+    public static Task<SerialPortChannel> AddSerialPortAsync(
+        this IZeusHost host,
+        string name,
+        string portName,
+        int baudRate = 115200,
+        CancellationToken cancellationToken = default)
+        => host.AddSerialPortAsync(name, options =>
+        {
+            options.PortName = portName;
+            options.BaudRate = baudRate;
+        }, cancellationToken);
+
+    /// <summary>
+    /// 以选项回调在已构建的宿主上登记串口通道。
+    /// </summary>
+    public static Task<SerialPortChannel> AddSerialPortAsync(
+        this IZeusHost host,
+        string name,
+        Action<SerialPortOptions> configure,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var options = new SerialPortOptions();
+        configure(options);
+        var logger = host.Services.GetService<ILogger<SerialPortChannel>>();
+        return AddAndMaybeOpenAsync(host, new SerialPortChannel(name, options, logger), cancellationToken);
+    }
+
+    /// <summary>
+    /// 在已构建的宿主上登记虚拟通道。宿主运行中会立即打开。
+    /// </summary>
+    public static Task<VirtualChannel> AddVirtualChannelAsync(
+        this IZeusHost host,
+        string name,
+        IVirtualResponder? responder = null,
+        CancellationToken cancellationToken = default)
+    {
+        var logger = host.Services.GetService<ILogger<VirtualChannel>>();
+        return AddAndMaybeOpenAsync(host, new VirtualChannel(name, logger, responder), cancellationToken);
+    }
+
+    /// <summary>
+    /// 在已构建的宿主上登记 TCP 客户端通道。
+    /// </summary>
+    public static Task<TcpClientChannel> AddTcpClientAsync(
+        this IZeusHost host,
+        string name,
+        string hostName,
+        int port,
+        CancellationToken cancellationToken = default)
+        => host.AddTcpClientAsync(name, options =>
+        {
+            options.Host = hostName;
+            options.Port = port;
+        }, cancellationToken);
+
+    /// <summary>
+    /// 以选项回调在已构建的宿主上登记 TCP 客户端通道。
+    /// </summary>
+    public static Task<TcpClientChannel> AddTcpClientAsync(
+        this IZeusHost host,
+        string name,
+        Action<TcpClientOptions> configure,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var options = new TcpClientOptions();
+        configure(options);
+        var logger = host.Services.GetService<ILogger<TcpClientChannel>>();
+        return AddAndMaybeOpenAsync(host, new TcpClientChannel(name, options, logger), cancellationToken);
+    }
+
+    /// <summary>
+    /// 在已构建的宿主上登记 UDP 客户端通道。
+    /// </summary>
+    public static Task<UdpClientChannel> AddUdpClientAsync(
+        this IZeusHost host,
+        string name,
+        string hostName,
+        int port,
+        CancellationToken cancellationToken = default)
+        => host.AddUdpClientAsync(name, options =>
+        {
+            options.Host = hostName;
+            options.Port = port;
+        }, cancellationToken);
+
+    /// <summary>
+    /// 以选项回调在已构建的宿主上登记 UDP 客户端通道。
+    /// </summary>
+    public static Task<UdpClientChannel> AddUdpClientAsync(
+        this IZeusHost host,
+        string name,
+        Action<UdpClientOptions> configure,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var options = new UdpClientOptions();
+        configure(options);
+        var logger = host.Services.GetService<ILogger<UdpClientChannel>>();
+        return AddAndMaybeOpenAsync(host, new UdpClientChannel(name, options, logger), cancellationToken);
+    }
+
+    /// <summary>
+    /// 登记通道；宿主已启动时立即打开，失败记入 <see cref="ChannelState.Faulted"/> 并由自动重连接管。
+    /// </summary>
+    private static async Task<TChannel> AddAndMaybeOpenAsync<TChannel>(
+        IZeusHost host,
+        TChannel channel,
+        CancellationToken cancellationToken)
+        where TChannel : IChannel
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        host.Channels.Add(channel);
+        if (!host.IsRunning)
+        {
+            return channel;
+        }
+
+        try
+        {
+            await channel.OpenAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // 打开失败已进入 Faulted；自动重连服务会按退避重试。
+        }
+
+        return channel;
+    }
 }

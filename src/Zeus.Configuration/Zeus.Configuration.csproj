@@ -5,8 +5,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Zeus</RootNamespace>
     <AssemblyName>Zeus.Configuration</AssemblyName>
-    <Description>Zeus JSON 工程配置：装载通道/设备/点表，并热更新采集间隔。</Description>
-    <PackageDescription>Zeus JSON 工程配置：装载通道/设备/点表，并热更新采集间隔。</PackageDescription>
+    <Description>Zeus JSON 工程配置：装载通道/设备/点表，并热更新采集、重连与拓扑。</Description>
+    <PackageDescription>Zeus JSON 工程配置：装载通道/设备/点表，并热更新采集、重连与拓扑。</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

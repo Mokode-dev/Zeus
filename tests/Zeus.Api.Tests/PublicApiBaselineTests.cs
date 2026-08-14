@@ -90,10 +90,12 @@ public sealed class PublicApiBaselineTests
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var candidate = Path.Combine(directory.FullName, "Baselines", fileName);
-            if (File.Exists(candidate) || directory.Name == "Zeus.Api.Tests")
+            // 只认测试项目源目录，避免命中 bin 下复制出来的基线。
+            if (directory.Name == "Zeus.Api.Tests"
+                && !directory.FullName.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                && !directory.FullName.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
             {
-                return candidate;
+                return Path.Combine(directory.FullName, "Baselines", fileName);
             }
 
             directory = directory.Parent;

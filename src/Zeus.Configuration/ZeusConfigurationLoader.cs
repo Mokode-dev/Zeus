@@ -88,6 +88,21 @@ public static class ZeusConfigurationLoader
             throw new ZeusException($"{sourceName} 中 acquisition.intervalMilliseconds 必须大于 0。");
         }
 
+        if (document.Reconnect.InitialDelayMilliseconds < 0)
+        {
+            throw new ZeusException($"{sourceName} 中 reconnect.initialDelayMilliseconds 不能为负数。");
+        }
+
+        if (document.Reconnect.MaxDelayMilliseconds < 0)
+        {
+            throw new ZeusException($"{sourceName} 中 reconnect.maxDelayMilliseconds 不能为负数。");
+        }
+
+        if (document.Reconnect.BackoffMultiplier < 1)
+        {
+            throw new ZeusException($"{sourceName} 中 reconnect.backoffMultiplier 必须大于或等于 1。");
+        }
+
         var channelNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < document.Channels.Count; i++)
         {

@@ -113,7 +113,9 @@ namespace Zeus
     }
     public static class ZeusHostBuilderModbusExtensions
     {
+        public static Zeus.ModbusDevice AddModbusRtu(this Zeus.IZeusHost host, string deviceName, string channelName, byte unitId = 1, System.TimeSpan? timeout = default, System.Action<Zeus.ModbusPointMap>? points = null) { }
         public static Zeus.ZeusHostBuilder AddModbusRtu(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, byte unitId = 1, System.TimeSpan? timeout = default, System.Action<Zeus.ModbusPointMap>? points = null) { }
+        public static Zeus.ModbusDevice AddModbusTcp(this Zeus.IZeusHost host, string deviceName, string channelName, byte unitId = 1, System.TimeSpan? timeout = default, System.Action<Zeus.ModbusPointMap>? points = null) { }
         public static Zeus.ZeusHostBuilder AddModbusTcp(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, byte unitId = 1, System.TimeSpan? timeout = default, System.Action<Zeus.ModbusPointMap>? points = null) { }
     }
 }

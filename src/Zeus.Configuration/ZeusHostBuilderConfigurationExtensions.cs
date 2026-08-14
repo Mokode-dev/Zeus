@@ -4,12 +4,12 @@ using Microsoft.Extensions.Logging;
 namespace Zeus;
 
 /// <summary>
-/// 把 JSON 工程配置装进宿主。通道与设备在构建期登记；采集间隔写入可热更新的选项单例。
+/// 把 JSON 工程配置装进宿主。构建期登记通道与设备；监视开启后采集、重连与拓扑均可热更新。
 /// </summary>
 public static class ZeusHostBuilderConfigurationExtensions
 {
     /// <summary>
-    /// 从文件装载配置。默认监视该文件：保存后只热更新采集间隔，通道与设备需重启进程。
+    /// 从文件装载配置。默认监视该文件：保存后热更新采集间隔、重连选项，以及通道/设备增删与参数变更。
     /// </summary>
     /// <param name="builder">宿主构建器。</param>
     /// <param name="path">JSON 路径。</param>
@@ -19,7 +19,9 @@ public static class ZeusHostBuilderConfigurationExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
         var fullPath = Path.GetFullPath(path);
-        Apply(builder, ZeusConfigurationLoader.LoadFile(fullPath));
+        var document = ZeusConfigurationLoader.LoadFile(fullPath);
+        Apply(builder, document);
+        EnsureState(builder).Path = fullPath;
 
         if (watch)
         {
@@ -45,7 +47,7 @@ public static class ZeusHostBuilderConfigurationExtensions
 
     /// <summary>
     /// 从文件重新读取采集间隔并立即生效。通道与设备不会重建。
-    /// 监视器内部也走同一路径；测试或不想依赖 <c>FileSystemWatcher</c> 时可手动调用。
+    /// 需要同步拓扑时请使用 <see cref="ReloadAsync"/>。
     /// </summary>
     /// <param name="host">已构建的宿主。</param>
     /// <param name="path">JSON 路径。</param>
@@ -58,11 +60,34 @@ public static class ZeusHostBuilderConfigurationExtensions
     }
 
     /// <summary>
+    /// 从文件重新装载配置：更新采集与重连选项，并按差异增删通道、设备。
+    /// 监视器内部也走同一路径；测试或不想依赖 <c>FileSystemWatcher</c> 时可手动调用。
+    /// </summary>
+    /// <param name="host">已构建的宿主。</param>
+    /// <param name="path">JSON 路径。省略时使用 <see cref="AddJsonFile"/> 登记的路径。</param>
+    /// <param name="cancellationToken">取消热更新。</param>
+    public static async Task ReloadAsync(
+        this IZeusHost host,
+        string? path = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        var state = host.Services.GetRequiredService<ZeusConfigurationState>();
+        var fullPath = Path.GetFullPath(path ?? state.Path ?? throw new ZeusException(
+            "未指定配置文件路径。请传入 path，或先使用 AddJsonFile 装载。"));
+        var document = ZeusConfigurationLoader.LoadFile(fullPath);
+        await ApplyRuntimeAsync(host, state.Last, document, cancellationToken).ConfigureAwait(false);
+        state.Last = document;
+        state.Path = fullPath;
+    }
+
+    /// <summary>
     /// 把已校验的配置应用到构建器。供装载与热更新共用采集写入逻辑。
     /// </summary>
     internal static void Apply(ZeusHostBuilder builder, ZeusAppConfiguration document)
     {
         ApplyAcquisition(builder.Acquisition, document.Acquisition);
+        ApplyReconnect(builder.Reconnect, document.Reconnect);
         foreach (var channel in document.Channels)
         {
             ApplyChannel(builder, channel);
@@ -72,6 +97,8 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             ApplyDevice(builder, device);
         }
+
+        EnsureState(builder).Last = document;
     }
 
     /// <summary>
@@ -86,6 +113,156 @@ public static class ZeusHostBuilderConfigurationExtensions
 
         options.Interval = TimeSpan.FromMilliseconds(configuration.IntervalMilliseconds);
         options.PollImmediately = configuration.PollImmediately;
+    }
+
+    /// <summary>
+    /// 把 JSON 中的重连选项写回运行中的单例。
+    /// </summary>
+    internal static void ApplyReconnect(ChannelReconnectOptions options, ReconnectConfiguration configuration)
+    {
+        options.Enabled = configuration.Enabled;
+        options.InitialDelay = TimeSpan.FromMilliseconds(configuration.InitialDelayMilliseconds);
+        options.MaxDelay = TimeSpan.FromMilliseconds(configuration.MaxDelayMilliseconds);
+        options.BackoffMultiplier = configuration.BackoffMultiplier;
+    }
+
+    /// <summary>
+    /// 按上一份与当前配置的差异，增删运行中的通道与设备。
+    /// </summary>
+    internal static async Task ApplyRuntimeAsync(
+        IZeusHost host,
+        ZeusAppConfiguration previous,
+        ZeusAppConfiguration next,
+        CancellationToken cancellationToken)
+    {
+        ApplyAcquisition(host.Services.GetRequiredService<AcquisitionOptions>(), next.Acquisition);
+        ApplyReconnect(host.Services.GetRequiredService<ChannelReconnectOptions>(), next.Reconnect);
+
+        var previousChannels = previous.Channels.ToDictionary(item => item.Name.Trim(), StringComparer.OrdinalIgnoreCase);
+        var nextChannels = next.Channels.ToDictionary(item => item.Name.Trim(), StringComparer.OrdinalIgnoreCase);
+        var previousDevices = previous.Devices.ToDictionary(item => item.Name.Trim(), StringComparer.OrdinalIgnoreCase);
+        var nextDevices = next.Devices.ToDictionary(item => item.Name.Trim(), StringComparer.OrdinalIgnoreCase);
+
+        var replacedChannels = new HashSet<string>(
+            previousChannels.Where(pair =>
+                    nextChannels.TryGetValue(pair.Key, out var updated)
+                    && ChannelFingerprint(pair.Value) != ChannelFingerprint(updated))
+                .Select(pair => pair.Key),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var pair in previousDevices)
+        {
+            var shouldRemove = !nextDevices.TryGetValue(pair.Key, out var updated)
+                || DeviceFingerprint(pair.Value) != DeviceFingerprint(updated)
+                || replacedChannels.Contains(pair.Value.Channel.Trim())
+                || !nextChannels.ContainsKey(pair.Value.Channel.Trim());
+            if (shouldRemove && host.Devices.TryGet<IDevice>(pair.Key, out _))
+            {
+                await host.RemoveDeviceAsync(pair.Key, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        foreach (var pair in previousChannels)
+        {
+            var shouldRemove = !nextChannels.ContainsKey(pair.Key) || replacedChannels.Contains(pair.Key);
+            if (shouldRemove && host.Channels.TryGet(pair.Key, out _))
+            {
+                await host.RemoveChannelAsync(pair.Key, removeBoundDevices: true, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        foreach (var pair in nextChannels)
+        {
+            if (!previousChannels.ContainsKey(pair.Key) || replacedChannels.Contains(pair.Key))
+            {
+                await AddRuntimeChannelAsync(host, pair.Value, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        foreach (var pair in nextDevices)
+        {
+            var shouldAdd = !previousDevices.TryGetValue(pair.Key, out var old)
+                || DeviceFingerprint(old) != DeviceFingerprint(pair.Value)
+                || replacedChannels.Contains(pair.Value.Channel.Trim());
+            if (shouldAdd)
+            {
+                AddRuntimeDevice(host, pair.Value);
+            }
+        }
+    }
+
+    private static Task AddRuntimeChannelAsync(
+        IZeusHost host,
+        ChannelConfiguration channel,
+        CancellationToken cancellationToken)
+    {
+        var name = channel.Name.Trim();
+        return ZeusConfigurationLoader.Normalize(channel.Type) switch
+        {
+            "virtual" => Await(host.AddVirtualChannelAsync(name, CreateResponder(channel), cancellationToken)),
+            "serial" => Await(host.AddSerialPortAsync(name, channel.PortName!, channel.BaudRate, cancellationToken)),
+            "tcp" => Await(host.AddTcpClientAsync(name, channel.Host!, channel.Port, cancellationToken)),
+            "udp" => Await(host.AddUdpClientAsync(name, options =>
+            {
+                options.Host = channel.Host!;
+                options.Port = channel.Port;
+                options.LocalPort = channel.LocalPort;
+            }, cancellationToken)),
+            _ => Task.CompletedTask
+        };
+
+        static async Task Await(Task task) => await task.ConfigureAwait(false);
+    }
+
+    private static void AddRuntimeDevice(IZeusHost host, DeviceConfiguration device)
+    {
+        var type = ZeusConfigurationLoader.Normalize(device.Type);
+        var isTcp = type is "modbus-tcp" or "modbustcp" or "tcp";
+        var timeout = device.TimeoutMilliseconds is { } ms
+            ? TimeSpan.FromMilliseconds(ms)
+            : (TimeSpan?)null;
+        Action<ModbusPointMap>? points = device.Points.Count == 0 ? null : map => ApplyPoints(map, device.Points);
+        if (isTcp)
+        {
+            host.AddModbusTcp(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
+        }
+        else
+        {
+            host.AddModbusRtu(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
+        }
+    }
+
+    private static string ChannelFingerprint(ChannelConfiguration channel)
+    {
+        var type = ZeusConfigurationLoader.Normalize(channel.Type);
+        return type switch
+        {
+            "virtual" => string.Join('|', type, ZeusConfigurationLoader.Normalize(channel.Responder), channel.UnitId, ZeusConfigurationLoader.Normalize(channel.Transport)),
+            "serial" => string.Join('|', type, channel.PortName?.Trim(), channel.BaudRate),
+            "tcp" => string.Join('|', type, channel.Host?.Trim(), channel.Port),
+            "udp" => string.Join('|', type, channel.Host?.Trim(), channel.Port, channel.LocalPort),
+            _ => type
+        };
+    }
+
+    private static string DeviceFingerprint(DeviceConfiguration device)
+    {
+        var points = string.Join(';', device.Points.Select(point =>
+            string.Join(':', point.Name, ZeusConfigurationLoader.Normalize(point.Table), point.Address, point.Scale, point.LowAlarmLimit, point.HighAlarmLimit)));
+        return string.Join('|', device.Channel.Trim(), ZeusConfigurationLoader.Normalize(device.Type), device.UnitId, device.TimeoutMilliseconds, points);
+    }
+
+    private static ZeusConfigurationState EnsureState(ZeusHostBuilder builder)
+    {
+        var existing = builder.Services.FirstOrDefault(descriptor => descriptor.ServiceType == typeof(ZeusConfigurationState));
+        if (existing?.ImplementationInstance is ZeusConfigurationState state)
+        {
+            return state;
+        }
+
+        state = new ZeusConfigurationState();
+        builder.Services.AddSingleton(state);
+        return state;
     }
 
     private static void ApplyChannel(ZeusHostBuilder builder, ChannelConfiguration channel)
@@ -219,28 +396,29 @@ internal sealed class ZeusConfigurationWatchOptions
 }
 
 /// <summary>
-/// 监视 JSON 文件。保存后重新读取，只把采集间隔写回运行中的 <see cref="AcquisitionOptions"/>。
-/// 通道与设备拓扑变更会被拒绝并记日志，避免热插拔半开的串口。
+/// 监视 JSON 文件。保存后走 <see cref="ZeusHostBuilderConfigurationExtensions.ReloadAsync"/>，
+/// 同步采集间隔、重连选项以及通道/设备拓扑。
 /// </summary>
 internal sealed class ZeusConfigurationWatchService : IDisposable, Microsoft.Extensions.Hosting.IHostedService
 {
     private readonly ZeusConfigurationWatchOptions _watch;
-    private readonly AcquisitionOptions _acquisition;
+    private readonly ZeusHostAccessor _accessor;
     private readonly ILogger<ZeusConfigurationWatchService> _logger;
     private readonly FileSystemWatcher _watcher;
     private readonly object _gate = new();
     private DateTime _lastWrite = DateTime.MinValue;
+    private readonly SemaphoreSlim _reload = new(1, 1);
 
     /// <summary>
     /// 创建监视服务。
     /// </summary>
     public ZeusConfigurationWatchService(
         ZeusConfigurationWatchOptions watch,
-        AcquisitionOptions acquisition,
+        ZeusHostAccessor accessor,
         ILogger<ZeusConfigurationWatchService> logger)
     {
         _watch = watch;
-        _acquisition = acquisition;
+        _accessor = accessor;
         _logger = logger;
         var directory = Path.GetDirectoryName(watch.Path) ?? Directory.GetCurrentDirectory();
         var fileName = Path.GetFileName(watch.Path);
@@ -268,7 +446,11 @@ internal sealed class ZeusConfigurationWatchService : IDisposable, Microsoft.Ext
     }
 
     /// <inheritdoc />
-    public void Dispose() => _watcher.Dispose();
+    public void Dispose()
+    {
+        _watcher.Dispose();
+        _reload.Dispose();
+    }
 
     private void OnChanged(object sender, FileSystemEventArgs e)
     {
@@ -289,19 +471,26 @@ internal sealed class ZeusConfigurationWatchService : IDisposable, Microsoft.Ext
 
     private async Task ReloadAsync()
     {
+        await _reload.WaitAsync().ConfigureAwait(false);
         try
         {
             await Task.Delay(80).ConfigureAwait(false);
-            var document = ZeusConfigurationLoader.LoadFile(_watch.Path);
-            ZeusHostBuilderConfigurationExtensions.ApplyAcquisition(_acquisition, document.Acquisition);
-            _logger.LogInformation(
-                "已热更新采集间隔为 {Interval} ms（来自 {Path}）。通道与设备拓扑变更需要重启进程。",
-                document.Acquisition.IntervalMilliseconds,
-                _watch.Path);
+            var host = _accessor.Host;
+            if (host is null)
+            {
+                return;
+            }
+
+            await host.ReloadAsync(_watch.Path).ConfigureAwait(false);
+            _logger.LogInformation("已热更新配置 {Path}：采集间隔、重连选项与通道/设备拓扑已同步。", _watch.Path);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "配置文件 {Path} 热更新失败，继续使用上一份有效采集间隔。", _watch.Path);
+            _logger.LogWarning(ex, "配置文件 {Path} 热更新失败，继续使用上一份有效配置。", _watch.Path);
+        }
+        finally
+        {
+            _reload.Release();
         }
     }
 }

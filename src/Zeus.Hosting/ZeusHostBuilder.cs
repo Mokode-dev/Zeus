@@ -28,17 +28,26 @@ public sealed class ZeusHostBuilder
         Services.AddSingleton<DeviceRegistry>();
         Services.AddSingleton<IDeviceRegistry>(sp => sp.GetRequiredService<DeviceRegistry>());
         Services.AddSingleton(Acquisition);
+        Services.AddSingleton(Reconnect);
+        Services.AddSingleton<HostRunState>();
+        Services.AddSingleton<ZeusHostAccessor>();
         Services.AddSingleton<PointTable>();
         Services.AddSingleton<IPointTable>(sp => sp.GetRequiredService<PointTable>());
         Services.AddSingleton<IPointTableWriter>(sp => sp.GetRequiredService<PointTable>());
         Services.AddHostedService<ChannelLifecycleService>();
         Services.AddHostedService<AcquisitionLoopService>();
+        Services.AddHostedService<ChannelReconnectService>();
     }
 
     /// <summary>
     /// 采集选项单例。代码与 JSON 热更新都改这一份，循环每轮读取最新间隔。
     /// </summary>
     public AcquisitionOptions Acquisition { get; } = new();
+
+    /// <summary>
+    /// 通道故障自动重连选项。与采集选项一样是单例，运行中修改下一轮退避即生效。
+    /// </summary>
+    public ChannelReconnectOptions Reconnect { get; } = new();
 
     /// <summary>标准依赖注入容器。高级用户可在此注册自己的服务。</summary>
     public IServiceCollection Services => _inner.Services;
@@ -64,11 +73,14 @@ public sealed class ZeusHostBuilder
         var channels = host.Services.GetRequiredService<ChannelRegistry>();
         var devices = host.Services.GetRequiredService<DeviceRegistry>();
         var points = host.Services.GetRequiredService<PointTable>();
+        var runState = host.Services.GetRequiredService<HostRunState>();
         foreach (var registration in _registrations)
         {
             registration(host.Services, channels, devices);
         }
 
-        return new ZeusHostRuntime(host, channels, devices, points);
+        var runtime = new ZeusHostRuntime(host, channels, devices, points, runState);
+        host.Services.GetRequiredService<ZeusHostAccessor>().Host = runtime;
+        return runtime;
     }
 }

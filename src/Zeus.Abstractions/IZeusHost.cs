@@ -19,13 +19,22 @@ public interface IZeusHost : IAsyncDisposable
     IServiceProvider Services { get; }
 
     /// <summary>
+    /// 宿主是否处于已启动状态。为 <c>true</c> 时通道应保持打开，采集与自动重连会运行。
+    /// 停止后再 <see cref="StartAsync"/> 会重新打开通道并恢复采集。
+    /// </summary>
+    bool IsRunning { get; }
+
+    /// <summary>
     /// 启动宿主：按注册顺序打开通道并启动后台服务。
+    /// 对已启动的宿主重复调用是幂等的。停止后再调用会重新打开通道。
     /// </summary>
     /// <param name="cancellationToken">取消启动。</param>
     Task StartAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 停止宿主：停止后台服务并按相反顺序关闭通道。
+    /// 停止宿主：暂停采集与自动重连，并按相反顺序关闭通道。
+    /// 底层日志与配置监视仍保持，以便再次 <see cref="StartAsync"/>。
+    /// 释放资源请调用 <see cref="IAsyncDisposable.DisposeAsync"/>。
     /// </summary>
     /// <param name="cancellationToken">取消停止等待。</param>
     Task StopAsync(CancellationToken cancellationToken = default);

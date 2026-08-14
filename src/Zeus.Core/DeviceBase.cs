@@ -19,6 +19,6 @@ public abstract class DeviceBase : IDevice
     /// <inheritdoc />
     public string Name { get; }
 
-    /// <summary>设备绑定的传输通道。</summary>
+    /// <inheritdoc />
     public IChannel Channel { get; }
 }

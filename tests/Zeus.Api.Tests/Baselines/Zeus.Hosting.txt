@@ -7,6 +7,7 @@ namespace Zeus
     public sealed class ZeusHostBuilder
     {
         public Zeus.AcquisitionOptions Acquisition { get; }
+        public Zeus.ChannelReconnectOptions Reconnect { get; }
         public Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
         public void Register(System.Action<System.IServiceProvider, Zeus.ChannelRegistry, Zeus.DeviceRegistry> registration) { }
     }
@@ -14,10 +15,15 @@ namespace Zeus
     {
         public static Zeus.ZeusHostBuilder AddAcquisition(this Zeus.ZeusHostBuilder builder, System.Action<Zeus.AcquisitionOptions> configure) { }
         public static Zeus.ZeusHostBuilder AddAcquisition(this Zeus.ZeusHostBuilder builder, System.TimeSpan interval) { }
+        public static Zeus.ZeusHostBuilder AddReconnect(this Zeus.ZeusHostBuilder builder, System.Action<Zeus.ChannelReconnectOptions> configure) { }
     }
     public static class ZeusHostBuilderDeviceExtensions
     {
+        public static TDevice AddDevice<TDevice>(this Zeus.IZeusHost host, string name, string channelName, System.Func<string, Zeus.IChannel, TDevice> factory)
+            where TDevice :  class, Zeus.IDevice { }
         public static Zeus.ZeusHostBuilder AddDevice<TDevice>(this Zeus.ZeusHostBuilder builder, string name, string channelName, System.Func<string, Zeus.IChannel, TDevice> factory)
             where TDevice :  class, Zeus.IDevice { }
+        public static System.Threading.Tasks.Task RemoveChannelAsync(this Zeus.IZeusHost host, string name, bool removeBoundDevices = true, System.Threading.CancellationToken cancellationToken = default) { }
+        public static System.Threading.Tasks.Task RemoveDeviceAsync(this Zeus.IZeusHost host, string name, System.Threading.CancellationToken cancellationToken = default) { }
     }
 }

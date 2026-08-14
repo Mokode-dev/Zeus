@@ -58,10 +58,17 @@ namespace Zeus
     {
         public static Zeus.ZeusHostBuilder AddSerialPort(this Zeus.ZeusHostBuilder builder, string name, System.Action<Zeus.SerialPortOptions> configure) { }
         public static Zeus.ZeusHostBuilder AddSerialPort(this Zeus.ZeusHostBuilder builder, string name, string portName, int baudRate = 115200) { }
+        public static System.Threading.Tasks.Task<Zeus.SerialPortChannel> AddSerialPortAsync(this Zeus.IZeusHost host, string name, System.Action<Zeus.SerialPortOptions> configure, System.Threading.CancellationToken cancellationToken = default) { }
+        public static System.Threading.Tasks.Task<Zeus.SerialPortChannel> AddSerialPortAsync(this Zeus.IZeusHost host, string name, string portName, int baudRate = 115200, System.Threading.CancellationToken cancellationToken = default) { }
         public static Zeus.ZeusHostBuilder AddTcpClient(this Zeus.ZeusHostBuilder builder, string name, System.Action<Zeus.TcpClientOptions> configure) { }
         public static Zeus.ZeusHostBuilder AddTcpClient(this Zeus.ZeusHostBuilder builder, string name, string host, int port) { }
+        public static System.Threading.Tasks.Task<Zeus.TcpClientChannel> AddTcpClientAsync(this Zeus.IZeusHost host, string name, System.Action<Zeus.TcpClientOptions> configure, System.Threading.CancellationToken cancellationToken = default) { }
+        public static System.Threading.Tasks.Task<Zeus.TcpClientChannel> AddTcpClientAsync(this Zeus.IZeusHost host, string name, string hostName, int port, System.Threading.CancellationToken cancellationToken = default) { }
         public static Zeus.ZeusHostBuilder AddUdpClient(this Zeus.ZeusHostBuilder builder, string name, System.Action<Zeus.UdpClientOptions> configure) { }
         public static Zeus.ZeusHostBuilder AddUdpClient(this Zeus.ZeusHostBuilder builder, string name, string host, int port) { }
+        public static System.Threading.Tasks.Task<Zeus.UdpClientChannel> AddUdpClientAsync(this Zeus.IZeusHost host, string name, System.Action<Zeus.UdpClientOptions> configure, System.Threading.CancellationToken cancellationToken = default) { }
+        public static System.Threading.Tasks.Task<Zeus.UdpClientChannel> AddUdpClientAsync(this Zeus.IZeusHost host, string name, string hostName, int port, System.Threading.CancellationToken cancellationToken = default) { }
         public static Zeus.ZeusHostBuilder AddVirtualChannel(this Zeus.ZeusHostBuilder builder, string name, Zeus.IVirtualResponder? responder = null) { }
+        public static System.Threading.Tasks.Task<Zeus.VirtualChannel> AddVirtualChannelAsync(this Zeus.IZeusHost host, string name, Zeus.IVirtualResponder? responder = null, System.Threading.CancellationToken cancellationToken = default) { }
     }
 }

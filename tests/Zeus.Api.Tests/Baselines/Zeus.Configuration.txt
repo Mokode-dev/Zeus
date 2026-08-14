@@ -41,12 +41,21 @@ namespace Zeus
         public double? Scale { get; set; }
         public string Table { get; set; }
     }
+    public sealed class ReconnectConfiguration
+    {
+        public ReconnectConfiguration() { }
+        public double BackoffMultiplier { get; set; }
+        public bool Enabled { get; set; }
+        public int InitialDelayMilliseconds { get; set; }
+        public int MaxDelayMilliseconds { get; set; }
+    }
     public sealed class ZeusAppConfiguration
     {
         public ZeusAppConfiguration() { }
         public Zeus.AcquisitionConfiguration Acquisition { get; set; }
         public System.Collections.Generic.List<Zeus.ChannelConfiguration> Channels { get; set; }
         public System.Collections.Generic.List<Zeus.DeviceConfiguration> Devices { get; set; }
+        public Zeus.ReconnectConfiguration Reconnect { get; set; }
     }
     public static class ZeusConfigurationLoader
     {
@@ -59,5 +68,6 @@ namespace Zeus
         public static Zeus.ZeusHostBuilder AddJson(this Zeus.ZeusHostBuilder builder, string json, string sourceName = "配置") { }
         public static Zeus.ZeusHostBuilder AddJsonFile(this Zeus.ZeusHostBuilder builder, string path, bool watch = true) { }
         public static void ReloadAcquisition(this Zeus.IZeusHost host, string path) { }
+        public static System.Threading.Tasks.Task ReloadAsync(this Zeus.IZeusHost host, string? path = null, System.Threading.CancellationToken cancellationToken = default) { }
     }
 }

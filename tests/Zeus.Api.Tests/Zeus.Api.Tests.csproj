@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    冻结 0.1.0 公开 API。
-    任一已发布程序集的公开表面变化都会让本测试失败，避免 0.1.x 误改签名。
+    冻结当前发布版本的公开 API。
+    0.2 允许有意的破坏性变更，但必须同步更新 Baselines。
   -->
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>

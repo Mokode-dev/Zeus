@@ -24,4 +24,16 @@ public interface IPointTableWriter
     /// <param name="qualifiedName">限定名。</param>
     /// <param name="error">面向开发者的说明。</param>
     void PublishError(string qualifiedName, string error);
+
+    /// <summary>
+    /// 移除单个点及其历史。点不存在时忽略。
+    /// </summary>
+    /// <param name="qualifiedName">限定名。</param>
+    void Unregister(string qualifiedName);
+
+    /// <summary>
+    /// 移除某台设备贡献的全部点。运行中卸载设备时使用。
+    /// </summary>
+    /// <param name="deviceName">设备名。</param>
+    void UnregisterDevice(string deviceName);
 }
