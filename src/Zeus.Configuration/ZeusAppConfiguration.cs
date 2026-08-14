@@ -143,4 +143,10 @@ public sealed class PointConfiguration
 
     /// <summary>可选高报阈值。仅寄存器点支持，按换算后的值判断。</summary>
     public double? HighAlarmLimit { get; set; }
+
+    /// <summary>
+    /// 是否允许按点名写回。默认 false。
+    /// 仅 <c>holding</c> 与 <c>coil</c> 可设为 true；输入寄存器和离散输入始终只读。
+    /// </summary>
+    public bool Writable { get; set; }
 }

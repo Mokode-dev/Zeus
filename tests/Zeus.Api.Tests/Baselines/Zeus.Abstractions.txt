@@ -138,6 +138,7 @@ namespace Zeus
         T Get<T>(string name);
         System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> GetHistory(string name);
         bool TryGet<T>(string name, out T? value);
+        System.Threading.Tasks.Task WriteAsync(string name, object value, System.Threading.CancellationToken cancellationToken = default);
     }
     public interface IPointTableWriter
     {
@@ -146,6 +147,11 @@ namespace Zeus
         void Register(Zeus.PointDefinition definition);
         void Unregister(string qualifiedName);
         void UnregisterDevice(string deviceName);
+    }
+    public interface IPointWriter
+    {
+        string Name { get; }
+        System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default);
     }
     public interface IVirtualResponder
     {
@@ -186,11 +192,13 @@ namespace Zeus
     {
         public PointDefinition(string name, string deviceName, Zeus.PointValueKind kind) { }
         public PointDefinition(string name, string deviceName, Zeus.PointValueKind kind, Zeus.PointAlarmLimits? alarmLimits) { }
+        public PointDefinition(string name, string deviceName, Zeus.PointValueKind kind, Zeus.PointAlarmLimits? alarmLimits, bool writable) { }
         public Zeus.PointAlarmLimits? AlarmLimits { get; }
         public string DeviceName { get; }
         public Zeus.PointValueKind Kind { get; }
         public string Name { get; }
         public string QualifiedName { get; }
+        public bool Writable { get; }
     }
     public sealed class PointSnapshot
     {

@@ -248,6 +248,11 @@ public static class ZeusConfigurationLoader
             {
                 throw new ZeusException($"{path} 是布尔点，不能配置 lowAlarmLimit 或 highAlarmLimit。");
             }
+
+            if (point.Writable && table is "input" or "inputregister" or "discrete" or "discreteinput")
+            {
+                throw new ZeusException($"{path} 位于只读数据区，不能设置 writable: true。");
+            }
         }
     }
 

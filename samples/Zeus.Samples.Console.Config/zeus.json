@@ -20,7 +20,8 @@
       "unitId": 1,
       "points": [
         { "name": "temperature", "table": "holding", "address": 0, "scale": 0.1 },
-        { "name": "heater", "table": "coil", "address": 2 }
+        { "name": "setpoint", "table": "holding", "address": 1, "scale": 0.1, "writable": true },
+        { "name": "heater", "table": "coil", "address": 2, "writable": true }
       ]
     }
   ]

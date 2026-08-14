@@ -248,7 +248,7 @@ public static class ZeusHostBuilderConfigurationExtensions
     private static string DeviceFingerprint(DeviceConfiguration device)
     {
         var points = string.Join(';', device.Points.Select(point =>
-            string.Join(':', point.Name, ZeusConfigurationLoader.Normalize(point.Table), point.Address, point.Scale, point.LowAlarmLimit, point.HighAlarmLimit)));
+            string.Join(':', point.Name, ZeusConfigurationLoader.Normalize(point.Table), point.Address, point.Scale, point.LowAlarmLimit, point.HighAlarmLimit, point.Writable)));
         return string.Join('|', device.Channel.Trim(), ZeusConfigurationLoader.Normalize(device.Type), device.UnitId, device.TimeoutMilliseconds, points);
     }
 
@@ -333,7 +333,7 @@ public static class ZeusHostBuilderConfigurationExtensions
                 case "holding" or "holdingregister":
                     if (point.Scale is { } holdingScale)
                     {
-                        map.HoldingRegister(point.Name, point.Address, raw => raw * holdingScale);
+                        map.HoldingRegister(point.Name, point.Address, holdingScale);
                     }
                     else
                     {
@@ -341,12 +341,12 @@ public static class ZeusHostBuilderConfigurationExtensions
                     }
 
                     ApplyAlarmLimits(map, point, alarmLimits);
-
+                    ApplyWritable(map, point);
                     break;
                 case "input" or "inputregister":
                     if (point.Scale is { } inputScale)
                     {
-                        map.InputRegister(point.Name, point.Address, raw => raw * inputScale);
+                        map.InputRegister(point.Name, point.Address, inputScale);
                     }
                     else
                     {
@@ -354,10 +354,10 @@ public static class ZeusHostBuilderConfigurationExtensions
                     }
 
                     ApplyAlarmLimits(map, point, alarmLimits);
-
                     break;
                 case "coil":
                     map.Coil(point.Name, point.Address);
+                    ApplyWritable(map, point);
                     break;
                 case "discrete" or "discreteinput":
                     map.DiscreteInput(point.Name, point.Address);
@@ -376,6 +376,17 @@ public static class ZeusHostBuilderConfigurationExtensions
         if (alarmLimits is not null)
         {
             map.WithAlarmLimits(point.Name, alarmLimits.Low, alarmLimits.High);
+        }
+    }
+
+    /// <summary>
+    /// 把 JSON 中的 writable 落到点图。只读数据区已在装载时拒绝。
+    /// </summary>
+    private static void ApplyWritable(ModbusPointMap map, PointConfiguration point)
+    {
+        if (point.Writable)
+        {
+            map.Writable(point.Name);
         }
     }
 }

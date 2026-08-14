@@ -56,6 +56,7 @@ namespace Zeus
     public sealed class PointTable : Zeus.IPointTable, Zeus.IPointTableWriter
     {
         public PointTable(int historyCapacity = 128) { }
+        public PointTable(Zeus.IDeviceRegistry? devices, int historyCapacity = 128) { }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> All { get; }
         public int HistoryCapacity { get; }
         public event System.EventHandler<Zeus.PointChangedEventArgs>? Changed;
@@ -68,5 +69,6 @@ namespace Zeus
         public bool TryGet<T>(string name, out T? value) { }
         public void Unregister(string qualifiedName) { }
         public void UnregisterDevice(string deviceName) { }
+        public System.Threading.Tasks.Task WriteAsync(string name, object value, System.Threading.CancellationToken cancellationToken = default) { }
     }
 }

@@ -2,6 +2,7 @@ namespace Zeus;
 
 /// <summary>
 /// 声明一台 Modbus 设备上要周期采集的点。连续地址会在采集时自动合并为一次读取。
+/// 保持寄存器与线圈可再调用 <see cref="Writable"/>，以便按点名写回。
 /// </summary>
 public sealed class ModbusPointMap
 {
@@ -108,6 +109,79 @@ public sealed class ModbusPointMap
         => AddBit(name, ModbusTable.DiscreteInput, address);
 
     /// <summary>
+    /// 声明一个带线性换算的保持寄存器点。写回时会按同一系数反算。
+    /// </summary>
+    /// <param name="name">点名。</param>
+    /// <param name="address">0 基地址。</param>
+    /// <param name="scale">工程值 = 原始值 × 该系数，必须大于 0。</param>
+    public ModbusPointMap HoldingRegister(string name, ushort address, double scale)
+        => AddScaledRegister(name, ModbusTable.HoldingRegister, address, scale, null);
+
+    /// <summary>
+    /// 声明一个带线性换算和报警限的保持寄存器点。
+    /// </summary>
+    /// <param name="name">点名。</param>
+    /// <param name="address">0 基地址。</param>
+    /// <param name="scale">工程值 = 原始值 × 该系数，必须大于 0。</param>
+    /// <param name="alarmLimits">报警限，按换算后的工程值判断。</param>
+    public ModbusPointMap HoldingRegister(string name, ushort address, double scale, PointAlarmLimits alarmLimits)
+        => AddScaledRegister(name, ModbusTable.HoldingRegister, address, scale, alarmLimits);
+
+    /// <summary>
+    /// 声明一个带线性换算的输入寄存器点。输入区只读，不能再标为可写。
+    /// </summary>
+    /// <param name="name">点名。</param>
+    /// <param name="address">0 基地址。</param>
+    /// <param name="scale">工程值 = 原始值 × 该系数，必须大于 0。</param>
+    public ModbusPointMap InputRegister(string name, ushort address, double scale)
+        => AddScaledRegister(name, ModbusTable.InputRegister, address, scale, null);
+
+    /// <summary>
+    /// 声明一个带线性换算和报警限的输入寄存器点。
+    /// </summary>
+    /// <param name="name">点名。</param>
+    /// <param name="address">0 基地址。</param>
+    /// <param name="scale">工程值 = 原始值 × 该系数，必须大于 0。</param>
+    /// <param name="alarmLimits">报警限，按换算后的工程值判断。</param>
+    public ModbusPointMap InputRegister(string name, ushort address, double scale, PointAlarmLimits alarmLimits)
+        => AddScaledRegister(name, ModbusTable.InputRegister, address, scale, alarmLimits);
+
+    /// <summary>
+    /// 把已经声明的点标为可写，之后可通过 <see cref="IPointTable.WriteAsync"/> 按名称下发。
+    /// 输入寄存器和离散输入不能写；使用自定义换算函数、未提供 <c>scale</c> 的点也无法自动反算。
+    /// </summary>
+    /// <param name="name">点名。</param>
+    public ModbusPointMap Writable(string name)
+    {
+        var normalized = Normalize(name);
+        for (var i = 0; i < _points.Count; i++)
+        {
+            var point = _points[i];
+            if (!string.Equals(point.Name, normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (point.Table is ModbusTable.InputRegister or ModbusTable.DiscreteInput)
+            {
+                throw new ZeusException(
+                    $"点 {normalized} 位于 {DescribeTable(point.Table)}，该数据区只读，不能标为可写。");
+            }
+
+            if (point.Convert is not null && point.Scale is null)
+            {
+                throw new ZeusException(
+                    $"点 {normalized} 使用了自定义换算函数，无法把工程值反算为寄存器。请改用 HoldingRegister(\"{normalized}\", address, scale) 再调用 Writable。");
+            }
+
+            _points[i] = point.WithWritable(true);
+            return this;
+        }
+
+        throw new ZeusException($"找不到点 {normalized}，请先声明该点再标为可写。");
+    }
+
+    /// <summary>
     /// 为已经声明的数值点设置或替换报警限。
     /// </summary>
     /// <param name="name">点名。</param>
@@ -148,11 +222,45 @@ public sealed class ModbusPointMap
         return this;
     }
 
+    private ModbusPointMap AddScaledRegister(
+        string name,
+        ModbusTable table,
+        ushort address,
+        double scale,
+        PointAlarmLimits? alarmLimits)
+    {
+        if (scale <= 0 || !double.IsFinite(scale))
+        {
+            throw new ZeusException($"点 {Normalize(name)} 的 scale 必须是大于 0 的有限数值。");
+        }
+
+        Add(new ModbusPointSpec(
+            Normalize(name),
+            table,
+            address,
+            PointValueKind.Double,
+            raw => raw * scale,
+            alarmLimits,
+            writable: false,
+            scale: scale));
+        return this;
+    }
+
     private ModbusPointMap AddBit(string name, ModbusTable table, ushort address)
     {
         Add(new ModbusPointSpec(Normalize(name), table, address, PointValueKind.Boolean, null, null));
         return this;
     }
+
+    private static string DescribeTable(ModbusTable table)
+        => table switch
+        {
+            ModbusTable.HoldingRegister => "保持寄存器",
+            ModbusTable.InputRegister => "输入寄存器",
+            ModbusTable.Coil => "线圈",
+            ModbusTable.DiscreteInput => "离散输入",
+            _ => table.ToString()
+        };
 
     private void Add(ModbusPointSpec spec)
     {

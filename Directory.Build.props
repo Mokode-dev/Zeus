@@ -13,13 +13,13 @@
     <Product>Zeus</Product>
     <Description>面向 .NET 的 UI 无关上位机开发框架。把复杂留给 Zeus，把简单留给用户。</Description>
     <Copyright>Copyright © Zeus</Copyright>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <NeutralLanguage>zh-Hans</NeutralLanguage>
     <IsPackable>false</IsPackable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageTags>zeus;host;modbus;serial;tcp;winforms;wpf;industrial;scada</PackageTags>
-    <PackageReleaseNotes>0.2.0：宿主可再次启动；通道故障后可 OpenAsync 恢复并默认自动重连；运行中可增删通道与设备；JSON 监视同步拓扑。IDevice 新增 Channel；目录与点表写入器增加增删成员。</PackageReleaseNotes>
+    <PackageReleaseNotes>0.3.0：点表支持按名称写回可写点；Modbus 保持寄存器与线圈可声明 writable；JSON 配置增加 writable；工程值按 scale 反算后下发。</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Mokode-dev/Zeus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Mokode-dev/Zeus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

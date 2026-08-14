@@ -14,13 +14,17 @@ public sealed class ModbusPointSpec
     /// <param name="kind">点表中的值类型。</param>
     /// <param name="convert">寄存器换算；线圈点为 <c>null</c>。</param>
     /// <param name="alarmLimits">可选报警限。</param>
+    /// <param name="writable">是否允许按点名写回。</param>
+    /// <param name="scale">线性换算系数。写回时用工程值除以该系数得到寄存器值。</param>
     internal ModbusPointSpec(
         string name,
         ModbusTable table,
         ushort address,
         PointValueKind kind,
         Func<ushort, object>? convert,
-        PointAlarmLimits? alarmLimits)
+        PointAlarmLimits? alarmLimits,
+        bool writable = false,
+        double? scale = null)
     {
         Name = name;
         Table = table;
@@ -28,6 +32,8 @@ public sealed class ModbusPointSpec
         Kind = kind;
         Convert = convert;
         AlarmLimits = alarmLimits;
+        Writable = writable;
+        Scale = scale;
     }
 
     /// <summary>点名。</summary>
@@ -48,10 +54,26 @@ public sealed class ModbusPointSpec
     /// <summary>可选报警限。</summary>
     public PointAlarmLimits? AlarmLimits { get; }
 
+    /// <summary>是否允许通过点表写回该地址。</summary>
+    public bool Writable { get; }
+
+    /// <summary>
+    /// 线性换算系数。采集时 <c>工程值 = 原始值 * Scale</c>；写回时反向相除。
+    /// 仅使用自定义 <see cref="Convert"/>、未提供系数时为空，此时无法自动反算。
+    /// </summary>
+    public double? Scale { get; }
+
     /// <summary>
     /// 返回带报警限的新点描述。
     /// </summary>
     /// <param name="alarmLimits">报警限。</param>
     internal ModbusPointSpec WithAlarmLimits(PointAlarmLimits alarmLimits)
-        => new(Name, Table, Address, Kind, Convert, alarmLimits);
+        => new(Name, Table, Address, Kind, Convert, alarmLimits, Writable, Scale);
+
+    /// <summary>
+    /// 返回改为可写或只读的新点描述。
+    /// </summary>
+    /// <param name="writable">是否可写。</param>
+    internal ModbusPointSpec WithWritable(bool writable)
+        => new(Name, Table, Address, Kind, Convert, AlarmLimits, writable, Scale);
 }

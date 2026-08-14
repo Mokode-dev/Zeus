@@ -1,7 +1,7 @@
 namespace Zeus;
 
 /// <summary>
-/// 宿主级点表。采集循环写入，界面与业务只读查找。
+/// 宿主级点表。采集循环写入快照；界面与业务按名称读取，也可对可写点调用 <see cref="WriteAsync"/>。
 /// 短名在全宿主唯一时可直接使用；否则请用 <c>设备.点</c> 限定名。
 /// </summary>
 public interface IPointTable
@@ -38,4 +38,13 @@ public interface IPointTable
     /// </summary>
     /// <param name="name">点名或限定名。</param>
     IReadOnlyList<PointSnapshot> GetHistory(string name);
+
+    /// <summary>
+    /// 按点名把工程值写回所属设备。界面与业务应走这条路径，而不是直接拼寄存器地址。
+    /// 点必须声明为可写，且所属设备实现 <see cref="IPointWriter"/>。
+    /// </summary>
+    /// <param name="name">短名或 <c>设备.点</c>。</param>
+    /// <param name="value">工程值。带 <c>scale</c> 的寄存器点传入换算后的值，例如 <c>80.0</c>。</param>
+    /// <param name="cancellationToken">取消本次写入。</param>
+    Task WriteAsync(string name, object value, CancellationToken cancellationToken = default);
 }

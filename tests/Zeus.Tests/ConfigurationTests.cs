@@ -22,7 +22,8 @@ public sealed class ConfigurationTests
               "unitId": 1,
                 "points": [
                 { "name": "temperature", "table": "holding", "address": 0, "scale": 0.1, "lowAlarmLimit": 10, "highAlarmLimit": 80 },
-                { "name": "heater", "table": "coil", "address": 2 }
+                { "name": "setpoint", "table": "holding", "address": 1, "scale": 0.1, "writable": true },
+                { "name": "heater", "table": "coil", "address": 2, "writable": true }
               ]
             }
           ]
@@ -55,7 +56,39 @@ public sealed class ConfigurationTests
 
         Assert.Equal(0d, temperature);
         Assert.Equal(PointAlarmState.Low, host.Points.Get("temperature").AlarmState);
+        Assert.True(host.Points.Get("setpoint").Definition.Writable);
+        Assert.True(host.Points.Get("heater").Definition.Writable);
+        Assert.False(host.Points.Get("temperature").Definition.Writable);
         Assert.Equal(TimeSpan.FromMilliseconds(200), host.Services.GetRequiredService<AcquisitionOptions>().Interval);
+
+        await host.Points.WriteAsync("setpoint", 12.5);
+        Assert.Equal(12.5, host.Points.Get<double>("setpoint"), 3);
+    }
+
+    /// <summary>
+    /// 只读数据区不能在 JSON 里标为可写。
+    /// </summary>
+    [Fact]
+    public void WritableInputRegister_FailsAtLoad()
+    {
+        const string json = """
+            {
+              "channels": [ { "name": "bus", "type": "virtual" } ],
+              "devices": [
+                {
+                  "name": "oven",
+                  "channel": "bus",
+                  "type": "modbus-rtu",
+                  "points": [
+                    { "name": "status", "table": "input", "address": 0, "writable": true }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        var error = Assert.Throws<ZeusException>(() => ZeusConfigurationLoader.LoadJson(json, "可写配置"));
+        Assert.Contains("writable", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

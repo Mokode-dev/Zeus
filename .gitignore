@@ -4,6 +4,14 @@
 **/TestResults/
 artifacts/
 
+# 手册站点
+docusaurus/node_modules/
+docusaurus/build/
+docusaurus/.docusaurus/
+
+# 本地嵌套工作副本，不进入远端扁平仓库
+code/
+
 # IDE 与系统
 .vs/
 .idea/
