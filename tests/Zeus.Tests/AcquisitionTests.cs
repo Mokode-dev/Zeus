@@ -214,6 +214,26 @@ public sealed class AcquisitionTests
     }
 
     /// <summary>
+    /// 卸载设备后，点表应摘除该设备的点，并恢复被占用的短名。
+    /// </summary>
+    [Fact]
+    public void PointTable_UnregisterDevice_RemovesPointsAndRestoresShortName()
+    {
+        var table = new PointTable();
+        table.Register(new PointDefinition("pv", "oven", PointValueKind.UInt16));
+        table.Register(new PointDefinition("pv", "dryer", PointValueKind.UInt16));
+        table.Publish("oven.pv", (ushort)1);
+        table.Publish("dryer.pv", (ushort)2);
+
+        var error = Assert.Throws<ZeusException>(() => table.Get("pv"));
+        Assert.Contains("oven.pv", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        table.UnregisterDevice("dryer");
+        Assert.Equal((ushort)1, table.Get<ushort>("pv"));
+        Assert.Throws<ZeusException>(() => table.Get("dryer.pv"));
+    }
+
+    /// <summary>
     /// BindText 应在点变化时更新，释放后不再接收。
     /// </summary>
     [Fact]

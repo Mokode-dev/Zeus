@@ -25,6 +25,8 @@ public interface IChannel : IAsyncDisposable
 
     /// <summary>
     /// 打开通道。对已打开的通道重复调用是幂等的。
+    /// 对 <see cref="ChannelState.Closed"/> 或 <see cref="ChannelState.Faulted"/> 再次调用时，
+    /// 会先释放残留传输资源再重新打开。
     /// </summary>
     /// <param name="cancellationToken">取消打开过程。</param>
     Task OpenAsync(CancellationToken cancellationToken = default);

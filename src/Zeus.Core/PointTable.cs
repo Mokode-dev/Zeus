@@ -196,6 +196,90 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         Changed?.Invoke(this, new PointChangedEventArgs(previous, current));
     }
 
+    /// <inheritdoc />
+    public void Unregister(string qualifiedName)
+    {
+        if (string.IsNullOrWhiteSpace(qualifiedName))
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            RemoveLocked(qualifiedName.Trim());
+        }
+    }
+
+    /// <inheritdoc />
+    public void UnregisterDevice(string deviceName)
+    {
+        if (string.IsNullOrWhiteSpace(deviceName))
+        {
+            return;
+        }
+
+        var key = deviceName.Trim();
+        lock (_gate)
+        {
+            var doomed = _order
+                .Where(name => _byQualified.TryGetValue(name, out var snapshot)
+                    && string.Equals(snapshot.Definition.DeviceName, key, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            foreach (var qualified in doomed)
+            {
+                RemoveLocked(qualified);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 在已持有锁的前提下摘除一个点，并重建短名索引。
+    /// </summary>
+    private void RemoveLocked(string qualifiedName)
+    {
+        if (!_byQualified.Remove(qualifiedName, out var snapshot))
+        {
+            return;
+        }
+
+        _history.Remove(qualifiedName);
+        _order.Remove(qualifiedName);
+        RebuildShortNameIndex(snapshot.Definition.Name);
+    }
+
+    /// <summary>
+    /// 某个短名对应的点被移除后，按剩余点重建短名到限定名的映射。
+    /// </summary>
+    private void RebuildShortNameIndex(string shortName)
+    {
+        _shortToQualified.Remove(shortName);
+        _ambiguousShortNames.Remove(shortName);
+
+        string? unique = null;
+        foreach (var name in _order)
+        {
+            if (!_byQualified.TryGetValue(name, out var snapshot)
+                || !string.Equals(snapshot.Definition.Name, shortName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (unique is not null)
+            {
+                unique = null;
+                _ambiguousShortNames.Add(shortName);
+                return;
+            }
+
+            unique = name;
+        }
+
+        if (unique is not null)
+        {
+            _shortToQualified[shortName] = unique;
+        }
+    }
+
     private void AddHistory(PointSnapshot snapshot)
     {
         if (_historyCapacity == 0)

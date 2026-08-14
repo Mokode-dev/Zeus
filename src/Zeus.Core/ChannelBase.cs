@@ -51,6 +51,12 @@ public abstract class ChannelBase : IChannel
                 return;
             }
 
+            // 关闭或故障后再开：先尽力释放残留句柄，避免串口/套接字半开。
+            if (_state is ChannelState.Closed or ChannelState.Faulted)
+            {
+                await CloseCoreQuietlyAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             SetState(ChannelState.Opening);
             try
             {
@@ -60,6 +66,7 @@ public abstract class ChannelBase : IChannel
             }
             catch (Exception ex)
             {
+                await CloseCoreQuietlyAsync(CancellationToken.None).ConfigureAwait(false);
                 SetState(ChannelState.Faulted, ex);
                 throw new ZeusChannelException(
                     Name,
@@ -153,6 +160,7 @@ public abstract class ChannelBase : IChannel
 
     /// <summary>
     /// 关闭底层传输。即使抛出异常，基类仍会将状态置为已关闭。
+    /// 从故障态重新打开前也会调用，实现必须可重复执行。
     /// </summary>
     /// <param name="cancellationToken">取消关闭等待。</param>
     protected abstract Task CloseCoreAsync(CancellationToken cancellationToken);
@@ -211,6 +219,21 @@ public abstract class ChannelBase : IChannel
 
         _state = next;
         StateChanged?.Invoke(this, new ChannelStateChangedEventArgs(previous, next, error));
+    }
+
+    /// <summary>
+    /// 尽力关闭底层传输并吞掉异常。重开前清理残留资源时使用。
+    /// </summary>
+    private async Task CloseCoreQuietlyAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await CloseCoreAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "通道 {Channel} 重开前清理传输资源时出现异常，将继续尝试打开。", Name);
+        }
     }
 
     private void ThrowIfDisposed()
