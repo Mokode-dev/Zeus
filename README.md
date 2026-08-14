@@ -17,14 +17,6 @@
   <em>把复杂留给 Zeus，把简单留给用户。</em>
 </p>
 
-<p align="center">
-  <a href="https://www.nuget.org/packages/Zeus.Communications"><img src="https://img.shields.io/nuget/v/Zeus.Communications.svg?label=Zeus.Communications" alt="Zeus.Communications" /></a>
-  <a href="https://www.nuget.org/packages/Zeus.Protocols.Modbus"><img src="https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg?label=Zeus.Protocols.Modbus" alt="Zeus.Protocols.Modbus" /></a>
-  <a href="https://www.nuget.org/packages/Zeus.Configuration"><img src="https://img.shields.io/nuget/v/Zeus.Configuration.svg?label=Zeus.Configuration" alt="Zeus.Configuration" /></a>
-  <a href="https://www.nuget.org/packages/Zeus.Presentation.WinForms"><img src="https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg?label=WinForms" alt="Zeus.Presentation.WinForms" /></a>
-  <a href="https://www.nuget.org/packages/Zeus.Presentation.Wpf"><img src="https://img.shields.io/nuget/v/Zeus.Presentation.Wpf.svg?label=WPF" alt="Zeus.Presentation.Wpf" /></a>
-</p>
-
 ---
 
 ## ✨ 特性
@@ -62,15 +54,18 @@ app.Points.BindTo("temperature", temperatureLabel);
 
 ## 📦 程序集
 
-| 程序集 | 用途 |
-| --- | --- |
-| `Zeus.Hosting` | 宿主与采集循环 |
-| `Zeus.Communications` | 串口 / TCP / UDP / 虚拟通道 |
-| `Zeus.Protocols.Framing` | 自定义帧 |
-| `Zeus.Protocols.Modbus` | Modbus RTU / TCP |
-| `Zeus.Configuration` | JSON 工程配置 |
-| `Zeus.Presentation.WinForms` | WinForms 绑定 |
-| `Zeus.Presentation.Wpf` | WPF 绑定 |
+| 包 | 版本 | 用途 |
+| --- | --- | --- |
+| `Zeus.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Abstractions) | 通道、设备、点表与宿主契约 |
+| `Zeus.Runtime` | [![nuget](https://img.shields.io/nuget/v/Zeus.Runtime.svg)](https://www.nuget.org/packages/Zeus.Runtime) | 运行时内核：通道状态机、设备基类与点表 |
+| `Zeus.Hosting` | [![nuget](https://img.shields.io/nuget/v/Zeus.Hosting.svg)](https://www.nuget.org/packages/Zeus.Hosting) | 宿主与采集循环 |
+| `Zeus.Communications` | [![nuget](https://img.shields.io/nuget/v/Zeus.Communications.svg)](https://www.nuget.org/packages/Zeus.Communications) | 串口 / TCP / UDP / 虚拟通道 |
+| `Zeus.Protocols.Framing` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Framing.svg)](https://www.nuget.org/packages/Zeus.Protocols.Framing) | 自定义帧 |
+| `Zeus.Protocols.Modbus` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg)](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | Modbus RTU / TCP |
+| `Zeus.Configuration` | [![nuget](https://img.shields.io/nuget/v/Zeus.Configuration.svg)](https://www.nuget.org/packages/Zeus.Configuration) | JSON 工程配置 |
+| `Zeus.Presentation.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | UI 无关绑定抽象 |
+| `Zeus.Presentation.WinForms` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg)](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | WinForms 绑定 |
+| `Zeus.Presentation.Wpf` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Wpf.svg)](https://www.nuget.org/packages/Zeus.Presentation.Wpf) | WPF 绑定 |
 
 加入 QQ 群 `771421105` 可与其它使用者交流，二维码见手册 [社区](https://docs.greekmythology.cn/docs/community)。
 

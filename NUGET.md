@@ -6,11 +6,6 @@
 
 > 把复杂留给 Zeus，把简单留给用户。
 
-[![Zeus.Communications](https://img.shields.io/nuget/v/Zeus.Communications.svg?label=Zeus.Communications)](https://www.nuget.org/packages/Zeus.Communications)
-[![Zeus.Protocols.Modbus](https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg?label=Zeus.Protocols.Modbus)](https://www.nuget.org/packages/Zeus.Protocols.Modbus)
-[![WinForms](https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg?label=WinForms)](https://www.nuget.org/packages/Zeus.Presentation.WinForms)
-[![WPF](https://img.shields.io/nuget/v/Zeus.Presentation.Wpf.svg?label=WPF)](https://www.nuget.org/packages/Zeus.Presentation.Wpf)
-
 ```csharp
 await using var app = ZeusHost.Create(builder =>
 {
@@ -22,15 +17,18 @@ await app.StartAsync();
 
 按功能选择程序集：
 
-| 包 | 用途 |
-| --- | --- |
-| `Zeus.Hosting` | 宿主与采集循环 |
-| `Zeus.Communications` | 串口 / TCP / UDP / 虚拟通道 |
-| `Zeus.Protocols.Framing` | 自定义帧 |
-| `Zeus.Protocols.Modbus` | Modbus RTU/TCP |
-| `Zeus.Configuration` | JSON 工程配置 |
-| `Zeus.Presentation.WinForms` | WinForms 绑定 |
-| `Zeus.Presentation.Wpf` | WPF 绑定 |
+| 包 | 版本 | 用途 |
+| --- | --- | --- |
+| `Zeus.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Abstractions) | 通道、设备、点表与宿主契约 |
+| `Zeus.Runtime` | [![nuget](https://img.shields.io/nuget/v/Zeus.Runtime.svg)](https://www.nuget.org/packages/Zeus.Runtime) | 运行时内核：通道状态机、设备基类与点表 |
+| `Zeus.Hosting` | [![nuget](https://img.shields.io/nuget/v/Zeus.Hosting.svg)](https://www.nuget.org/packages/Zeus.Hosting) | 宿主与采集循环 |
+| `Zeus.Communications` | [![nuget](https://img.shields.io/nuget/v/Zeus.Communications.svg)](https://www.nuget.org/packages/Zeus.Communications) | 串口 / TCP / UDP / 虚拟通道 |
+| `Zeus.Protocols.Framing` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Framing.svg)](https://www.nuget.org/packages/Zeus.Protocols.Framing) | 自定义帧 |
+| `Zeus.Protocols.Modbus` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg)](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | Modbus RTU/TCP |
+| `Zeus.Configuration` | [![nuget](https://img.shields.io/nuget/v/Zeus.Configuration.svg)](https://www.nuget.org/packages/Zeus.Configuration) | JSON 工程配置 |
+| `Zeus.Presentation.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | UI 无关绑定抽象 |
+| `Zeus.Presentation.WinForms` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg)](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | WinForms 绑定 |
+| `Zeus.Presentation.Wpf` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Wpf.svg)](https://www.nuget.org/packages/Zeus.Presentation.Wpf) | WPF 绑定 |
 
 点表支持最近成功采样历史与报警限状态，适合在界面上直接显示当前值、采集错误和高低报。
 
