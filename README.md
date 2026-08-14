@@ -17,6 +17,14 @@
   <em>把复杂留给 Zeus，把简单留给用户。</em>
 </p>
 
+<p align="center">
+  <a href="https://www.nuget.org/packages/Zeus.Communications"><img src="https://img.shields.io/nuget/v/Zeus.Communications.svg?label=Zeus.Communications" alt="Zeus.Communications" /></a>
+  <a href="https://www.nuget.org/packages/Zeus.Protocols.Modbus"><img src="https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg?label=Zeus.Protocols.Modbus" alt="Zeus.Protocols.Modbus" /></a>
+  <a href="https://www.nuget.org/packages/Zeus.Configuration"><img src="https://img.shields.io/nuget/v/Zeus.Configuration.svg?label=Zeus.Configuration" alt="Zeus.Configuration" /></a>
+  <a href="https://www.nuget.org/packages/Zeus.Presentation.WinForms"><img src="https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg?label=WinForms" alt="Zeus.Presentation.WinForms" /></a>
+  <a href="https://www.nuget.org/packages/Zeus.Presentation.Wpf"><img src="https://img.shields.io/nuget/v/Zeus.Presentation.Wpf.svg?label=WPF" alt="Zeus.Presentation.Wpf" /></a>
+</p>
+
 ---
 
 ## ✨ 特性
@@ -64,7 +72,7 @@ app.Points.BindTo("temperature", temperatureLabel);
 | `Zeus.Presentation.WinForms` | WinForms 绑定 |
 | `Zeus.Presentation.Wpf` | WPF 绑定 |
 
-当前版本为 `0.1.0-preview`。
+加入 QQ 群 `771421105` 可与其它使用者交流，二维码见手册 [社区](https://docs.greekmythology.cn/docs/community)。
 
 ## 📄 许可证
 

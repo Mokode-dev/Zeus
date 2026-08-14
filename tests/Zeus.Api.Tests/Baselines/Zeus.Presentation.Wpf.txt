@@ -1,0 +1,22 @@
+namespace Zeus
+{
+    public static class WpfChannelExtensions
+    {
+        public static Zeus.ChannelBindingSource AsBindingSource(this Zeus.IChannel channel, System.Windows.FrameworkElement element) { }
+        public static Zeus.IUiBinding BindState(this Zeus.IChannel channel, System.Windows.Controls.TextBlock textBlock) { }
+        public static Zeus.IUiBinding BindText(this Zeus.IChannel channel, System.Windows.Controls.TextBlock textBlock, System.Func<System.ReadOnlyMemory<byte>, string>? formatter = null) { }
+        public static Zeus.IUiBinding BindTo(this Zeus.IChannel channel, System.Windows.Controls.TextBlock textBlock, System.Func<System.ReadOnlyMemory<byte>, string>? formatter = null) { }
+        public static Zeus.IUiBinding BindTo(this Zeus.IPointTable table, string pointName, System.Windows.Controls.TextBlock textBlock, System.Func<object?, string>? formatter = null) { }
+    }
+    public static class WpfHostExtensions
+    {
+        public static Zeus.UiHostAttachment AttachZeus(this System.Windows.Window window, System.Action<Zeus.ZeusHostBuilder>? configure) { }
+        public static Zeus.UiHostAttachment AttachZeus(this System.Windows.Window window, Zeus.IZeusHost host) { }
+    }
+    public sealed class WpfUiDispatcher : Zeus.IUiDispatcher
+    {
+        public WpfUiDispatcher(System.Windows.Threading.Dispatcher dispatcher) { }
+        public bool CheckAccess() { }
+        public void Post(System.Action action) { }
+    }
+}

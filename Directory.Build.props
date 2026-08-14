@@ -13,13 +13,13 @@
     <Product>Zeus</Product>
     <Description>面向 .NET 的 UI 无关上位机开发框架。把复杂留给 Zeus，把简单留给用户。</Description>
     <Copyright>Copyright © Zeus</Copyright>
-    <Version>0.1.0-preview</Version>
+    <Version>0.1.0</Version>
     <NeutralLanguage>zh-Hans</NeutralLanguage>
     <IsPackable>false</IsPackable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageTags>zeus;host;modbus;serial;tcp;winforms;wpf;industrial;scada</PackageTags>
-    <PackageReleaseNotes>0.1.0-preview：宿主、串口/TCP/虚拟通道、通道报文追踪、自定义帧、Modbus、点表采集与历史缓冲、JSON 配置、WinForms/WPF 适配器。</PackageReleaseNotes>
+    <PackageReleaseNotes>0.1.0：首个正式切片。宿主、串口/TCP/UDP/虚拟通道、报文追踪、自定义帧、Modbus、点表采集与历史、JSON 配置、WinForms/WPF 适配器。0.1.x 只修缺陷，不改公开签名。</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Mokode-dev/Zeus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Mokode-dev/Zeus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

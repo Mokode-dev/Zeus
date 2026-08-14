@@ -1,0 +1,61 @@
+namespace Zeus
+{
+    public static class FrameChecksum
+    {
+        public static byte[] Compute(Zeus.FrameChecksumKind kind, System.ReadOnlySpan<byte> data) { }
+        public static ushort Crc16Modbus(System.ReadOnlySpan<byte> data) { }
+    }
+    public enum FrameChecksumKind
+    {
+        None = 0,
+        Xor8 = 1,
+        Sum8 = 2,
+        Crc16Modbus = 3,
+    }
+    public sealed class FrameLayout
+    {
+        public FrameLayout() { }
+        public FrameLayout(byte[] header, Zeus.FrameLengthKind lengthKind, Zeus.FrameChecksumKind checksum) { }
+        public Zeus.FrameChecksumKind Checksum { get; }
+        public int ChecksumSize { get; }
+        public System.Collections.Generic.IReadOnlyList<byte> Header { get; }
+        public int LengthFieldSize { get; }
+        public Zeus.FrameLengthKind LengthKind { get; }
+        public int MaxPayloadLength { get; }
+    }
+    public enum FrameLengthKind
+    {
+        UInt8 = 0,
+        UInt16LittleEndian = 1,
+        UInt16BigEndian = 2,
+    }
+    public sealed class FrameSession : System.IAsyncDisposable
+    {
+        public FrameSession(Zeus.IChannel channel, Zeus.IFrameCodec codec, System.TimeSpan? timeout = default) { }
+        public Zeus.IChannel Channel { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<byte[]> RequestAsync(System.ReadOnlyMemory<byte> payload, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<byte[]> RequestAsync(System.ReadOnlyMemory<byte> payload, System.Func<System.ReadOnlyMemory<byte>, bool> isExpectedResponse, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SendAsync(System.ReadOnlyMemory<byte> payload, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public interface IFrameCodec
+    {
+        void Append(System.ReadOnlySpan<byte> data);
+        byte[] Encode(System.ReadOnlySpan<byte> payload);
+        void Reset();
+        bool TryDecode(out byte[] payload);
+    }
+    public sealed class LengthHeaderFrameCodec : Zeus.IFrameCodec
+    {
+        public LengthHeaderFrameCodec(Zeus.FrameLayout? layout = null) { }
+        public void Append(System.ReadOnlySpan<byte> data) { }
+        public byte[] Encode(System.ReadOnlySpan<byte> payload) { }
+        public void Reset() { }
+        public bool TryDecode(out byte[] payload) { }
+    }
+    public static class ZeusHostBuilderFramingExtensions
+    {
+        public static Zeus.FrameSession CreateFrameSession(this Zeus.IZeusHost host, string channelName, System.TimeSpan? timeout = default) { }
+        public static Zeus.FrameSession CreateFrameSession(this Zeus.IZeusHost host, string channelName, Zeus.FrameLayout layout, System.TimeSpan? timeout = default) { }
+    }
+}

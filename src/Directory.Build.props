@@ -1,6 +1,6 @@
 <Project>
   <!--
-    src 下的程序集默认打成 NuGet 预览包。
+    src 下的程序集默认打成 NuGet 包。
     图标使用仓库根下的 Zeus.png，作为 nuget.org / 本地源上的包头像。
   -->
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />

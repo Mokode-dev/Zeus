@@ -6,6 +6,11 @@
 
 > 把复杂留给 Zeus，把简单留给用户。
 
+[![Zeus.Communications](https://img.shields.io/nuget/v/Zeus.Communications.svg?label=Zeus.Communications)](https://www.nuget.org/packages/Zeus.Communications)
+[![Zeus.Protocols.Modbus](https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg?label=Zeus.Protocols.Modbus)](https://www.nuget.org/packages/Zeus.Protocols.Modbus)
+[![WinForms](https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg?label=WinForms)](https://www.nuget.org/packages/Zeus.Presentation.WinForms)
+[![WPF](https://img.shields.io/nuget/v/Zeus.Presentation.Wpf.svg?label=WPF)](https://www.nuget.org/packages/Zeus.Presentation.Wpf)
+
 ```csharp
 await using var app = ZeusHost.Create(builder =>
 {
@@ -31,4 +36,4 @@ await app.StartAsync();
 
 通道支持 `PacketTraced` 报文追踪事件与 `ChannelTraceBuffer` 滚动内存记录器，可直接接入通信诊断窗口或现场故障快照。
 
-当前版本为 `0.1.0-preview`，安装时请加上 `--prerelease`。
+手册：[docs.greekmythology.cn](https://docs.greekmythology.cn)　·　QQ 群：`771421105`

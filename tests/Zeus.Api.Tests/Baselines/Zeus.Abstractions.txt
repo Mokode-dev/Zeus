@@ -1,0 +1,187 @@
+namespace Zeus
+{
+    public sealed class ChannelDataReceivedEventArgs : System.EventArgs
+    {
+        public ChannelDataReceivedEventArgs(System.ReadOnlyMemory<byte> data) { }
+        public System.ReadOnlyMemory<byte> Data { get; }
+    }
+    public enum ChannelState
+    {
+        Created = 0,
+        Opening = 1,
+        Open = 2,
+        Faulted = 3,
+        Closed = 4,
+    }
+    public sealed class ChannelStateChangedEventArgs : System.EventArgs
+    {
+        public ChannelStateChangedEventArgs(Zeus.ChannelState previous, Zeus.ChannelState current, System.Exception? error = null) { }
+        public Zeus.ChannelState Current { get; }
+        public System.Exception? Error { get; }
+        public Zeus.ChannelState Previous { get; }
+    }
+    public sealed class ChannelTraceBuffer : System.IDisposable
+    {
+        public ChannelTraceBuffer(Zeus.IChannel channel, int capacity = 256) { }
+        public int Capacity { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.ChannelTraceEntry> Entries { get; }
+        public void Clear() { }
+        public void Dispose() { }
+    }
+    public enum ChannelTraceDirection
+    {
+        Sent = 0,
+        Received = 1,
+    }
+    public sealed class ChannelTraceEntry
+    {
+        public ChannelTraceEntry(string channelName, Zeus.ChannelTraceDirection direction, System.ReadOnlyMemory<byte> data, System.DateTimeOffset timestamp) { }
+        public string ChannelName { get; }
+        public System.ReadOnlyMemory<byte> Data { get; }
+        public Zeus.ChannelTraceDirection Direction { get; }
+        public string Hex { get; }
+        public System.DateTimeOffset Timestamp { get; }
+    }
+    public sealed class ChannelTraceEventArgs : System.EventArgs
+    {
+        public ChannelTraceEventArgs(Zeus.ChannelTraceDirection direction, System.ReadOnlyMemory<byte> data, System.DateTimeOffset timestamp) { }
+        public System.ReadOnlyMemory<byte> Data { get; }
+        public Zeus.ChannelTraceDirection Direction { get; }
+        public string Hex { get; }
+        public System.DateTimeOffset Timestamp { get; }
+    }
+    public sealed class ChannelTraceFileLogger : System.IDisposable
+    {
+        public ChannelTraceFileLogger(Zeus.IChannel channel, string path, bool append = true) { }
+        public string ChannelName { get; }
+        public string FilePath { get; }
+        public void Dispose() { }
+        public static string FormatLine(Zeus.ChannelTraceEntry entry) { }
+    }
+    public interface IAcquisitionSource
+    {
+        string Name { get; }
+        System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
+        System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public interface IChannel : System.IAsyncDisposable
+    {
+        string Name { get; }
+        Zeus.ChannelState State { get; }
+        event System.EventHandler<Zeus.ChannelDataReceivedEventArgs>? DataReceived;
+        event System.EventHandler<Zeus.ChannelTraceEventArgs>? PacketTraced;
+        event System.EventHandler<Zeus.ChannelStateChangedEventArgs>? StateChanged;
+        System.Threading.Tasks.Task CloseAsync(System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task OpenAsync(System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public interface IChannelRegistry
+    {
+        System.Collections.Generic.IReadOnlyList<Zeus.IChannel> All { get; }
+        Zeus.IChannel Get(string name);
+        bool TryGet(string name, out Zeus.IChannel? channel);
+    }
+    public interface IDevice
+    {
+        string Name { get; }
+    }
+    public interface IDeviceRegistry
+    {
+        System.Collections.Generic.IReadOnlyList<Zeus.IDevice> All { get; }
+        TDevice Get<TDevice>(string name)
+            where TDevice :  class, Zeus.IDevice;
+    }
+    public interface IPointTable
+    {
+        System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> All { get; }
+        event System.EventHandler<Zeus.PointChangedEventArgs>? Changed;
+        Zeus.PointSnapshot Get(string name);
+        T Get<T>(string name);
+        System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> GetHistory(string name);
+        bool TryGet<T>(string name, out T? value);
+    }
+    public interface IPointTableWriter
+    {
+        void Publish(string qualifiedName, object? value);
+        void PublishError(string qualifiedName, string error);
+        void Register(Zeus.PointDefinition definition);
+    }
+    public interface IVirtualResponder
+    {
+        System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request);
+    }
+    public interface IZeusHost : System.IAsyncDisposable
+    {
+        Zeus.IChannelRegistry Channels { get; }
+        Zeus.IDeviceRegistry Devices { get; }
+        Zeus.IPointTable Points { get; }
+        System.IServiceProvider Services { get; }
+        System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = default);
+    }
+    public sealed class PointAlarmLimits
+    {
+        public PointAlarmLimits(double? low = default, double? high = default) { }
+        public double? High { get; }
+        public double? Low { get; }
+        public Zeus.PointAlarmState Evaluate(object? value) { }
+    }
+    public enum PointAlarmState
+    {
+        Disabled = 0,
+        Normal = 1,
+        Low = 2,
+        High = 3,
+        Unknown = 4,
+    }
+    public sealed class PointChangedEventArgs : System.EventArgs
+    {
+        public PointChangedEventArgs(Zeus.PointSnapshot? previous, Zeus.PointSnapshot current) { }
+        public Zeus.PointSnapshot Current { get; }
+        public Zeus.PointSnapshot? Previous { get; }
+    }
+    public sealed class PointDefinition
+    {
+        public PointDefinition(string name, string deviceName, Zeus.PointValueKind kind) { }
+        public PointDefinition(string name, string deviceName, Zeus.PointValueKind kind, Zeus.PointAlarmLimits? alarmLimits) { }
+        public Zeus.PointAlarmLimits? AlarmLimits { get; }
+        public string DeviceName { get; }
+        public Zeus.PointValueKind Kind { get; }
+        public string Name { get; }
+        public string QualifiedName { get; }
+    }
+    public sealed class PointSnapshot
+    {
+        public PointSnapshot(Zeus.PointDefinition definition, object? value, System.DateTimeOffset? updatedAt, string? error) { }
+        public Zeus.PointAlarmState AlarmState { get; }
+        public Zeus.PointDefinition Definition { get; }
+        public string? Error { get; }
+        public bool IsAlarmed { get; }
+        public string QualifiedName { get; }
+        public System.DateTimeOffset? UpdatedAt { get; }
+        public object? Value { get; }
+    }
+    public enum PointValueKind
+    {
+        UInt16 = 0,
+        Boolean = 1,
+        Double = 2,
+        Object = 3,
+    }
+    public sealed class ZeusChannelException : Zeus.ZeusException
+    {
+        public ZeusChannelException(string channelName, string message) { }
+        public ZeusChannelException(string channelName, string message, System.Exception innerException) { }
+        public string ChannelName { get; }
+    }
+    public class ZeusException : System.Exception
+    {
+        public ZeusException(string message) { }
+        public ZeusException(string message, System.Exception innerException) { }
+    }
+    public class ZeusProtocolException : Zeus.ZeusException
+    {
+        public ZeusProtocolException(string message) { }
+        public ZeusProtocolException(string message, System.Exception innerException) { }
+    }
+}

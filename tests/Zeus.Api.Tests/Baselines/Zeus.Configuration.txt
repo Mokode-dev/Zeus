@@ -1,0 +1,63 @@
+namespace Zeus
+{
+    public sealed class AcquisitionConfiguration
+    {
+        public AcquisitionConfiguration() { }
+        public int IntervalMilliseconds { get; set; }
+        public bool PollImmediately { get; set; }
+    }
+    public sealed class ChannelConfiguration
+    {
+        public ChannelConfiguration() { }
+        public int BaudRate { get; set; }
+        public string? Host { get; set; }
+        public int LocalPort { get; set; }
+        public string Name { get; set; }
+        public int Port { get; set; }
+        public string? PortName { get; set; }
+        public string? Responder { get; set; }
+        public string Transport { get; set; }
+        public string Type { get; set; }
+        public byte UnitId { get; set; }
+    }
+    public sealed class DeviceConfiguration
+    {
+        public DeviceConfiguration() { }
+        public string Channel { get; set; }
+        public string Name { get; set; }
+        public System.Collections.Generic.List<Zeus.PointConfiguration> Points { get; set; }
+        public int? TimeoutMilliseconds { get; set; }
+        public string Type { get; set; }
+        public byte UnitId { get; set; }
+    }
+    public sealed class PointConfiguration
+    {
+        public PointConfiguration() { }
+        public ushort Address { get; set; }
+        public double? HighAlarmLimit { get; set; }
+        public double? LowAlarmLimit { get; set; }
+        public string Name { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName("scale")]
+        public double? Scale { get; set; }
+        public string Table { get; set; }
+    }
+    public sealed class ZeusAppConfiguration
+    {
+        public ZeusAppConfiguration() { }
+        public Zeus.AcquisitionConfiguration Acquisition { get; set; }
+        public System.Collections.Generic.List<Zeus.ChannelConfiguration> Channels { get; set; }
+        public System.Collections.Generic.List<Zeus.DeviceConfiguration> Devices { get; set; }
+    }
+    public static class ZeusConfigurationLoader
+    {
+        public static Zeus.ZeusAppConfiguration LoadFile(string path) { }
+        public static Zeus.ZeusAppConfiguration LoadJson(string json, string sourceName = "配置") { }
+        public static void Validate(Zeus.ZeusAppConfiguration document, string sourceName = "配置") { }
+    }
+    public static class ZeusHostBuilderConfigurationExtensions
+    {
+        public static Zeus.ZeusHostBuilder AddJson(this Zeus.ZeusHostBuilder builder, string json, string sourceName = "配置") { }
+        public static Zeus.ZeusHostBuilder AddJsonFile(this Zeus.ZeusHostBuilder builder, string path, bool watch = true) { }
+        public static void ReloadAcquisition(this Zeus.IZeusHost host, string path) { }
+    }
+}

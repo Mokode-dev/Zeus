@@ -1,0 +1,67 @@
+namespace Zeus
+{
+    public sealed class SerialPortChannel : Zeus.ChannelBase
+    {
+        public SerialPortChannel(string name, Zeus.SerialPortOptions options, Microsoft.Extensions.Logging.ILogger<Zeus.SerialPortChannel>? logger = null) { }
+        protected override System.Threading.Tasks.Task CloseCoreAsync(System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task OpenCoreAsync(System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task WriteCoreAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class SerialPortOptions
+    {
+        public SerialPortOptions() { }
+        public int BaudRate { get; set; }
+        public int DataBits { get; set; }
+        public System.IO.Ports.Parity Parity { get; set; }
+        public string PortName { get; set; }
+        public int ReadTimeoutMilliseconds { get; set; }
+        public System.IO.Ports.StopBits StopBits { get; set; }
+        public int WriteTimeoutMilliseconds { get; set; }
+    }
+    public sealed class TcpClientChannel : Zeus.ChannelBase
+    {
+        public TcpClientChannel(string name, Zeus.TcpClientOptions options, Microsoft.Extensions.Logging.ILogger<Zeus.TcpClientChannel>? logger = null) { }
+        protected override System.Threading.Tasks.Task CloseCoreAsync(System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task OpenCoreAsync(System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task WriteCoreAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class TcpClientOptions
+    {
+        public TcpClientOptions() { }
+        public int ConnectTimeoutMilliseconds { get; set; }
+        public string Host { get; set; }
+        public int Port { get; set; }
+    }
+    public sealed class UdpClientChannel : Zeus.ChannelBase
+    {
+        public UdpClientChannel(string name, Zeus.UdpClientOptions options, Microsoft.Extensions.Logging.ILogger<Zeus.UdpClientChannel>? logger = null) { }
+        protected override System.Threading.Tasks.Task CloseCoreAsync(System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task OpenCoreAsync(System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task WriteCoreAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class UdpClientOptions
+    {
+        public UdpClientOptions() { }
+        public string Host { get; set; }
+        public int LocalPort { get; set; }
+        public int Port { get; set; }
+        public int ReceiveBufferSize { get; set; }
+    }
+    public sealed class VirtualChannel : Zeus.ChannelBase
+    {
+        public VirtualChannel(string name, Microsoft.Extensions.Logging.ILogger<Zeus.VirtualChannel>? logger = null, Zeus.IVirtualResponder? responder = null) { }
+        protected override System.Threading.Tasks.Task CloseCoreAsync(System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task OpenCoreAsync(System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task WriteCoreAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public static class ZeusHostBuilderCommunicationExtensions
+    {
+        public static Zeus.ZeusHostBuilder AddSerialPort(this Zeus.ZeusHostBuilder builder, string name, System.Action<Zeus.SerialPortOptions> configure) { }
+        public static Zeus.ZeusHostBuilder AddSerialPort(this Zeus.ZeusHostBuilder builder, string name, string portName, int baudRate = 115200) { }
+        public static Zeus.ZeusHostBuilder AddTcpClient(this Zeus.ZeusHostBuilder builder, string name, System.Action<Zeus.TcpClientOptions> configure) { }
+        public static Zeus.ZeusHostBuilder AddTcpClient(this Zeus.ZeusHostBuilder builder, string name, string host, int port) { }
+        public static Zeus.ZeusHostBuilder AddUdpClient(this Zeus.ZeusHostBuilder builder, string name, System.Action<Zeus.UdpClientOptions> configure) { }
+        public static Zeus.ZeusHostBuilder AddUdpClient(this Zeus.ZeusHostBuilder builder, string name, string host, int port) { }
+        public static Zeus.ZeusHostBuilder AddVirtualChannel(this Zeus.ZeusHostBuilder builder, string name, Zeus.IVirtualResponder? responder = null) { }
+    }
+}

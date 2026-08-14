@@ -1,0 +1,119 @@
+namespace Zeus
+{
+    public sealed class ModbusClient : System.IAsyncDisposable
+    {
+        public ModbusClient(Zeus.IChannel channel, Zeus.ModbusTransport transport, System.TimeSpan? timeout = default) { }
+        public Zeus.IChannel Channel { get; }
+        public Zeus.ModbusTransport Transport { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<byte[]> ExecuteAsync(byte unitId, System.ReadOnlyMemory<byte> requestPdu, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task MaskWriteRegisterAsync(byte unitId, ushort address, ushort andMask, ushort orMask, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<bool[]> ReadCoilsAsync(byte unitId, ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<bool[]> ReadDiscreteInputsAsync(byte unitId, ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteMultipleCoilsAsync(byte unitId, ushort address, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteMultipleRegistersAsync(byte unitId, ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteSingleCoilAsync(byte unitId, ushort address, bool value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteSingleRegisterAsync(byte unitId, ushort address, ushort value, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class ModbusDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource
+    {
+        public ModbusDevice(string name, Zeus.IChannel channel, byte unitId, Zeus.ModbusTransport transport, System.TimeSpan? timeout = default, Zeus.ModbusPointMap? pointMap = null) { }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
+        public Zeus.ModbusTransport Transport { get; }
+        public byte UnitId { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task MaskWriteRegisterAsync(ushort address, ushort andMask, ushort orMask, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<bool[]> ReadCoilsAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<bool[]> ReadDiscreteInputsAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadHoldingRegistersAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadInputRegistersAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteMultipleCoilsAsync(ushort address, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteMultipleRegistersAsync(ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteSingleCoilAsync(ushort address, bool value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteSingleRegisterAsync(ushort address, ushort value, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class ModbusException : Zeus.ZeusProtocolException
+    {
+        public ModbusException(byte unitId, byte function, Zeus.ModbusExceptionCode code) { }
+        public Zeus.ModbusExceptionCode Code { get; }
+        public byte Function { get; }
+        public byte UnitId { get; }
+    }
+    public enum ModbusExceptionCode : byte
+    {
+        IllegalFunction = 1,
+        IllegalDataAddress = 2,
+        IllegalDataValue = 3,
+        SlaveDeviceFailure = 4,
+    }
+    public static class ModbusFunction
+    {
+        public const byte MaskWriteRegister = 22;
+        public const byte ReadCoils = 1;
+        public const byte ReadDiscreteInputs = 2;
+        public const byte ReadHoldingRegisters = 3;
+        public const byte ReadInputRegisters = 4;
+        public const byte WriteMultipleCoils = 15;
+        public const byte WriteMultipleRegisters = 16;
+        public const byte WriteSingleCoil = 5;
+        public const byte WriteSingleRegister = 6;
+    }
+    public sealed class ModbusPointMap
+    {
+        public ModbusPointMap() { }
+        public Zeus.ModbusPointMap Coil(string name, ushort address) { }
+        public Zeus.ModbusPointMap DiscreteInput(string name, ushort address) { }
+        public Zeus.ModbusPointMap HoldingRegister(string name, ushort address) { }
+        public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, System.Func<ushort, double> convert) { }
+        public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, System.Func<ushort, double> convert, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.ModbusPointMap InputRegister(string name, ushort address) { }
+        public Zeus.ModbusPointMap InputRegister(string name, ushort address, System.Func<ushort, double> convert) { }
+        public Zeus.ModbusPointMap InputRegister(string name, ushort address, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.ModbusPointMap InputRegister(string name, ushort address, System.Func<ushort, double> convert, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.ModbusPointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
+    }
+    public sealed class ModbusPointSpec
+    {
+        public ushort Address { get; }
+        public Zeus.PointAlarmLimits? AlarmLimits { get; }
+        public System.Func<ushort, object>? Convert { get; }
+        public Zeus.PointValueKind Kind { get; }
+        public string Name { get; }
+        public Zeus.ModbusTable Table { get; }
+    }
+    public sealed class ModbusSlaveMemory
+    {
+        public ModbusSlaveMemory(int holdingRegisters = 256, int inputRegisters = 256, int coils = 256, int discreteInputs = 256) { }
+        public bool[] Coils { get; }
+        public bool[] DiscreteInputs { get; }
+        public ushort[] HoldingRegisters { get; }
+        public ushort[] InputRegisters { get; }
+    }
+    public sealed class ModbusSlaveResponder : Zeus.IVirtualResponder
+    {
+        public ModbusSlaveResponder(byte unitId, Zeus.ModbusTransport transport, Zeus.ModbusSlaveMemory? memory = null) { }
+        public Zeus.ModbusSlaveMemory Memory { get; }
+        public System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request) { }
+    }
+    public enum ModbusTable
+    {
+        HoldingRegister = 0,
+        InputRegister = 1,
+        Coil = 2,
+        DiscreteInput = 3,
+    }
+    public enum ModbusTransport
+    {
+        Rtu = 0,
+        Tcp = 1,
+    }
+    public static class ZeusHostBuilderModbusExtensions
+    {
+        public static Zeus.ZeusHostBuilder AddModbusRtu(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, byte unitId = 1, System.TimeSpan? timeout = default, System.Action<Zeus.ModbusPointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddModbusTcp(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, byte unitId = 1, System.TimeSpan? timeout = default, System.Action<Zeus.ModbusPointMap>? points = null) { }
+    }
+}

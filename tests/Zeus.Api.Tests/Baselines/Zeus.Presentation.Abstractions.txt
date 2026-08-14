@@ -1,0 +1,56 @@
+namespace Zeus
+{
+    public sealed class ChannelBindingSource : System.ComponentModel.INotifyPropertyChanged, System.IDisposable
+    {
+        public ChannelBindingSource(Zeus.IChannel channel, Zeus.IUiDispatcher? dispatcher = null) { }
+        public string LastHex { get; }
+        public string LastText { get; }
+        public string Name { get; }
+        public int ReceivedCount { get; }
+        public Zeus.ChannelState State { get; }
+        public string StateText { get; }
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+        public void Dispose() { }
+    }
+    public static class ChannelTextFormatter
+    {
+        public static string Default(System.ReadOnlyMemory<byte> data) { }
+        public static string Hex(System.ReadOnlyMemory<byte> data) { }
+    }
+    public static class ChannelUiExtensions
+    {
+        public static Zeus.ChannelBindingSource AsBindingSource(this Zeus.IChannel channel, Zeus.IUiDispatcher? dispatcher = null) { }
+        public static Zeus.IUiBinding BindState(this Zeus.IChannel channel, Zeus.IUiDispatcher dispatcher, System.Action<string> setText) { }
+        public static Zeus.IUiBinding BindText(this Zeus.IChannel channel, Zeus.IUiDispatcher dispatcher, System.Action<string> setText, System.Func<System.ReadOnlyMemory<byte>, string>? formatter = null) { }
+    }
+    public sealed class DelegateUiBinding : System.IDisposable, Zeus.IUiBinding
+    {
+        public DelegateUiBinding(System.Action dispose) { }
+        public void Dispose() { }
+    }
+    public interface IUiBinding : System.IDisposable { }
+    public interface IUiDispatcher
+    {
+        bool CheckAccess();
+        void Post(System.Action action);
+    }
+    public sealed class ImmediateUiDispatcher : Zeus.IUiDispatcher
+    {
+        public ImmediateUiDispatcher() { }
+        public static Zeus.ImmediateUiDispatcher Instance { get; }
+        public bool CheckAccess() { }
+        public void Post(System.Action action) { }
+    }
+    public static class PointTableUiExtensions
+    {
+        public static Zeus.IUiBinding BindText(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<string> setText, System.Func<object?, string>? formatter = null) { }
+    }
+    public sealed class UiHostAttachment : System.IAsyncDisposable
+    {
+        public UiHostAttachment(Zeus.IZeusHost host) { }
+        public Zeus.IZeusHost Host { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public void DisposeBlocking() { }
+        public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = default) { }
+    }
+}

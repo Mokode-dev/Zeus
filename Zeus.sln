@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zeus.Samples.Console.Headle
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zeus.Tests", "tests\Zeus.Tests\Zeus.Tests.csproj", "{3AD25CFF-13DC-4451-9411-356154612D8D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zeus.Api.Tests", "tests\Zeus.Api.Tests\Zeus.Api.Tests.csproj", "{A11B22C3-D44E-4F55-8666-777888999006}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zeus.Presentation.Abstractions", "src\Zeus.Presentation.Abstractions\Zeus.Presentation.Abstractions.csproj", "{CD25E0A1-D39F-4FE4-B5EC-3DE1642B49E3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zeus.Presentation.WinForms", "src\Zeus.Presentation.WinForms\Zeus.Presentation.WinForms.csproj", "{050D849F-24D1-45D7-B219-653190BA452E}"
@@ -243,6 +245,18 @@ Global
 		{A11B22C3-D44E-4F55-8666-777888999005}.Release|x64.Build.0 = Release|Any CPU
 		{A11B22C3-D44E-4F55-8666-777888999005}.Release|x86.ActiveCfg = Release|Any CPU
 		{A11B22C3-D44E-4F55-8666-777888999005}.Release|x86.Build.0 = Release|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Debug|x64.Build.0 = Debug|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Debug|x86.Build.0 = Debug|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Release|x64.ActiveCfg = Release|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Release|x64.Build.0 = Release|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Release|x86.ActiveCfg = Release|Any CPU
+		{A11B22C3-D44E-4F55-8666-777888999006}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -264,5 +278,6 @@ Global
 		{A11B22C3-D44E-4F55-8666-777888999003} = {B2C1A8E4-6F3D-4A91-9C20-1E8F0D4B7A55}
 		{A11B22C3-D44E-4F55-8666-777888999005} = {B2C1A8E4-6F3D-4A91-9C20-1E8F0D4B7A55}
 		{3AD25CFF-13DC-4451-9411-356154612D8D} = {C3D2B9F5-704E-5B02-AD31-2F9E1E5C8B66}
+		{A11B22C3-D44E-4F55-8666-777888999006} = {C3D2B9F5-704E-5B02-AD31-2F9E1E5C8B66}
 	EndGlobalSection
 EndGlobal

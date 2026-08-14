@@ -1,0 +1,23 @@
+namespace Zeus
+{
+    public static class ZeusHost
+    {
+        public static Zeus.IZeusHost Create(System.Action<Zeus.ZeusHostBuilder>? configure = null) { }
+    }
+    public sealed class ZeusHostBuilder
+    {
+        public Zeus.AcquisitionOptions Acquisition { get; }
+        public Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
+        public void Register(System.Action<System.IServiceProvider, Zeus.ChannelRegistry, Zeus.DeviceRegistry> registration) { }
+    }
+    public static class ZeusHostBuilderAcquisitionExtensions
+    {
+        public static Zeus.ZeusHostBuilder AddAcquisition(this Zeus.ZeusHostBuilder builder, System.Action<Zeus.AcquisitionOptions> configure) { }
+        public static Zeus.ZeusHostBuilder AddAcquisition(this Zeus.ZeusHostBuilder builder, System.TimeSpan interval) { }
+    }
+    public static class ZeusHostBuilderDeviceExtensions
+    {
+        public static Zeus.ZeusHostBuilder AddDevice<TDevice>(this Zeus.ZeusHostBuilder builder, string name, string channelName, System.Func<string, Zeus.IChannel, TDevice> factory)
+            where TDevice :  class, Zeus.IDevice { }
+    }
+}
