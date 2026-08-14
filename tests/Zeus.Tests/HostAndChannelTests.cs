@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using Zeus;
 
 namespace Zeus.Tests;
@@ -177,6 +178,31 @@ public sealed class HostAndChannelTests
     }
 
     /// <summary>
+    /// 结构化日志器应把 TX/RX 报文写入 ILogger，并在释放后退订。
+    /// </summary>
+    [Fact]
+    public async Task ChannelTraceLogger_WritesStructuredLogEntries()
+    {
+        await using var host = ZeusHost.Create(builder => builder.AddVirtualChannel("loop"));
+        var channel = host.Channels.Get("loop");
+        var logger = new RecordingLogger();
+
+        using (new ChannelTraceLogger(channel, logger))
+        {
+            await host.StartAsync();
+            await channel.WriteAsync(Encoding.ASCII.GetBytes("PING"));
+        }
+
+        await channel.WriteAsync(Encoding.ASCII.GetBytes("PONG"));
+
+        Assert.Equal(2, logger.Messages.Count);
+        Assert.Contains("loop", logger.Messages[0], StringComparison.Ordinal);
+        Assert.Contains(nameof(ChannelTraceDirection.Sent), logger.Messages[0], StringComparison.Ordinal);
+        Assert.Contains("50494E47", logger.Messages[0], StringComparison.Ordinal);
+        Assert.Contains(nameof(ChannelTraceDirection.Received), logger.Messages[1], StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// 重复打开已打开的通道必须幂等，不能再次触发 Opening 迁移。
     /// </summary>
     [Fact]
@@ -255,5 +281,26 @@ public sealed class HostAndChannelTests
         Assert.Equal(channelName, parts[1]);
         Assert.Equal(direction.ToString(), parts[2]);
         Assert.Equal(hex, parts[3]);
+    }
+
+    private sealed class RecordingLogger : ILogger
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull
+            => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            Messages.Add(formatter(state, exception));
+        }
     }
 }

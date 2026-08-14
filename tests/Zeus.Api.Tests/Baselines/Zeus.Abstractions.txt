@@ -77,6 +77,12 @@ namespace Zeus
         public void Dispose() { }
         public static string FormatLine(Zeus.ChannelTraceEntry entry) { }
     }
+    public sealed class ChannelTraceLogger : System.IDisposable
+    {
+        public ChannelTraceLogger(Zeus.IChannel channel, Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel level = 1) { }
+        public string ChannelName { get; }
+        public void Dispose() { }
+    }
     public enum DeviceRegistryChange
     {
         Added = 0,
