@@ -1,5 +1,22 @@
 # 更新记录
 
+## 0.4.0
+
+补齐通信诊断、UDP 监听和常用界面启停绑定，同时扩展 Modbus 保持寄存器读写事务。
+
+### 包含
+
+- Modbus：新增功能码 17 / `ReadWriteMultipleRegistersAsync`，一次事务内先写多个保持寄存器，再读回保持寄存器
+- 通信：新增 `UdpServerChannel`、`UdpServerOptions`、`AddUdpServer` 与 `AddUdpServerAsync`，可监听本地 UDP 端口并回复最近发送方
+- 配置：JSON 通道新增 `type: "udp-server"`，支持 `localAddress`、`localPort`
+- 追踪：新增 `ChannelTraceLogger`，把 TX/RX 原始报文写入 `ILogger` 结构化日志
+- 界面：WinForms / WPF 新增 `BindEnabled`，按通道状态自动控制控件启用状态
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.3 已发布的类型、成员和扩展方法签名
+- `0.4.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.3.0
 
 点表从只读公告栏变成读写口。界面和业务可以按点名下发设定值，不必再拿设备拼寄存器地址。

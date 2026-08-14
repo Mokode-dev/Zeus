@@ -21,10 +21,10 @@
 
 ## ✨ 特性
 
-- 🔌 **通道** — 串口、TCP、UDP、虚拟通道，同一套 API
-- 📡 **协议** — 自定义帧、Modbus RTU / TCP，可挂虚拟从站
+- 🔌 **通道** — 串口、TCP、UDP 客户端 / 服务端、虚拟通道，同一套 API
+- 📡 **协议** — 自定义帧、Modbus RTU / TCP（含功能码 17），可挂虚拟从站
 - 📊 **采集** — 声明点表后按间隔自动轮询，保留最近成功采样，计算报警限；可写点按名称写回
-- 🧭 **追踪** — 通道级 TX/RX 报文事件、滚动内存记录器与文件日志器
+- 🧭 **追踪** — 通道级 TX/RX 报文事件、滚动内存记录器、文件日志器与 `ILogger` 结构化日志
 - 🖥️ **界面无关** — 业务代码不绑死 WinForms 或 WPF
 - 🧾 **JSON 配置** — 现场改端口和从站地址，不必重新编译
 - 🧪 **可先不接硬件** — 虚拟通道与真实设备用法相同
@@ -59,7 +59,7 @@ app.Points.BindTo("temperature", temperatureLabel);
 | `Zeus.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Abstractions) | 通道、设备、点表与宿主契约 |
 | `Zeus.Runtime` | [![nuget](https://img.shields.io/nuget/v/Zeus.Runtime.svg)](https://www.nuget.org/packages/Zeus.Runtime) | 运行时内核：通道状态机、设备基类与点表 |
 | `Zeus.Hosting` | [![nuget](https://img.shields.io/nuget/v/Zeus.Hosting.svg)](https://www.nuget.org/packages/Zeus.Hosting) | 宿主与采集循环 |
-| `Zeus.Communications` | [![nuget](https://img.shields.io/nuget/v/Zeus.Communications.svg)](https://www.nuget.org/packages/Zeus.Communications) | 串口 / TCP / UDP / 虚拟通道 |
+| `Zeus.Communications` | [![nuget](https://img.shields.io/nuget/v/Zeus.Communications.svg)](https://www.nuget.org/packages/Zeus.Communications) | 串口 / TCP / UDP 客户端与服务端 / 虚拟通道 |
 | `Zeus.Protocols.Framing` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Framing.svg)](https://www.nuget.org/packages/Zeus.Protocols.Framing) | 自定义帧 |
 | `Zeus.Protocols.Modbus` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg)](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | Modbus RTU / TCP |
 | `Zeus.Configuration` | [![nuget](https://img.shields.io/nuget/v/Zeus.Configuration.svg)](https://www.nuget.org/packages/Zeus.Configuration) | JSON 工程配置 |
