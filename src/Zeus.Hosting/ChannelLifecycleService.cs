@@ -4,8 +4,8 @@ using Microsoft.Extensions.Logging;
 namespace Zeus;
 
 /// <summary>
-/// 将通道生命周期挂到 Generic Host：启动时按注册顺序打开，停止时按相反顺序关闭。
-/// 单个通道失败不会阻断其余通道，但会记录错误，便于现场排错。
+/// Generic Host 释放时的通道兜底关闭。
+/// 日常启停由 <see cref="ZeusHostRuntime"/> 负责，以便停止后仍可再次启动。
 /// </summary>
 internal sealed class ChannelLifecycleService : IHostedService
 {
@@ -24,20 +24,7 @@ internal sealed class ChannelLifecycleService : IHostedService
     }
 
     /// <inheritdoc />
-    public async Task StartAsync(CancellationToken cancellationToken)
-    {
-        foreach (var channel in _channels.All)
-        {
-            try
-            {
-                await channel.OpenAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "启动时打开通道 {Channel} 失败，其余通道将继续尝试。", channel.Name);
-            }
-        }
-    }
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <inheritdoc />
     public async Task StopAsync(CancellationToken cancellationToken)
@@ -50,7 +37,7 @@ internal sealed class ChannelLifecycleService : IHostedService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "停止时关闭通道 {Channel} 失败。", channel.Name);
+                _logger.LogWarning(ex, "释放宿主时关闭通道 {Channel} 失败。", channel.Name);
             }
         }
     }
