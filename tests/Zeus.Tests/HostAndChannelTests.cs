@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Zeus;
 
@@ -111,6 +112,71 @@ public sealed class HostAndChannelTests
     }
 
     /// <summary>
+    /// 文件日志器应把收发报文写成可解析的制表符分隔文本。
+    /// </summary>
+    [Fact]
+    public async Task ChannelTraceFileLogger_WritesTraceLines()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"zeus-trace-{Guid.NewGuid():N}.log");
+        try
+        {
+            await using var host = ZeusHost.Create(builder => builder.AddVirtualChannel("loop"));
+            var channel = host.Channels.Get("loop");
+
+            using (new ChannelTraceFileLogger(channel, path, append: false))
+            {
+                await host.StartAsync();
+                await channel.WriteAsync(Encoding.ASCII.GetBytes("PING"));
+            }
+
+            var lines = await File.ReadAllLinesAsync(path);
+            Assert.Collection(
+                lines,
+                sent => AssertTraceLine(sent, "loop", ChannelTraceDirection.Sent, "50494E47"),
+                received => AssertTraceLine(received, "loop", ChannelTraceDirection.Received, "50494E47"));
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 文件日志器释放后必须退订通道事件，避免窗口关闭后继续写文件。
+    /// </summary>
+    [Fact]
+    public async Task ChannelTraceFileLogger_DisposeStopsWriting()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"zeus-trace-{Guid.NewGuid():N}.log");
+        try
+        {
+            await using var host = ZeusHost.Create(builder => builder.AddVirtualChannel("loop"));
+            var channel = host.Channels.Get("loop");
+            var logger = new ChannelTraceFileLogger(channel, path, append: false);
+
+            await host.StartAsync();
+            await channel.WriteAsync(new byte[] { 0x01 });
+
+            logger.Dispose();
+            await channel.WriteAsync(new byte[] { 0x02 });
+
+            var lines = await File.ReadAllLinesAsync(path);
+            Assert.Equal(2, lines.Length);
+            Assert.All(lines, line => Assert.EndsWith("\t01", line, StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
+
+    /// <summary>
     /// 重复打开已打开的通道必须幂等，不能再次触发 Opening 迁移。
     /// </summary>
     [Fact]
@@ -170,5 +236,24 @@ public sealed class HostAndChannelTests
                 builder.AddVirtualChannel("meter");
             }));
         Assert.Contains("meter", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void AssertTraceLine(
+        string line,
+        string channelName,
+        ChannelTraceDirection direction,
+        string hex)
+    {
+        var parts = line.Split('\t');
+        Assert.Equal(4, parts.Length);
+        Assert.True(DateTimeOffset.TryParse(
+            parts[0],
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.RoundtripKind,
+            out var timestamp));
+        Assert.Equal(TimeSpan.Zero, timestamp.Offset);
+        Assert.Equal(channelName, parts[1]);
+        Assert.Equal(direction.ToString(), parts[2]);
+        Assert.Equal(hex, parts[3]);
     }
 }
