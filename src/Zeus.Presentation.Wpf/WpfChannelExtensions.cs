@@ -49,6 +49,22 @@ public static class WpfChannelExtensions
     }
 
     /// <summary>
+    /// 按通道状态控制元素 <see cref="UIElement.IsEnabled"/>。默认仅通道打开时启用。
+    /// </summary>
+    /// <param name="channel">要观察的通道。</param>
+    /// <param name="element">目标元素。</param>
+    /// <param name="isEnabled">状态到启用状态的映射；为空时仅打开态启用。</param>
+    public static IUiBinding BindEnabled(
+        this IChannel channel,
+        UIElement element,
+        Func<ChannelState, bool>? isEnabled = null)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        var dispatcher = new WpfUiDispatcher(element.Dispatcher);
+        return channel.BindEnabled(dispatcher, enabled => element.IsEnabled = enabled, isEnabled);
+    }
+
+    /// <summary>
     /// 创建可直接作为 <c>DataContext</c> 的投影，属性变更封送到该元素所在的界面线程。
     /// </summary>
     /// <param name="channel">要观察的通道。</param>

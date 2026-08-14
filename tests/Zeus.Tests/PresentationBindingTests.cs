@@ -61,6 +61,25 @@ public sealed class PresentationBindingTests
     }
 
     /// <summary>
+    /// BindEnabled 默认仅在通道打开后启用，关闭后再禁用。
+    /// </summary>
+    [Fact]
+    public async Task BindEnabled_FollowsOpenState()
+    {
+        var channel = new VirtualChannel("meter");
+        var values = new List<bool>();
+        using var binding = channel.BindEnabled(ImmediateUiDispatcher.Instance, values.Add);
+
+        Assert.Equal(new[] { false }, values);
+
+        await channel.OpenAsync();
+        await channel.CloseAsync();
+
+        Assert.Equal(new[] { false, false, true, false }, values);
+        await channel.DisposeAsync();
+    }
+
+    /// <summary>
     /// 绑定源应在调度器上更新 LastText 与 ReceivedCount。
     /// </summary>
     [Fact]

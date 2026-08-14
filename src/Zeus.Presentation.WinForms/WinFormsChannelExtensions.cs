@@ -61,6 +61,28 @@ public static class WinFormsChannelExtensions
     }
 
     /// <summary>
+    /// 按通道状态控制控件 <see cref="Control.Enabled"/>。默认仅通道打开时启用。
+    /// </summary>
+    /// <param name="channel">要观察的通道。</param>
+    /// <param name="control">目标控件。</param>
+    /// <param name="isEnabled">状态到启用状态的映射；为空时仅打开态启用。</param>
+    public static IUiBinding BindEnabled(
+        this IChannel channel,
+        Control control,
+        Func<ChannelState, bool>? isEnabled = null)
+    {
+        ArgumentNullException.ThrowIfNull(control);
+        var dispatcher = new WinFormsUiDispatcher(control);
+        return channel.BindEnabled(dispatcher, enabled =>
+        {
+            if (!control.IsDisposed)
+            {
+                control.Enabled = enabled;
+            }
+        }, isEnabled);
+    }
+
+    /// <summary>
     /// 创建可绑定投影，属性变更封送到该控件所在的界面线程。
     /// </summary>
     /// <param name="channel">要观察的通道。</param>

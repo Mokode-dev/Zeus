@@ -3,6 +3,7 @@ namespace Zeus
     public static class WinFormsChannelExtensions
     {
         public static Zeus.ChannelBindingSource AsBindingSource(this Zeus.IChannel channel, System.Windows.Forms.Control control) { }
+        public static Zeus.IUiBinding BindEnabled(this Zeus.IChannel channel, System.Windows.Forms.Control control, System.Func<Zeus.ChannelState, bool>? isEnabled = null) { }
         public static Zeus.IUiBinding BindState(this Zeus.IChannel channel, System.Windows.Forms.Control control) { }
         public static Zeus.IUiBinding BindText(this Zeus.IChannel channel, System.Windows.Forms.Control control, System.Func<System.ReadOnlyMemory<byte>, string>? formatter = null) { }
         public static Zeus.IUiBinding BindTo(this Zeus.IChannel channel, System.Windows.Forms.Control control, System.Func<System.ReadOnlyMemory<byte>, string>? formatter = null) { }

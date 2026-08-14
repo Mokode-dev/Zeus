@@ -20,6 +20,7 @@ namespace Zeus
     public static class ChannelUiExtensions
     {
         public static Zeus.ChannelBindingSource AsBindingSource(this Zeus.IChannel channel, Zeus.IUiDispatcher? dispatcher = null) { }
+        public static Zeus.IUiBinding BindEnabled(this Zeus.IChannel channel, Zeus.IUiDispatcher dispatcher, System.Action<bool> setEnabled, System.Func<Zeus.ChannelState, bool>? isEnabled = null) { }
         public static Zeus.IUiBinding BindState(this Zeus.IChannel channel, Zeus.IUiDispatcher dispatcher, System.Action<string> setText) { }
         public static Zeus.IUiBinding BindText(this Zeus.IChannel channel, Zeus.IUiDispatcher dispatcher, System.Action<string> setText, System.Func<System.ReadOnlyMemory<byte>, string>? formatter = null) { }
     }

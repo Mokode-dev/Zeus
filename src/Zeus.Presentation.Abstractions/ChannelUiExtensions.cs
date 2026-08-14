@@ -57,6 +57,34 @@ public static class ChannelUiExtensions
     }
 
     /// <summary>
+    /// 按通道状态控制界面元素启用状态，订阅时会立即推送当前状态。默认仅 <see cref="ChannelState.Open"/> 启用。
+    /// </summary>
+    /// <param name="channel">要观察的通道。</param>
+    /// <param name="dispatcher">界面线程调度器。</param>
+    /// <param name="setEnabled">在界面线程上设置启用状态。</param>
+    /// <param name="isEnabled">状态到启用状态的映射；为空时仅打开态启用。</param>
+    /// <returns>绑定句柄，释放后停止更新。</returns>
+    public static IUiBinding BindEnabled(
+        this IChannel channel,
+        IUiDispatcher dispatcher,
+        Action<bool> setEnabled,
+        Func<ChannelState, bool>? isEnabled = null)
+    {
+        ArgumentNullException.ThrowIfNull(channel);
+        ArgumentNullException.ThrowIfNull(dispatcher);
+        ArgumentNullException.ThrowIfNull(setEnabled);
+        isEnabled ??= static state => state == ChannelState.Open;
+
+        void Apply(ChannelState state) => Dispatch(dispatcher, () => setEnabled(isEnabled(state)));
+
+        void OnStateChanged(object? sender, ChannelStateChangedEventArgs e) => Apply(e.Current);
+
+        Apply(channel.State);
+        channel.StateChanged += OnStateChanged;
+        return new DelegateUiBinding(() => channel.StateChanged -= OnStateChanged);
+    }
+
+    /// <summary>
     /// 创建可绑定投影，属性变更会封送到 <paramref name="dispatcher"/>。
     /// </summary>
     /// <param name="channel">要观察的通道。</param>
