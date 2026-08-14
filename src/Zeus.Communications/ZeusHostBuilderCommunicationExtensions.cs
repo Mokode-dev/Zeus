@@ -167,6 +167,45 @@ public static class ZeusHostBuilderCommunicationExtensions
     }
 
     /// <summary>
+    /// 注册 UDP 服务端通道。
+    /// </summary>
+    /// <param name="builder">宿主构建器。</param>
+    /// <param name="name">通道名。</param>
+    /// <param name="localPort">本地监听端口。</param>
+    /// <returns>同一构建器。</returns>
+    public static ZeusHostBuilder AddUdpServer(this ZeusHostBuilder builder, string name, int localPort)
+    {
+        return builder.AddUdpServer(name, options => options.LocalPort = localPort);
+    }
+
+    /// <summary>
+    /// 以选项回调注册 UDP 服务端。
+    /// </summary>
+    /// <param name="builder">宿主构建器。</param>
+    /// <param name="name">通道名。</param>
+    /// <param name="configure">配置本地监听参数。</param>
+    /// <returns>同一构建器。</returns>
+    public static ZeusHostBuilder AddUdpServer(
+        this ZeusHostBuilder builder,
+        string name,
+        Action<UdpServerOptions> configure)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var options = new UdpServerOptions();
+        configure(options);
+
+        builder.Register((services, channels, _) =>
+        {
+            var logger = services.GetService<ILogger<UdpServerChannel>>();
+            channels.Add(new UdpServerChannel(name, options, logger));
+        });
+
+        return builder;
+    }
+
+    /// <summary>
     /// 在已构建的宿主上登记串口通道。宿主运行中会立即打开。
     /// </summary>
     public static Task<SerialPortChannel> AddSerialPortAsync(
@@ -270,6 +309,32 @@ public static class ZeusHostBuilderCommunicationExtensions
         configure(options);
         var logger = host.Services.GetService<ILogger<UdpClientChannel>>();
         return AddAndMaybeOpenAsync(host, new UdpClientChannel(name, options, logger), cancellationToken);
+    }
+
+    /// <summary>
+    /// 在已构建的宿主上登记 UDP 服务端通道。
+    /// </summary>
+    public static Task<UdpServerChannel> AddUdpServerAsync(
+        this IZeusHost host,
+        string name,
+        int localPort,
+        CancellationToken cancellationToken = default)
+        => host.AddUdpServerAsync(name, options => options.LocalPort = localPort, cancellationToken);
+
+    /// <summary>
+    /// 以选项回调在已构建的宿主上登记 UDP 服务端通道。
+    /// </summary>
+    public static Task<UdpServerChannel> AddUdpServerAsync(
+        this IZeusHost host,
+        string name,
+        Action<UdpServerOptions> configure,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var options = new UdpServerOptions();
+        configure(options);
+        var logger = host.Services.GetService<ILogger<UdpServerChannel>>();
+        return AddAndMaybeOpenAsync(host, new UdpServerChannel(name, options, logger), cancellationToken);
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Net;
 
 namespace Zeus;
 
@@ -142,9 +143,12 @@ public static class ZeusConfigurationLoader
                     }
 
                     break;
+                case "udp-server" or "udpserver":
+                    ValidateUdpServerChannel(channel, path);
+                    break;
                 default:
                     throw new ZeusException(
-                        $"{path}.type「{channel.Type}」不受支持。可选 virtual、serial、tcp、udp。");
+                        $"{path}.type「{channel.Type}」不受支持。可选 virtual、serial、tcp、udp、udp-server。");
             }
         }
 
@@ -209,6 +213,25 @@ public static class ZeusConfigurationLoader
         if (channel.Port is <= 0 or > 65535)
         {
             throw new ZeusException($"{path}.port 必须介于 1 与 65535 之间。");
+        }
+    }
+
+    private static void ValidateUdpServerChannel(ChannelConfiguration channel, string path)
+    {
+        if (!string.IsNullOrWhiteSpace(channel.LocalAddress)
+            && !IPAddress.TryParse(channel.LocalAddress.Trim(), out _))
+        {
+            throw new ZeusException($"{path}.localAddress 必须是有效 IP 地址，例如 0.0.0.0 或 127.0.0.1。");
+        }
+
+        if (channel.LocalPort is < 0 or > 65535)
+        {
+            throw new ZeusException($"{path}.localPort 必须介于 0 与 65535 之间，0 表示自动分配。");
+        }
+
+        if (channel.Port is < 0 or > 65535)
+        {
+            throw new ZeusException($"{path}.port 必须介于 0 与 65535 之间；udp-server 未提供 localPort 时会把 port 当作监听端口。");
         }
     }
 

@@ -60,7 +60,7 @@ public sealed class ChannelConfiguration
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// 类型：<c>virtual</c>、<c>serial</c>、<c>tcp</c>、<c>udp</c>。
+    /// 类型：<c>virtual</c>、<c>serial</c>、<c>tcp</c>、<c>udp</c>、<c>udp-server</c>。
     /// </summary>
     public string Type { get; set; } = "virtual";
 
@@ -70,13 +70,16 @@ public sealed class ChannelConfiguration
     /// <summary>波特率，默认 115200。仅 serial。</summary>
     public int BaudRate { get; set; } = 115200;
 
-    /// <summary>TCP/UDP 主机。仅 tcp、udp。</summary>
+    /// <summary>TCP/UDP 对端主机。仅 tcp、udp 客户端。</summary>
     public string? Host { get; set; }
 
-    /// <summary>TCP/UDP 端口，默认 502。仅 tcp、udp。</summary>
+    /// <summary>TCP/UDP 端口，默认 502。tcp/udp 为对端端口，udp-server 可作为监听端口。</summary>
     public int Port { get; set; } = 502;
 
-    /// <summary>UDP 本地绑定端口，0 表示自动分配。仅 udp。</summary>
+    /// <summary>UDP 本地绑定或监听地址。仅 udp-server。</summary>
+    public string? LocalAddress { get; set; }
+
+    /// <summary>UDP 本地绑定或监听端口，0 表示自动分配。仅 udp、udp-server。</summary>
     public int LocalPort { get; set; }
 
     /// <summary>

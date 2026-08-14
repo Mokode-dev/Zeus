@@ -72,5 +72,21 @@ public sealed class NetworkChannelOptionTests
             })),
             new[] { "udp", nameof(UdpClientOptions.ReceiveBufferSize), "不能为负数" }
         ];
+        yield return
+        [
+            new Action<ZeusHostBuilder>(builder => builder.AddUdpServer("udp-server", options =>
+            {
+                options.LocalAddress = "not-an-ip";
+            })),
+            new[] { "udp-server", "UDP 服务端", "本地地址" }
+        ];
+        yield return
+        [
+            new Action<ZeusHostBuilder>(builder => builder.AddUdpServer("udp-server", options =>
+            {
+                options.LocalPort = -1;
+            })),
+            new[] { "udp-server", "UDP 服务端", "本地端口" }
+        ];
     }
 }

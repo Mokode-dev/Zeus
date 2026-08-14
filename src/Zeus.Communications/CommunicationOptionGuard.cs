@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace Zeus;
 
 /// <summary>
@@ -60,6 +62,30 @@ internal static class CommunicationOptionGuard
         }
 
         return port;
+    }
+
+    /// <summary>
+    /// 校验本地监听地址。
+    /// </summary>
+    /// <param name="address">IP 地址文本；为空时使用任意地址。</param>
+    /// <param name="channelName">通道名。</param>
+    /// <param name="transport">传输类型。</param>
+    /// <returns>可用于绑定的 IP 地址。</returns>
+    public static IPAddress LocalAddress(string? address, string channelName, string transport)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return IPAddress.Any;
+        }
+
+        if (IPAddress.TryParse(address.Trim(), out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new ZeusChannelException(
+            channelName,
+            $"通道 {channelName} 的 {transport} 本地地址必须是有效 IP 地址。当前值：{address}。");
     }
 
     /// <summary>

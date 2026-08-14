@@ -208,6 +208,15 @@ public static class ZeusHostBuilderConfigurationExtensions
                 options.Port = channel.Port;
                 options.LocalPort = channel.LocalPort;
             }, cancellationToken)),
+            "udp-server" or "udpserver" => Await(host.AddUdpServerAsync(name, options =>
+            {
+                if (!string.IsNullOrWhiteSpace(channel.LocalAddress))
+                {
+                    options.LocalAddress = channel.LocalAddress;
+                }
+
+                options.LocalPort = EffectiveUdpServerPort(channel);
+            }, cancellationToken)),
             _ => Task.CompletedTask
         };
 
@@ -241,6 +250,7 @@ public static class ZeusHostBuilderConfigurationExtensions
             "serial" => string.Join('|', type, channel.PortName?.Trim(), channel.BaudRate),
             "tcp" => string.Join('|', type, channel.Host?.Trim(), channel.Port),
             "udp" => string.Join('|', type, channel.Host?.Trim(), channel.Port, channel.LocalPort),
+            "udp-server" or "udpserver" => string.Join('|', "udp-server", channel.LocalAddress?.Trim(), EffectiveUdpServerPort(channel)),
             _ => type
         };
     }
@@ -287,8 +297,22 @@ public static class ZeusHostBuilderConfigurationExtensions
                     options.LocalPort = channel.LocalPort;
                 });
                 break;
+            case "udp-server" or "udpserver":
+                builder.AddUdpServer(name, options =>
+                {
+                    if (!string.IsNullOrWhiteSpace(channel.LocalAddress))
+                    {
+                        options.LocalAddress = channel.LocalAddress;
+                    }
+
+                    options.LocalPort = EffectiveUdpServerPort(channel);
+                });
+                break;
         }
     }
+
+    private static int EffectiveUdpServerPort(ChannelConfiguration channel)
+        => channel.LocalPort != 0 ? channel.LocalPort : channel.Port;
 
     private static IVirtualResponder? CreateResponder(ChannelConfiguration channel)
     {

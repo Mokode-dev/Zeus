@@ -11,6 +11,7 @@ namespace Zeus
         public ChannelConfiguration() { }
         public int BaudRate { get; set; }
         public string? Host { get; set; }
+        public string? LocalAddress { get; set; }
         public int LocalPort { get; set; }
         public string Name { get; set; }
         public int Port { get; set; }

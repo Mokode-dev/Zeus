@@ -182,6 +182,24 @@ public sealed class ConfigurationTests
     }
 
     /// <summary>
+    /// JSON 配置可声明 UDP 服务端通道。
+    /// </summary>
+    [Fact]
+    public async Task AddJson_CreatesUdpServerChannel()
+    {
+        const string json = """
+            {
+              "channels": [
+                { "name": "listener", "type": "udp-server", "localAddress": "127.0.0.1", "localPort": 0 }
+              ]
+            }
+            """;
+
+        await using var host = ZeusHost.Create(builder => builder.AddJson(json, "UDP 服务端配置"));
+        Assert.IsType<UdpServerChannel>(host.Channels.Get("listener"));
+    }
+
+    /// <summary>
     /// ReloadAcquisition 只更新间隔，不重建设备。
     /// </summary>
     [Fact]
