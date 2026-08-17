@@ -143,12 +143,15 @@ public static class ZeusConfigurationLoader
                     }
 
                     break;
+                case "tcp-server" or "tcpserver":
+                    ValidateTcpServerChannel(channel, path);
+                    break;
                 case "udp-server" or "udpserver":
                     ValidateUdpServerChannel(channel, path);
                     break;
                 default:
                     throw new ZeusException(
-                        $"{path}.type「{channel.Type}」不受支持。可选 virtual、serial、tcp、udp、udp-server。");
+                        $"{path}.type「{channel.Type}」不受支持。可选 virtual、serial、tcp、tcp-server、udp、udp-server。");
             }
         }
 
@@ -175,12 +178,18 @@ public static class ZeusConfigurationLoader
             }
 
             var type = Normalize(device.Type);
-            if (type is not ("modbus-rtu" or "modbusrtu" or "rtu" or "modbus-tcp" or "modbustcp" or "tcp"))
+            if (IsModbusDeviceType(type))
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp。");
+                ValidatePoints(device.Points, path);
             }
-
-            ValidatePoints(device.Points, path);
+            else if (IsMcDeviceType(type))
+            {
+                ValidateMcDevice(device, path);
+            }
+            else
+            {
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc。");
+            }
         }
     }
 
@@ -191,9 +200,15 @@ public static class ZeusConfigurationLoader
             return;
         }
 
-        if (Normalize(channel.Responder) is not "modbus")
+        var responder = Normalize(channel.Responder);
+        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc"))
         {
-            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前仅支持 modbus，或省略以回显写入。");
+            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc，或省略以回显写入。");
+        }
+
+        if (responder is "mc" or "mitsubishi-mc" or "mitsubishimc")
+        {
+            return;
         }
 
         var transport = Normalize(channel.Transport);
@@ -235,6 +250,25 @@ public static class ZeusConfigurationLoader
         }
     }
 
+    private static void ValidateTcpServerChannel(ChannelConfiguration channel, string path)
+    {
+        if (!string.IsNullOrWhiteSpace(channel.LocalAddress)
+            && !IPAddress.TryParse(channel.LocalAddress.Trim(), out _))
+        {
+            throw new ZeusException($"{path}.localAddress 必须是有效 IP 地址，例如 0.0.0.0 或 127.0.0.1。");
+        }
+
+        if (channel.LocalPort is < 0 or > 65535)
+        {
+            throw new ZeusException($"{path}.localPort 必须介于 0 与 65535 之间，0 表示自动分配。");
+        }
+
+        if (channel.Port is < 0 or > 65535)
+        {
+            throw new ZeusException($"{path}.port 必须介于 0 与 65535 之间；tcp-server 未提供 localPort 时会把 port 当作监听端口。");
+        }
+    }
+
     private static void ValidatePoints(List<PointConfiguration> points, string devicePath)
     {
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -252,6 +286,11 @@ public static class ZeusConfigurationLoader
             if (table is not ("holding" or "holdingregister" or "input" or "inputregister" or "coil" or "discrete" or "discreteinput"))
             {
                 throw new ZeusException($"{path}.table「{point.Table}」不受支持。可选 holding、input、coil、discrete。");
+            }
+
+            if (point.Address is < 0 or > ushort.MaxValue)
+            {
+                throw new ZeusException($"{path}.address 必须介于 0 与 65535 之间。");
             }
 
             if (point.Scale is <= 0)
@@ -279,6 +318,79 @@ public static class ZeusConfigurationLoader
         }
     }
 
+    private static void ValidateMcDevice(DeviceConfiguration device, string path)
+    {
+        var frameType = ParseMcFrameType(device.FrameType, $"{path}.frameType");
+        ParseMcDataEncoding(device.Encoding, $"{path}.encoding");
+        ValidateByte(device.NetworkNumber, $"{path}.networkNumber");
+        ValidateByte(device.PcNumber, $"{path}.pcNumber");
+        ValidateUInt16(device.IoNumber, $"{path}.ioNumber");
+        ValidateByte(device.StationNumber, $"{path}.stationNumber");
+        ValidateUInt16(device.MonitoringTimer, $"{path}.monitoringTimer");
+        ValidateUInt16(device.SerialNumber, $"{path}.serialNumber");
+
+        if (device.TimeoutMilliseconds is <= 0)
+        {
+            throw new ZeusException($"{path}.timeoutMilliseconds 必须大于 0。");
+        }
+
+        ValidateMcPoints(device.Points, path, frameType);
+    }
+
+    private static void ValidateMcPoints(List<PointConfiguration> points, string devicePath, McFrameType frameType)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var path = $"{devicePath}.points[{i}]";
+            EnsureName(point.Name, path);
+            if (!names.Add(point.Name.Trim()))
+            {
+                throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
+            }
+
+            var deviceCode = ParseMcDeviceCode(point.DeviceCode ?? point.Table, $"{path}.deviceCode");
+            if (frameType == McFrameType.Frame1E && deviceCode == McDeviceCode.ExtendedFileRegister)
+            {
+                throw new ZeusException($"{path}.deviceCode 为 ZR，但 MC 1E 帧不支持 ZR。请改用 3e/4e，或移除该点。");
+            }
+
+            if (point.Address is < 0 or > 0xFFFFFF)
+            {
+                throw new ZeusException($"{path}.address 必须介于 0 与 16777215 之间。");
+            }
+
+            if (point.Scale is <= 0)
+            {
+                throw new ZeusException($"{path}.scale 必须大于 0。");
+            }
+
+            ValidateAlarmLimit(point.LowAlarmLimit, $"{path}.lowAlarmLimit");
+            ValidateAlarmLimit(point.HighAlarmLimit, $"{path}.highAlarmLimit");
+            if (point.LowAlarmLimit > point.HighAlarmLimit)
+            {
+                throw new ZeusException($"{path}.lowAlarmLimit 不能高于 highAlarmLimit。");
+            }
+
+            var isBit = IsMcBitDeviceCode(deviceCode);
+            if (point.Scale is not null && isBit)
+            {
+                throw new ZeusException($"{path} 是 MC 位软元件，不能配置 scale。");
+            }
+
+            if ((point.LowAlarmLimit is not null || point.HighAlarmLimit is not null) && isBit)
+            {
+                throw new ZeusException($"{path} 是 MC 位软元件，不能配置 lowAlarmLimit 或 highAlarmLimit。");
+            }
+
+            if (point.Writable && deviceCode == McDeviceCode.InputRelay)
+            {
+                throw new ZeusException($"{path}.deviceCode 为 X 输入继电器，该软元件只读，不能设置 writable: true。");
+            }
+        }
+    }
+
     private static void ValidateAlarmLimit(double? value, string path)
     {
         if (value is { } number && !double.IsFinite(number))
@@ -297,4 +409,77 @@ public static class ZeusConfigurationLoader
 
     internal static string Normalize(string? value)
         => (value ?? string.Empty).Trim().ToLowerInvariant().Replace("_", "-");
+
+    internal static bool IsModbusDeviceType(string type)
+        => type is "modbus-rtu" or "modbusrtu" or "rtu" or "modbus-tcp" or "modbustcp" or "tcp";
+
+    internal static bool IsModbusTcpDeviceType(string type)
+        => type is "modbus-tcp" or "modbustcp" or "tcp";
+
+    internal static bool IsMcDeviceType(string type)
+        => type is "mitsubishi-mc" or "mitsubishimc" or "mc" or "melsec-mc" or "melsecmc" or "mc-3e" or "mc3e";
+
+    internal static McFrameType ParseMcFrameType(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "1e" or "frame1e" => McFrameType.Frame1E,
+            "3e" or "frame3e" or "" => McFrameType.Frame3E,
+            "4e" or "frame4e" => McFrameType.Frame4E,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。可选 1e、3e、4e。")
+        };
+    }
+
+    internal static McDataEncoding ParseMcDataEncoding(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "binary" or "bin" or "" => McDataEncoding.Binary,
+            "ascii" or "asc" => McDataEncoding.Ascii,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。可选 binary、ascii。")
+        };
+    }
+
+    internal static McDeviceCode ParseMcDeviceCode(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "d" or "data" or "dataregister" or "holding" or "holdingregister" => McDeviceCode.DataRegister,
+            "m" or "internal" or "internalrelay" or "coil" => McDeviceCode.InternalRelay,
+            "x" or "input" or "inputrelay" => McDeviceCode.InputRelay,
+            "y" or "output" or "outputrelay" => McDeviceCode.OutputRelay,
+            "w" or "link" or "linkregister" => McDeviceCode.LinkRegister,
+            "r" or "file" or "fileregister" => McDeviceCode.FileRegister,
+            "zr" or "extendedfile" or "extendedfileregister" => McDeviceCode.ExtendedFileRegister,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。可选 D、M、X、Y、W、R、ZR。")
+        };
+    }
+
+    internal static bool IsMcWordDeviceCode(McDeviceCode deviceCode)
+        => deviceCode is McDeviceCode.DataRegister
+            or McDeviceCode.LinkRegister
+            or McDeviceCode.FileRegister
+            or McDeviceCode.ExtendedFileRegister;
+
+    internal static bool IsMcBitDeviceCode(McDeviceCode deviceCode)
+        => deviceCode is McDeviceCode.InternalRelay or McDeviceCode.InputRelay or McDeviceCode.OutputRelay;
+
+    private static void ValidateByte(int value, string path)
+    {
+        if (value is < 0 or > byte.MaxValue)
+        {
+            throw new ZeusException($"{path} 必须介于 0 与 255 之间。");
+        }
+    }
+
+    private static void ValidateUInt16(int value, string path)
+    {
+        if (value is < 0 or > ushort.MaxValue)
+        {
+            throw new ZeusException($"{path} 必须介于 0 与 65535 之间。");
+        }
+    }
 }

@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Zeus;
@@ -60,7 +62,7 @@ public sealed class ChannelConfiguration
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// 类型：<c>virtual</c>、<c>serial</c>、<c>tcp</c>、<c>udp</c>、<c>udp-server</c>。
+    /// 类型：<c>virtual</c>、<c>serial</c>、<c>tcp</c>、<c>tcp-server</c>、<c>udp</c>、<c>udp-server</c>。
     /// </summary>
     public string Type { get; set; } = "virtual";
 
@@ -73,17 +75,17 @@ public sealed class ChannelConfiguration
     /// <summary>TCP/UDP 对端主机。仅 tcp、udp 客户端。</summary>
     public string? Host { get; set; }
 
-    /// <summary>TCP/UDP 端口，默认 502。tcp/udp 为对端端口，udp-server 可作为监听端口。</summary>
+    /// <summary>TCP/UDP 端口，默认 502。tcp/udp 为对端端口，tcp-server/udp-server 可作为监听端口。</summary>
     public int Port { get; set; } = 502;
 
-    /// <summary>UDP 本地绑定或监听地址。仅 udp-server。</summary>
+    /// <summary>TCP/UDP 本地监听地址。仅 tcp-server、udp-server。</summary>
     public string? LocalAddress { get; set; }
 
-    /// <summary>UDP 本地绑定或监听端口，0 表示自动分配。仅 udp、udp-server。</summary>
+    /// <summary>TCP/UDP 本地绑定或监听端口，0 表示自动分配。仅 udp、tcp-server、udp-server。</summary>
     public int LocalPort { get; set; }
 
     /// <summary>
-    /// 虚拟通道挂接的从站。当前仅支持 <c>modbus</c>。
+    /// 虚拟通道挂接的从站。支持 <c>modbus</c>、<c>mc</c>。
     /// </summary>
     public string? Responder { get; set; }
 
@@ -105,7 +107,7 @@ public sealed class DeviceConfiguration
     /// <summary>绑定的通道名。</summary>
     public string Channel { get; set; } = string.Empty;
 
-    /// <summary>类型：<c>modbus-rtu</c> 或 <c>modbus-tcp</c>。</summary>
+    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c> 或 <c>mitsubishi-mc</c>。</summary>
     public string Type { get; set; } = "modbus-rtu";
 
     /// <summary>从站/单元标识，默认 1。</summary>
@@ -113,6 +115,30 @@ public sealed class DeviceConfiguration
 
     /// <summary>应答超时（毫秒）。省略则使用协议默认 1000。</summary>
     public int? TimeoutMilliseconds { get; set; }
+
+    /// <summary>MC 帧类型：<c>1e</c>、<c>3e</c>、<c>4e</c>。仅 Mitsubishi MC。</summary>
+    public string FrameType { get; set; } = "3e";
+
+    /// <summary>MC 编码：<c>binary</c> 或 <c>ascii</c>。仅 Mitsubishi MC。</summary>
+    public string Encoding { get; set; } = "binary";
+
+    /// <summary>MC 网络号，默认 0。仅 Mitsubishi MC。</summary>
+    public int NetworkNumber { get; set; }
+
+    /// <summary>MC PC 号，默认 255。仅 Mitsubishi MC。</summary>
+    public int PcNumber { get; set; } = 0xFF;
+
+    /// <summary>MC I/O 号，默认 0x03FF。仅 Mitsubishi MC。</summary>
+    public int IoNumber { get; set; } = 0x03FF;
+
+    /// <summary>MC 站号，默认 0。仅 Mitsubishi MC。</summary>
+    public int StationNumber { get; set; }
+
+    /// <summary>MC 监视定时器，单位 250ms，默认 0x0010。仅 Mitsubishi MC。</summary>
+    public int MonitoringTimer { get; set; } = 0x0010;
+
+    /// <summary>MC 4E 序列号，默认 0。仅 Mitsubishi MC。</summary>
+    public int SerialNumber { get; set; }
 
     /// <summary>周期采集点。</summary>
     public List<PointConfiguration> Points { get; set; } = [];
@@ -127,12 +153,20 @@ public sealed class PointConfiguration
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// 数据区：<c>holding</c>、<c>input</c>、<c>coil</c>、<c>discrete</c>。
+    /// Modbus 数据区：<c>holding</c>、<c>input</c>、<c>coil</c>、<c>discrete</c>。
+    /// Mitsubishi MC 也可兼容使用 <c>D</c>、<c>M</c> 等软元件代码；推荐改用 <see cref="DeviceCode"/>。
     /// </summary>
     public string Table { get; set; } = "holding";
 
+    /// <summary>
+    /// Mitsubishi MC 软元件代码：<c>D</c>、<c>M</c>、<c>X</c>、<c>Y</c>、<c>W</c>、<c>R</c>、<c>ZR</c>。
+    /// Modbus 点忽略该字段。
+    /// </summary>
+    public string? DeviceCode { get; set; }
+
     /// <summary>0 基地址。</summary>
-    public ushort Address { get; set; }
+    [JsonConverter(typeof(FlexibleInt32JsonConverter))]
+    public int Address { get; set; }
 
     /// <summary>
     /// 寄存器换算系数。例如 0.1 表示原始值乘 0.1 后写入点表。
@@ -152,4 +186,50 @@ public sealed class PointConfiguration
     /// 仅 <c>holding</c> 与 <c>coil</c> 可设为 true；输入寄存器和离散输入始终只读。
     /// </summary>
     public bool Writable { get; set; }
+}
+
+internal sealed class FlexibleInt32JsonConverter : JsonConverter<int>
+{
+    public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out var number))
+        {
+            return number;
+        }
+
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var text = reader.GetString()?.Trim();
+            if (string.IsNullOrEmpty(text))
+            {
+                throw new JsonException("address 不能为空字符串。");
+            }
+
+            if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    return int.Parse(text[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                }
+                catch (Exception ex) when (ex is FormatException or OverflowException)
+                {
+                    throw new JsonException("address 十六进制字符串格式无效。", ex);
+                }
+            }
+
+            try
+            {
+                return int.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture);
+            }
+            catch (Exception ex) when (ex is FormatException or OverflowException)
+            {
+                throw new JsonException("address 整数字符串格式无效。", ex);
+            }
+        }
+
+        throw new JsonException("address 必须是整数，或形如 \"0x10\" 的十六进制字符串。");
+    }
+
+    public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+        => writer.WriteNumberValue(value);
 }

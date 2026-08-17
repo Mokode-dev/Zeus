@@ -202,6 +202,15 @@ public static class ZeusHostBuilderConfigurationExtensions
             "virtual" => Await(host.AddVirtualChannelAsync(name, CreateResponder(channel), cancellationToken)),
             "serial" => Await(host.AddSerialPortAsync(name, channel.PortName!, channel.BaudRate, cancellationToken)),
             "tcp" => Await(host.AddTcpClientAsync(name, channel.Host!, channel.Port, cancellationToken)),
+            "tcp-server" or "tcpserver" => Await(host.AddTcpServerAsync(name, options =>
+            {
+                if (!string.IsNullOrWhiteSpace(channel.LocalAddress))
+                {
+                    options.LocalAddress = channel.LocalAddress;
+                }
+
+                options.LocalPort = EffectiveTcpServerPort(channel);
+            }, cancellationToken)),
             "udp" => Await(host.AddUdpClientAsync(name, options =>
             {
                 options.Host = channel.Host!;
@@ -226,10 +235,18 @@ public static class ZeusHostBuilderConfigurationExtensions
     private static void AddRuntimeDevice(IZeusHost host, DeviceConfiguration device)
     {
         var type = ZeusConfigurationLoader.Normalize(device.Type);
-        var isTcp = type is "modbus-tcp" or "modbustcp" or "tcp";
         var timeout = device.TimeoutMilliseconds is { } ms
             ? TimeSpan.FromMilliseconds(ms)
             : (TimeSpan?)null;
+
+        if (ZeusConfigurationLoader.IsMcDeviceType(type))
+        {
+            Action<McPointMap>? mcPoints = device.Points.Count == 0 ? null : map => ApplyMcPoints(map, device.Points);
+            host.AddMitsubishiMc(device.Name.Trim(), device.Channel.Trim(), CreateMcOptions(device), timeout, mcPoints);
+            return;
+        }
+
+        var isTcp = ZeusConfigurationLoader.IsModbusTcpDeviceType(type);
         Action<ModbusPointMap>? points = device.Points.Count == 0 ? null : map => ApplyPoints(map, device.Points);
         if (isTcp)
         {
@@ -249,6 +266,7 @@ public static class ZeusHostBuilderConfigurationExtensions
             "virtual" => string.Join('|', type, ZeusConfigurationLoader.Normalize(channel.Responder), channel.UnitId, ZeusConfigurationLoader.Normalize(channel.Transport)),
             "serial" => string.Join('|', type, channel.PortName?.Trim(), channel.BaudRate),
             "tcp" => string.Join('|', type, channel.Host?.Trim(), channel.Port),
+            "tcp-server" or "tcpserver" => string.Join('|', "tcp-server", channel.LocalAddress?.Trim(), EffectiveTcpServerPort(channel)),
             "udp" => string.Join('|', type, channel.Host?.Trim(), channel.Port, channel.LocalPort),
             "udp-server" or "udpserver" => string.Join('|', "udp-server", channel.LocalAddress?.Trim(), EffectiveUdpServerPort(channel)),
             _ => type
@@ -258,8 +276,26 @@ public static class ZeusHostBuilderConfigurationExtensions
     private static string DeviceFingerprint(DeviceConfiguration device)
     {
         var points = string.Join(';', device.Points.Select(point =>
-            string.Join(':', point.Name, ZeusConfigurationLoader.Normalize(point.Table), point.Address, point.Scale, point.LowAlarmLimit, point.HighAlarmLimit, point.Writable)));
-        return string.Join('|', device.Channel.Trim(), ZeusConfigurationLoader.Normalize(device.Type), device.UnitId, device.TimeoutMilliseconds, points);
+            string.Join(':', point.Name, ZeusConfigurationLoader.Normalize(point.Table), ZeusConfigurationLoader.Normalize(point.DeviceCode), point.Address, point.Scale, point.LowAlarmLimit, point.HighAlarmLimit, point.Writable)));
+        var type = ZeusConfigurationLoader.Normalize(device.Type);
+        if (ZeusConfigurationLoader.IsMcDeviceType(type))
+        {
+            return string.Join('|',
+                device.Channel.Trim(),
+                type,
+                device.TimeoutMilliseconds,
+                ZeusConfigurationLoader.Normalize(device.FrameType),
+                ZeusConfigurationLoader.Normalize(device.Encoding),
+                device.NetworkNumber,
+                device.PcNumber,
+                device.IoNumber,
+                device.StationNumber,
+                device.MonitoringTimer,
+                device.SerialNumber,
+                points);
+        }
+
+        return string.Join('|', device.Channel.Trim(), type, device.UnitId, device.TimeoutMilliseconds, points);
     }
 
     private static ZeusConfigurationState EnsureState(ZeusHostBuilder builder)
@@ -289,6 +325,17 @@ public static class ZeusHostBuilderConfigurationExtensions
             case "tcp":
                 builder.AddTcpClient(name, channel.Host!, channel.Port);
                 break;
+            case "tcp-server" or "tcpserver":
+                builder.AddTcpServer(name, options =>
+                {
+                    if (!string.IsNullOrWhiteSpace(channel.LocalAddress))
+                    {
+                        options.LocalAddress = channel.LocalAddress;
+                    }
+
+                    options.LocalPort = EffectiveTcpServerPort(channel);
+                });
+                break;
             case "udp":
                 builder.AddUdpClient(name, options =>
                 {
@@ -314,11 +361,19 @@ public static class ZeusHostBuilderConfigurationExtensions
     private static int EffectiveUdpServerPort(ChannelConfiguration channel)
         => channel.LocalPort != 0 ? channel.LocalPort : channel.Port;
 
+    private static int EffectiveTcpServerPort(ChannelConfiguration channel)
+        => channel.LocalPort != 0 ? channel.LocalPort : channel.Port;
+
     private static IVirtualResponder? CreateResponder(ChannelConfiguration channel)
     {
         if (string.IsNullOrWhiteSpace(channel.Responder))
         {
             return null;
+        }
+
+        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "mc" or "mitsubishi-mc" or "mitsubishimc")
+        {
+            return new McSlaveResponder();
         }
 
         var transport = ZeusConfigurationLoader.Normalize(channel.Transport) == "tcp"
@@ -330,10 +385,18 @@ public static class ZeusHostBuilderConfigurationExtensions
     private static void ApplyDevice(ZeusHostBuilder builder, DeviceConfiguration device)
     {
         var type = ZeusConfigurationLoader.Normalize(device.Type);
-        var isTcp = type is "modbus-tcp" or "modbustcp" or "tcp";
         var timeout = device.TimeoutMilliseconds is { } ms
             ? TimeSpan.FromMilliseconds(ms)
             : (TimeSpan?)null;
+
+        if (ZeusConfigurationLoader.IsMcDeviceType(type))
+        {
+            Action<McPointMap>? mcPoints = device.Points.Count == 0 ? null : map => ApplyMcPoints(map, device.Points);
+            builder.AddMitsubishiMc(device.Name.Trim(), device.Channel.Trim(), CreateMcOptions(device), timeout, mcPoints);
+            return;
+        }
+
+        var isTcp = ZeusConfigurationLoader.IsModbusTcpDeviceType(type);
         Action<ModbusPointMap>? points = device.Points.Count == 0 ? null : map => ApplyPoints(map, device.Points);
 
         if (isTcp)
@@ -357,11 +420,11 @@ public static class ZeusHostBuilderConfigurationExtensions
                 case "holding" or "holdingregister":
                     if (point.Scale is { } holdingScale)
                     {
-                        map.HoldingRegister(point.Name, point.Address, holdingScale);
+                        map.HoldingRegister(point.Name, (ushort)point.Address, holdingScale);
                     }
                     else
                     {
-                        map.HoldingRegister(point.Name, point.Address);
+                        map.HoldingRegister(point.Name, (ushort)point.Address);
                     }
 
                     ApplyAlarmLimits(map, point, alarmLimits);
@@ -370,23 +433,50 @@ public static class ZeusHostBuilderConfigurationExtensions
                 case "input" or "inputregister":
                     if (point.Scale is { } inputScale)
                     {
-                        map.InputRegister(point.Name, point.Address, inputScale);
+                        map.InputRegister(point.Name, (ushort)point.Address, inputScale);
                     }
                     else
                     {
-                        map.InputRegister(point.Name, point.Address);
+                        map.InputRegister(point.Name, (ushort)point.Address);
                     }
 
                     ApplyAlarmLimits(map, point, alarmLimits);
                     break;
                 case "coil":
-                    map.Coil(point.Name, point.Address);
+                    map.Coil(point.Name, (ushort)point.Address);
                     ApplyWritable(map, point);
                     break;
                 case "discrete" or "discreteinput":
-                    map.DiscreteInput(point.Name, point.Address);
+                    map.DiscreteInput(point.Name, (ushort)point.Address);
                     break;
             }
+        }
+    }
+
+    private static void ApplyMcPoints(McPointMap map, List<PointConfiguration> points)
+    {
+        foreach (var point in points)
+        {
+            var deviceCode = ZeusConfigurationLoader.ParseMcDeviceCode(point.DeviceCode ?? point.Table, $"point {point.Name}.deviceCode");
+            var alarmLimits = CreateAlarmLimits(point);
+            if (ZeusConfigurationLoader.IsMcWordDeviceCode(deviceCode))
+            {
+                if (point.Scale is { } scale)
+                {
+                    map.Word(point.Name, deviceCode, point.Address, scale);
+                }
+                else
+                {
+                    map.Word(point.Name, deviceCode, point.Address);
+                }
+
+                ApplyMcAlarmLimits(map, point, alarmLimits);
+                ApplyMcWritable(map, point);
+                continue;
+            }
+
+            map.Bit(point.Name, deviceCode, point.Address);
+            ApplyMcWritable(map, point);
         }
     }
 
@@ -413,6 +503,35 @@ public static class ZeusHostBuilderConfigurationExtensions
             map.Writable(point.Name);
         }
     }
+
+    private static void ApplyMcAlarmLimits(McPointMap map, PointConfiguration point, PointAlarmLimits? alarmLimits)
+    {
+        if (alarmLimits is not null)
+        {
+            map.WithAlarmLimits(point.Name, alarmLimits.Low, alarmLimits.High);
+        }
+    }
+
+    private static void ApplyMcWritable(McPointMap map, PointConfiguration point)
+    {
+        if (point.Writable)
+        {
+            map.Writable(point.Name);
+        }
+    }
+
+    private static Mc3EOptions CreateMcOptions(DeviceConfiguration device)
+        => new()
+        {
+            FrameType = ZeusConfigurationLoader.ParseMcFrameType(device.FrameType, "device.frameType"),
+            DataEncoding = ZeusConfigurationLoader.ParseMcDataEncoding(device.Encoding, "device.encoding"),
+            NetworkNumber = (byte)device.NetworkNumber,
+            PcNumber = (byte)device.PcNumber,
+            IoNumber = (ushort)device.IoNumber,
+            StationNumber = (byte)device.StationNumber,
+            MonitoringTimer = (ushort)device.MonitoringTimer,
+            SerialNumber = (ushort)device.SerialNumber
+        };
 }
 
 /// <summary>

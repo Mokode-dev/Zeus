@@ -25,8 +25,16 @@ namespace Zeus
     {
         public DeviceConfiguration() { }
         public string Channel { get; set; }
+        public string Encoding { get; set; }
+        public string FrameType { get; set; }
+        public int IoNumber { get; set; }
+        public int MonitoringTimer { get; set; }
         public string Name { get; set; }
+        public int NetworkNumber { get; set; }
+        public int PcNumber { get; set; }
         public System.Collections.Generic.List<Zeus.PointConfiguration> Points { get; set; }
+        public int SerialNumber { get; set; }
+        public int StationNumber { get; set; }
         public int? TimeoutMilliseconds { get; set; }
         public string Type { get; set; }
         public byte UnitId { get; set; }
@@ -34,7 +42,9 @@ namespace Zeus
     public sealed class PointConfiguration
     {
         public PointConfiguration() { }
-        public ushort Address { get; set; }
+        [System.Text.Json.Serialization.JsonConverter(typeof(Zeus.FlexibleInt32JsonConverter))]
+        public int Address { get; set; }
+        public string? DeviceCode { get; set; }
         public double? HighAlarmLimit { get; set; }
         public double? LowAlarmLimit { get; set; }
         public string Name { get; set; }
