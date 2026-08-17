@@ -1,5 +1,22 @@
 # 更新记录
 
+## 0.6.0
+
+补齐点表到桌面界面的绑定能力，让值、报警、错误和写回按钮可以直接从 `IPointTable` 驱动。
+
+### 包含
+
+- 界面绑定：新增 `PointBindingSource`，投影单点的 `Value`、`Text`、`Error`、`AlarmState`、`IsAlarmed`、`UpdatedAt` 与 `Writable`
+- 界面绑定：新增 `IPointTable.BindSnapshot`，可把完整 `PointSnapshot` 封送到 UI 线程
+- 界面绑定：新增点表级 `BindEnabled`，默认按“可写且无错误”控制按钮或控件启用状态
+- WinForms / WPF：新增点表 `AsBindingSource`、报警前景/背景色绑定和 `BindWriteBack` 按钮写回辅助方法
+- 示例：WinForms / WPF QuickStart 增加本地点表温度点、报警色与状态展示
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.5 已发布的类型、成员和扩展方法签名
+- `0.6.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.5.0
 
 补齐 TCP 服务端通道、Mitsubishi MC、Siemens S7 与 Modbus 诊断能力，同时完善 JSON 配置声明。

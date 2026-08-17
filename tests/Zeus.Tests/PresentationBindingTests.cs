@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Zeus;
 
@@ -104,6 +105,108 @@ public sealed class PresentationBindingTests
         Assert.Equal("0A0B", source.LastHex);
         Assert.Contains(nameof(ChannelBindingSource.LastText), names);
         Assert.Contains(nameof(ChannelBindingSource.ReceivedCount), names);
+    }
+
+    /// <summary>
+    /// BindSnapshot 应立即推送当前快照，并在点值变化时继续推送完整状态。
+    /// </summary>
+    [Fact]
+    public void BindSnapshot_PushesCurrentAndChangedSnapshot()
+    {
+        var table = new PointTable();
+        table.Register(new PointDefinition(
+            "temperature",
+            "oven",
+            PointValueKind.Double,
+            new PointAlarmLimits(low: 0, high: 100),
+            writable: true));
+
+        var snapshots = new List<PointSnapshot>();
+        using var binding = table.BindSnapshot("temperature", ImmediateUiDispatcher.Instance, snapshots.Add);
+
+        Assert.Single(snapshots);
+        Assert.Null(snapshots[0].Value);
+        Assert.Equal(PointAlarmState.Unknown, snapshots[0].AlarmState);
+
+        table.Publish("oven.temperature", 42d);
+
+        Assert.Equal(2, snapshots.Count);
+        Assert.Equal(42d, snapshots[^1].Value);
+        Assert.Equal(PointAlarmState.Normal, snapshots[^1].AlarmState);
+    }
+
+    /// <summary>
+    /// PointBindingSource 应投影值、错误、报警与可写状态，并在释放后停止更新。
+    /// </summary>
+    [Fact]
+    public void PointBindingSource_ProjectsSnapshotProperties()
+    {
+        var table = new PointTable();
+        table.Register(new PointDefinition(
+            "temperature",
+            "oven",
+            PointValueKind.Double,
+            new PointAlarmLimits(high: 10),
+            writable: true));
+
+        using var source = table.AsBindingSource(
+            "oven.temperature",
+            ImmediateUiDispatcher.Instance,
+            value => value is null
+                ? string.Empty
+                : Convert.ToDouble(value, CultureInfo.InvariantCulture).ToString("0.0", CultureInfo.InvariantCulture) + " C");
+        var names = new List<string>();
+        source.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is not null)
+            {
+                names.Add(e.PropertyName);
+            }
+        };
+
+        Assert.Equal("temperature", source.Name);
+        Assert.Equal("oven.temperature", source.QualifiedName);
+        Assert.True(source.Writable);
+        Assert.Equal(PointAlarmState.Unknown, source.AlarmState);
+
+        table.Publish("oven.temperature", 12d);
+
+        Assert.Equal(12d, source.Value);
+        Assert.Equal("12.0 C", source.Text);
+        Assert.Equal(PointAlarmState.High, source.AlarmState);
+        Assert.True(source.IsAlarmed);
+        Assert.Contains(nameof(PointBindingSource.Text), names);
+        Assert.Contains(nameof(PointBindingSource.AlarmState), names);
+
+        table.PublishError("oven.temperature", "sensor offline");
+
+        Assert.True(source.HasError);
+        Assert.Equal("sensor offline", source.Text);
+        Assert.Equal("sensor offline", source.Error);
+
+        source.Dispose();
+        table.Publish("oven.temperature", 8d);
+        Assert.Equal("sensor offline", source.Text);
+    }
+
+    /// <summary>
+    /// 点表 BindEnabled 默认只在点可写且当前无错误时启用。
+    /// </summary>
+    [Fact]
+    public void PointBindEnabled_DefaultsToWritableAndNoError()
+    {
+        var table = new PointTable();
+        table.Register(new PointDefinition("setpoint", "oven", PointValueKind.Double, null, writable: true));
+        var values = new List<bool>();
+
+        using var binding = table.BindEnabled("setpoint", ImmediateUiDispatcher.Instance, values.Add);
+
+        Assert.Equal(new[] { true }, values);
+
+        table.PublishError("oven.setpoint", "write blocked");
+        table.Publish("oven.setpoint", 75d);
+
+        Assert.Equal(new[] { true, false, true }, values);
     }
 
     /// <summary>

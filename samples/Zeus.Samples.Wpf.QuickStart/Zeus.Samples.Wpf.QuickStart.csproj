@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Zeus.Communications\Zeus.Communications.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Core\Zeus.Core.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Presentation.Wpf\Zeus.Presentation.Wpf.csproj" />
   </ItemGroup>
 

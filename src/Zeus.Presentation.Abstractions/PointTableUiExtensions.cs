@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Zeus;
 
 /// <summary>
@@ -7,6 +5,53 @@ namespace Zeus;
 /// </summary>
 public static class PointTableUiExtensions
 {
+    /// <summary>
+    /// 把指定点的完整快照推到界面，订阅时会立即推送当前快照。
+    /// </summary>
+    /// <param name="table">宿主点表。</param>
+    /// <param name="pointName">短名或 <c>设备.点</c>。</param>
+    /// <param name="dispatcher">界面调度器。</param>
+    /// <param name="setSnapshot">在界面线程上接收快照。</param>
+    /// <returns>绑定句柄。</returns>
+    public static IUiBinding BindSnapshot(
+        this IPointTable table,
+        string pointName,
+        IUiDispatcher dispatcher,
+        Action<PointSnapshot> setSnapshot)
+    {
+        ArgumentNullException.ThrowIfNull(table);
+        ArgumentNullException.ThrowIfNull(dispatcher);
+        ArgumentNullException.ThrowIfNull(setSnapshot);
+        var key = PointUiFormatting.NormalizePointName(pointName);
+
+        void Apply(PointSnapshot snapshot)
+        {
+            if (dispatcher.CheckAccess())
+            {
+                setSnapshot(snapshot);
+                return;
+            }
+
+            dispatcher.Post(() => setSnapshot(snapshot));
+        }
+
+        void OnChanged(object? sender, PointChangedEventArgs e)
+        {
+            if (PointUiFormatting.Matches(e.Current.Definition, key))
+            {
+                Apply(e.Current);
+            }
+        }
+
+        if (table.All.FirstOrDefault(item => PointUiFormatting.Matches(item.Definition, key)) is { } existing)
+        {
+            Apply(existing);
+        }
+
+        table.Changed += OnChanged;
+        return new DelegateUiBinding(() => table.Changed -= OnChanged);
+    }
+
     /// <summary>
     /// 把指定点的值格式化为文本并推到界面。点尚无值时先推送空字符串。
     /// </summary>
@@ -26,56 +71,48 @@ public static class PointTableUiExtensions
         ArgumentNullException.ThrowIfNull(table);
         ArgumentNullException.ThrowIfNull(dispatcher);
         ArgumentNullException.ThrowIfNull(setText);
-        if (string.IsNullOrWhiteSpace(pointName))
-        {
-            throw new ZeusException("绑定点名不能为空。");
-        }
-
-        formatter ??= DefaultFormat;
-        var key = pointName.Trim();
-
-        void Apply(PointSnapshot snapshot)
-        {
-            var text = snapshot.Error is null ? formatter(snapshot.Value) : snapshot.Error;
-            if (dispatcher.CheckAccess())
-            {
-                setText(text);
-                return;
-            }
-
-            dispatcher.Post(() => setText(text));
-        }
-
-        void OnChanged(object? sender, PointChangedEventArgs e)
-        {
-            if (Matches(e.Current.Definition, key))
-            {
-                Apply(e.Current);
-            }
-        }
-
-        if (table.All.FirstOrDefault(item => Matches(item.Definition, key)) is { } existing)
-        {
-            Apply(existing);
-        }
-
-        table.Changed += OnChanged;
-        return new DelegateUiBinding(() => table.Changed -= OnChanged);
+        formatter ??= PointUiFormatting.DefaultFormat;
+        return table.BindSnapshot(
+            pointName,
+            dispatcher,
+            snapshot => setText(PointUiFormatting.FormatSnapshot(snapshot, formatter)));
     }
 
-    private static bool Matches(PointDefinition definition, string key)
+    /// <summary>
+    /// 按点快照控制界面元素启用状态，订阅时会立即推送当前状态。默认仅可写且无错误时启用。
+    /// </summary>
+    /// <param name="table">宿主点表。</param>
+    /// <param name="pointName">短名或 <c>设备.点</c>。</param>
+    /// <param name="dispatcher">界面调度器。</param>
+    /// <param name="setEnabled">在界面线程上设置启用状态。</param>
+    /// <param name="isEnabled">快照到启用状态的映射；为空时使用可写且无错误。</param>
+    /// <returns>绑定句柄。</returns>
+    public static IUiBinding BindEnabled(
+        this IPointTable table,
+        string pointName,
+        IUiDispatcher dispatcher,
+        Action<bool> setEnabled,
+        Func<PointSnapshot, bool>? isEnabled = null)
     {
-        return definition.Name.Equals(key, StringComparison.OrdinalIgnoreCase)
-               || definition.QualifiedName.Equals(key, StringComparison.OrdinalIgnoreCase);
+        ArgumentNullException.ThrowIfNull(setEnabled);
+        isEnabled ??= static snapshot => snapshot.Definition.Writable && snapshot.Error is null;
+        return table.BindSnapshot(pointName, dispatcher, snapshot => setEnabled(isEnabled(snapshot)));
     }
 
-    private static string DefaultFormat(object? value)
+    /// <summary>
+    /// 创建单个点的可绑定投影，属性变更会封送到 <paramref name="dispatcher"/>。
+    /// </summary>
+    /// <param name="table">宿主点表。</param>
+    /// <param name="pointName">短名或 <c>设备.点</c>。</param>
+    /// <param name="dispatcher">界面调度器。测试可传入 <see cref="ImmediateUiDispatcher"/>。</param>
+    /// <param name="formatter">成功值到文本的转换；为空时使用不变区域性的 <see cref="object.ToString"/>。</param>
+    public static PointBindingSource AsBindingSource(
+        this IPointTable table,
+        string pointName,
+        IUiDispatcher? dispatcher = null,
+        Func<object?, string>? formatter = null)
     {
-        return value switch
-        {
-            null => string.Empty,
-            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture) ?? string.Empty,
-            _ => value.ToString() ?? string.Empty
-        };
+        ArgumentNullException.ThrowIfNull(table);
+        return new PointBindingSource(table, pointName, dispatcher, formatter);
     }
 }

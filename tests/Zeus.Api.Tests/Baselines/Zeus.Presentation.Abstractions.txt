@@ -42,8 +42,32 @@ namespace Zeus
         public bool CheckAccess() { }
         public void Post(System.Action action) { }
     }
+    public sealed class PointBindingSource : System.ComponentModel.INotifyPropertyChanged, System.IDisposable
+    {
+        public PointBindingSource(Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher? dispatcher = null, System.Func<object?, string>? formatter = null) { }
+        public Zeus.PointAlarmState AlarmState { get; }
+        public string Error { get; }
+        public bool HasError { get; }
+        public bool HasValue { get; }
+        public bool IsAlarmed { get; }
+        public Zeus.PointValueKind? Kind { get; }
+        public string Name { get; }
+        public string PointName { get; }
+        public string QualifiedName { get; }
+        public Zeus.PointSnapshot? Snapshot { get; }
+        public string Text { get; }
+        public System.DateTimeOffset? UpdatedAt { get; }
+        public object? Value { get; }
+        public bool Writable { get; }
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+        public void Dispose() { }
+        public System.Threading.Tasks.Task WriteAsync(object value, System.Threading.CancellationToken cancellationToken = default) { }
+    }
     public static class PointTableUiExtensions
     {
+        public static Zeus.PointBindingSource AsBindingSource(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher? dispatcher = null, System.Func<object?, string>? formatter = null) { }
+        public static Zeus.IUiBinding BindEnabled(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<bool> setEnabled, System.Func<Zeus.PointSnapshot, bool>? isEnabled = null) { }
+        public static Zeus.IUiBinding BindSnapshot(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<Zeus.PointSnapshot> setSnapshot) { }
         public static Zeus.IUiBinding BindText(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<string> setText, System.Func<object?, string>? formatter = null) { }
     }
     public sealed class UiHostAttachment : System.IAsyncDisposable

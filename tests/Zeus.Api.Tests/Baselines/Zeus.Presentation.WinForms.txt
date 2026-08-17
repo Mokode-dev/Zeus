@@ -3,11 +3,17 @@ namespace Zeus
     public static class WinFormsChannelExtensions
     {
         public static Zeus.ChannelBindingSource AsBindingSource(this Zeus.IChannel channel, System.Windows.Forms.Control control) { }
+        public static Zeus.PointBindingSource AsBindingSource(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Func<object?, string>? formatter = null) { }
+        public static Zeus.IUiBinding BindAlarmBackColor(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Drawing.Color? normalColor = default, System.Drawing.Color? lowColor = default, System.Drawing.Color? highColor = default, System.Drawing.Color? errorColor = default, System.Drawing.Color? unknownColor = default) { }
+        public static Zeus.IUiBinding BindAlarmForeColor(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Drawing.Color? normalColor = default, System.Drawing.Color? lowColor = default, System.Drawing.Color? highColor = default, System.Drawing.Color? errorColor = default, System.Drawing.Color? unknownColor = default) { }
         public static Zeus.IUiBinding BindEnabled(this Zeus.IChannel channel, System.Windows.Forms.Control control, System.Func<Zeus.ChannelState, bool>? isEnabled = null) { }
+        public static Zeus.IUiBinding BindEnabled(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Func<Zeus.PointSnapshot, bool>? isEnabled = null) { }
+        public static Zeus.IUiBinding BindSnapshot(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Action<Zeus.PointSnapshot> setSnapshot) { }
         public static Zeus.IUiBinding BindState(this Zeus.IChannel channel, System.Windows.Forms.Control control) { }
         public static Zeus.IUiBinding BindText(this Zeus.IChannel channel, System.Windows.Forms.Control control, System.Func<System.ReadOnlyMemory<byte>, string>? formatter = null) { }
         public static Zeus.IUiBinding BindTo(this Zeus.IChannel channel, System.Windows.Forms.Control control, System.Func<System.ReadOnlyMemory<byte>, string>? formatter = null) { }
         public static Zeus.IUiBinding BindTo(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Func<object?, string>? formatter = null) { }
+        public static Zeus.IUiBinding BindWriteBack(this Zeus.IPointTable table, string pointName, System.Windows.Forms.TextBoxBase textBox, System.Windows.Forms.ButtonBase button, System.Func<string, object>? parser = null, System.Action<System.Exception>? onError = null, System.Threading.CancellationToken cancellationToken = default) { }
     }
     public static class WinFormsHostExtensions
     {

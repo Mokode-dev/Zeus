@@ -13,13 +13,13 @@
     <Product>Zeus</Product>
     <Description>面向 .NET 的 UI 无关上位机开发框架。把复杂留给 Zeus，把简单留给用户。</Description>
     <Copyright>Copyright © Zeus</Copyright>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <NeutralLanguage>zh-Hans</NeutralLanguage>
     <IsPackable>false</IsPackable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageTags>zeus;host;modbus;mitsubishi;mc;siemens;s7;serial;tcp;winforms;wpf;industrial;scada</PackageTags>
-    <PackageReleaseNotes>0.5.0：新增 TCP 服务端通道与 JSON type tcp-server；新增 Mitsubishi MC 1E/3E/4E Binary/ASCII、Siemens S7 TCP、虚拟 PLC 与点表写回；新增 Modbus 功能码 07、08、11。</PackageReleaseNotes>
+    <PackageReleaseNotes>0.6.0：新增 PointBindingSource、点表快照绑定、报警颜色绑定、点表写回按钮绑定，并扩展 WinForms / WPF 快速上手示例。</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Mokode-dev/Zeus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Mokode-dev/Zeus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

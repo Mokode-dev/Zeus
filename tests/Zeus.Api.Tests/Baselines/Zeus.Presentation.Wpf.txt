@@ -3,11 +3,19 @@ namespace Zeus
     public static class WpfChannelExtensions
     {
         public static Zeus.ChannelBindingSource AsBindingSource(this Zeus.IChannel channel, System.Windows.FrameworkElement element) { }
+        public static Zeus.PointBindingSource AsBindingSource(this Zeus.IPointTable table, string pointName, System.Windows.FrameworkElement element, System.Func<object?, string>? formatter = null) { }
+        public static Zeus.IUiBinding BindAlarmBackground(this Zeus.IPointTable table, string pointName, System.Windows.Controls.Control control, System.Windows.Media.Brush? normalBrush = null, System.Windows.Media.Brush? lowBrush = null, System.Windows.Media.Brush? highBrush = null, System.Windows.Media.Brush? errorBrush = null, System.Windows.Media.Brush? unknownBrush = null) { }
+        public static Zeus.IUiBinding BindAlarmBackground(this Zeus.IPointTable table, string pointName, System.Windows.Controls.TextBlock textBlock, System.Windows.Media.Brush? normalBrush = null, System.Windows.Media.Brush? lowBrush = null, System.Windows.Media.Brush? highBrush = null, System.Windows.Media.Brush? errorBrush = null, System.Windows.Media.Brush? unknownBrush = null) { }
+        public static Zeus.IUiBinding BindAlarmForeground(this Zeus.IPointTable table, string pointName, System.Windows.Controls.Control control, System.Windows.Media.Brush? normalBrush = null, System.Windows.Media.Brush? lowBrush = null, System.Windows.Media.Brush? highBrush = null, System.Windows.Media.Brush? errorBrush = null, System.Windows.Media.Brush? unknownBrush = null) { }
+        public static Zeus.IUiBinding BindAlarmForeground(this Zeus.IPointTable table, string pointName, System.Windows.Controls.TextBlock textBlock, System.Windows.Media.Brush? normalBrush = null, System.Windows.Media.Brush? lowBrush = null, System.Windows.Media.Brush? highBrush = null, System.Windows.Media.Brush? errorBrush = null, System.Windows.Media.Brush? unknownBrush = null) { }
         public static Zeus.IUiBinding BindEnabled(this Zeus.IChannel channel, System.Windows.UIElement element, System.Func<Zeus.ChannelState, bool>? isEnabled = null) { }
+        public static Zeus.IUiBinding BindEnabled(this Zeus.IPointTable table, string pointName, System.Windows.UIElement element, System.Func<Zeus.PointSnapshot, bool>? isEnabled = null) { }
+        public static Zeus.IUiBinding BindSnapshot(this Zeus.IPointTable table, string pointName, System.Windows.FrameworkElement element, System.Action<Zeus.PointSnapshot> setSnapshot) { }
         public static Zeus.IUiBinding BindState(this Zeus.IChannel channel, System.Windows.Controls.TextBlock textBlock) { }
         public static Zeus.IUiBinding BindText(this Zeus.IChannel channel, System.Windows.Controls.TextBlock textBlock, System.Func<System.ReadOnlyMemory<byte>, string>? formatter = null) { }
         public static Zeus.IUiBinding BindTo(this Zeus.IChannel channel, System.Windows.Controls.TextBlock textBlock, System.Func<System.ReadOnlyMemory<byte>, string>? formatter = null) { }
         public static Zeus.IUiBinding BindTo(this Zeus.IPointTable table, string pointName, System.Windows.Controls.TextBlock textBlock, System.Func<object?, string>? formatter = null) { }
+        public static Zeus.IUiBinding BindWriteBack(this Zeus.IPointTable table, string pointName, System.Windows.Controls.TextBox textBox, System.Windows.Controls.Primitives.ButtonBase button, System.Func<string, object>? parser = null, System.Action<System.Exception>? onError = null, System.Threading.CancellationToken cancellationToken = default) { }
     }
     public static class WpfHostExtensions
     {
