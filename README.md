@@ -22,7 +22,7 @@
 ## ✨ 特性
 
 - 🔌 **通道** — 串口、TCP、UDP 客户端 / 服务端、虚拟通道，同一套 API
-- 📡 **协议** — 自定义帧、Modbus RTU / TCP（含功能码 17），可挂虚拟从站
+- 📡 **协议** — 自定义帧、Modbus RTU / TCP、Mitsubishi MC 1E/3E/4E Binary/ASCII 与 3E/4E 随机读写，可挂虚拟从站
 - 📊 **采集** — 声明点表后按间隔自动轮询，保留最近成功采样，计算报警限；可写点按名称写回
 - 🧭 **追踪** — 通道级 TX/RX 报文事件、滚动内存记录器、文件日志器与 `ILogger` 结构化日志
 - 🖥️ **界面无关** — 业务代码不绑死 WinForms 或 WPF
@@ -62,6 +62,7 @@ app.Points.BindTo("temperature", temperatureLabel);
 | `Zeus.Communications` | [![nuget](https://img.shields.io/nuget/v/Zeus.Communications.svg)](https://www.nuget.org/packages/Zeus.Communications) | 串口 / TCP / UDP 客户端与服务端 / 虚拟通道 |
 | `Zeus.Protocols.Framing` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Framing.svg)](https://www.nuget.org/packages/Zeus.Protocols.Framing) | 自定义帧 |
 | `Zeus.Protocols.Modbus` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg)](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | Modbus RTU / TCP |
+| `Zeus.Protocols.Mc` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Mc.svg)](https://www.nuget.org/packages/Zeus.Protocols.Mc) | Mitsubishi MC 1E/3E/4E Binary/ASCII，3E/4E 随机读写 |
 | `Zeus.Configuration` | [![nuget](https://img.shields.io/nuget/v/Zeus.Configuration.svg)](https://www.nuget.org/packages/Zeus.Configuration) | JSON 工程配置 |
 | `Zeus.Presentation.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | UI 无关绑定抽象 |
 | `Zeus.Presentation.WinForms` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg)](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | WinForms 绑定 |

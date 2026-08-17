@@ -25,6 +25,7 @@ await app.StartAsync();
 | `Zeus.Communications` | [![nuget](https://img.shields.io/nuget/v/Zeus.Communications.svg)](https://www.nuget.org/packages/Zeus.Communications) | 串口 / TCP / UDP 客户端与服务端 / 虚拟通道 |
 | `Zeus.Protocols.Framing` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Framing.svg)](https://www.nuget.org/packages/Zeus.Protocols.Framing) | 自定义帧 |
 | `Zeus.Protocols.Modbus` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg)](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | Modbus RTU/TCP |
+| `Zeus.Protocols.Mc` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Mc.svg)](https://www.nuget.org/packages/Zeus.Protocols.Mc) | Mitsubishi MC 1E/3E/4E Binary/ASCII，3E/4E 随机读写 |
 | `Zeus.Configuration` | [![nuget](https://img.shields.io/nuget/v/Zeus.Configuration.svg)](https://www.nuget.org/packages/Zeus.Configuration) | JSON 工程配置 |
 | `Zeus.Presentation.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | UI 无关绑定抽象 |
 | `Zeus.Presentation.WinForms` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg)](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | WinForms 绑定 |
@@ -32,7 +33,7 @@ await app.StartAsync();
 
 点表支持最近成功采样历史、报警限，以及按点名写回可写点，适合在界面上直接显示当前值、采集错误和高低报，并下发设定值。
 
-0.4 起支持 Modbus 功能码 17、UDP 服务端、`ChannelTraceLogger` 与 `BindEnabled`；0.3 起可写点走 `Points.WriteAsync`；0.2 起宿主停止后可再次启动，通道故障默认自动重连，运行中可增删通道与设备，JSON 监视会同步拓扑。
+0.5 起支持 TCP 服务端、Mitsubishi MC 与 3E/4E 随机读写；0.4 起支持 Modbus 功能码 17、UDP 服务端、`ChannelTraceLogger` 与 `BindEnabled`；0.3 起可写点走 `Points.WriteAsync`；0.2 起宿主停止后可再次启动，通道故障默认自动重连，运行中可增删通道与设备，JSON 监视会同步拓扑。
 
 0.2 起宿主停止后可再次启动；通道故障默认自动重连；运行中可增删通道与设备；JSON 监视会同步拓扑。
 

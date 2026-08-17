@@ -3,7 +3,7 @@
 #   Zeus.Abstractions, Zeus.Runtime, Zeus.Hosting, Zeus.Communications,
 #   Zeus.Configuration, Zeus.Presentation.Abstractions,
 #   Zeus.Presentation.WinForms, Zeus.Presentation.Wpf,
-#   Zeus.Protocols.Framing, Zeus.Protocols.Modbus
+#   Zeus.Protocols.Framing, Zeus.Protocols.Modbus, Zeus.Protocols.Mc
 # 策略填写：
 #   Repository owner = Mokode-dev
 #   Repository = Zeus
