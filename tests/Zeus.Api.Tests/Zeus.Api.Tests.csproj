@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\src\Zeus.Presentation.WinForms\Zeus.Presentation.WinForms.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Presentation.Wpf\Zeus.Presentation.Wpf.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.Framing\Zeus.Protocols.Framing.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Protocols.Mc\Zeus.Protocols.Mc.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.Modbus\Zeus.Protocols.Modbus.csproj" />
   </ItemGroup>
 

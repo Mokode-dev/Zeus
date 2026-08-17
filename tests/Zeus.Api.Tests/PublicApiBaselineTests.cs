@@ -39,6 +39,10 @@ public sealed class PublicApiBaselineTests
     [Fact]
     public void Modbus_matches_baseline() => AssertMatchesBaseline(typeof(ModbusDevice).Assembly);
 
+    /// <summary>Mitsubishi MC 公开表面。</summary>
+    [Fact]
+    public void Mc_matches_baseline() => AssertMatchesBaseline(typeof(McDevice).Assembly);
+
     /// <summary>UI 无关绑定抽象公开表面。</summary>
     [Fact]
     public void PresentationAbstractions_matches_baseline() => AssertMatchesBaseline(typeof(IUiDispatcher).Assembly);
