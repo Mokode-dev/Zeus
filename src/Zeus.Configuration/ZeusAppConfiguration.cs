@@ -85,7 +85,7 @@ public sealed class ChannelConfiguration
     public int LocalPort { get; set; }
 
     /// <summary>
-    /// 虚拟通道挂接的从站。支持 <c>modbus</c>、<c>mc</c>。
+    /// 虚拟通道挂接的从站。支持 <c>modbus</c>、<c>mc</c>、<c>s7</c>、<c>fins</c>。
     /// </summary>
     public string? Responder { get; set; }
 
@@ -107,7 +107,7 @@ public sealed class DeviceConfiguration
     /// <summary>绑定的通道名。</summary>
     public string Channel { get; set; } = string.Empty;
 
-    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>mitsubishi-mc</c> 或 <c>siemens-s7</c>。</summary>
+    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c> 或 <c>omron-fins</c>。</summary>
     public string Type { get; set; } = "modbus-rtu";
 
     /// <summary>从站/单元标识，默认 1。</summary>
@@ -155,6 +155,39 @@ public sealed class DeviceConfiguration
     /// <summary>S7 请求协商的 PDU 长度，默认 480。仅 Siemens S7。</summary>
     public int RequestedPduLength { get; set; } = 480;
 
+    /// <summary>FINS 目标网络号 DNA，默认 0。仅 Omron FINS。</summary>
+    public int DestinationNetwork { get; set; }
+
+    /// <summary>FINS 目标节点号 DA1。UDP 通常填 PLC 节点号；TCP 可由握手自动填充。</summary>
+    public int DestinationNode { get; set; }
+
+    /// <summary>FINS 目标单元号 DA2，CPU 单元通常为 0。</summary>
+    public int DestinationUnit { get; set; }
+
+    /// <summary>FINS 源网络号 SNA，默认 0。</summary>
+    public int SourceNetwork { get; set; }
+
+    /// <summary>FINS 源节点号 SA1。UDP 通常填本机节点号；TCP 可由握手自动填充。</summary>
+    public int SourceNode { get; set; }
+
+    /// <summary>FINS 源单元号 SA2，默认 0。</summary>
+    public int SourceUnit { get; set; }
+
+    /// <summary>FINS 网关计数 GCT，默认 2。</summary>
+    public int GatewayCount { get; set; } = 2;
+
+    /// <summary>FINS ICF 控制字段，默认 0x80。</summary>
+    public int InformationControlField { get; set; } = 0x80;
+
+    /// <summary>FINS/TCP 节点握手请求的客户端节点号，0 表示请求服务端分配。</summary>
+    public int TcpRequestedClientNode { get; set; }
+
+    /// <summary>FINS/TCP 是否使用节点地址握手，默认 true。</summary>
+    public bool UseTcpNodeAddressHandshake { get; set; } = true;
+
+    /// <summary>FINS 32 位值字序：<c>high-word-first</c> 或 <c>low-word-first</c>。</summary>
+    public string WordOrder { get; set; } = "high-word-first";
+
     /// <summary>周期采集点。</summary>
     public List<PointConfiguration> Points { get; set; } = [];
 }
@@ -185,6 +218,7 @@ public sealed class PointConfiguration
 
     /// <summary>
     /// Siemens S7 存储区：<c>db</c>、<c>m</c>、<c>i</c>、<c>q</c>。
+    /// Omron FINS 存储区：<c>cio</c>、<c>wr</c>、<c>hr</c>、<c>ar</c>、<c>dm</c>、<c>tc</c>、<c>em</c>、<c>em0</c> 等。
     /// Modbus 与 Mitsubishi MC 点忽略该字段。
     /// </summary>
     public string? Area { get; set; }
@@ -197,7 +231,7 @@ public sealed class PointConfiguration
     [JsonPropertyName("bit")]
     public int BitOffset { get; set; }
 
-    /// <summary>Siemens S7 数据类型：<c>bool</c>、<c>byte</c>、<c>word</c>、<c>dword</c>、<c>int</c>、<c>dint</c>、<c>real</c>。</summary>
+    /// <summary>Siemens S7 / Omron FINS 数据类型。FINS 支持 <c>bit</c>、<c>word</c>、<c>int16</c>、<c>uint32</c>、<c>int32</c>、<c>real</c>。</summary>
     public string DataType { get; set; } = "word";
 
     /// <summary>

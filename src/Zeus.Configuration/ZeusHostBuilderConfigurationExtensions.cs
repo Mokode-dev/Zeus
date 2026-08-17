@@ -239,6 +239,13 @@ public static class ZeusHostBuilderConfigurationExtensions
             ? TimeSpan.FromMilliseconds(ms)
             : (TimeSpan?)null;
 
+        if (ZeusConfigurationLoader.IsFinsDeviceType(type))
+        {
+            Action<FinsPointMap>? finsPoints = device.Points.Count == 0 ? null : map => ApplyFinsPoints(map, device.Points);
+            host.AddOmronFins(device.Name.Trim(), device.Channel.Trim(), CreateFinsTransport(type), CreateFinsOptions(device), timeout, finsPoints);
+            return;
+        }
+
         if (ZeusConfigurationLoader.IsMcDeviceType(type))
         {
             Action<McPointMap>? mcPoints = device.Points.Count == 0 ? null : map => ApplyMcPoints(map, device.Points);
@@ -297,6 +304,26 @@ public static class ZeusHostBuilderConfigurationExtensions
                 point.HighAlarmLimit,
                 point.Writable)));
         var type = ZeusConfigurationLoader.Normalize(device.Type);
+        if (ZeusConfigurationLoader.IsFinsDeviceType(type))
+        {
+            return string.Join('|',
+                device.Channel.Trim(),
+                type,
+                device.TimeoutMilliseconds,
+                device.DestinationNetwork,
+                device.DestinationNode,
+                device.DestinationUnit,
+                device.SourceNetwork,
+                device.SourceNode,
+                device.SourceUnit,
+                device.GatewayCount,
+                device.InformationControlField,
+                device.TcpRequestedClientNode,
+                device.UseTcpNodeAddressHandshake,
+                ZeusConfigurationLoader.Normalize(device.WordOrder),
+                points);
+        }
+
         if (ZeusConfigurationLoader.IsMcDeviceType(type))
         {
             return string.Join('|',
@@ -414,6 +441,14 @@ public static class ZeusHostBuilderConfigurationExtensions
             return new S7SlaveResponder();
         }
 
+        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "fins" or "omron-fins" or "omronfins")
+        {
+            var finsTransport = ZeusConfigurationLoader.Normalize(channel.Transport) == "tcp"
+                ? FinsTransport.Tcp
+                : FinsTransport.Udp;
+            return new FinsSlaveResponder(finsTransport);
+        }
+
         var transport = ZeusConfigurationLoader.Normalize(channel.Transport) == "tcp"
             ? ModbusTransport.Tcp
             : ModbusTransport.Rtu;
@@ -426,6 +461,13 @@ public static class ZeusHostBuilderConfigurationExtensions
         var timeout = device.TimeoutMilliseconds is { } ms
             ? TimeSpan.FromMilliseconds(ms)
             : (TimeSpan?)null;
+
+        if (ZeusConfigurationLoader.IsFinsDeviceType(type))
+        {
+            Action<FinsPointMap>? finsPoints = device.Points.Count == 0 ? null : map => ApplyFinsPoints(map, device.Points);
+            builder.AddOmronFins(device.Name.Trim(), device.Channel.Trim(), CreateFinsTransport(type), CreateFinsOptions(device), timeout, finsPoints);
+            return;
+        }
 
         if (ZeusConfigurationLoader.IsMcDeviceType(type))
         {
@@ -545,6 +587,52 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyFinsPoints(FinsPointMap map, List<PointConfiguration> points)
+    {
+        foreach (var point in points)
+        {
+            var dataType = ZeusConfigurationLoader.ParseFinsDataType(point.DataType, $"point {point.Name}.dataType");
+            var area = ZeusConfigurationLoader.ParseFinsMemoryAreaCode(point.Area ?? point.Table, dataType, $"point {point.Name}.area");
+            var alarmLimits = CreateAlarmLimits(point);
+            if (dataType == FinsDataType.Bit)
+            {
+                map.Bit(point.Name, area, (ushort)point.Address, (byte)point.BitOffset);
+                ApplyFinsWritable(map, point);
+                continue;
+            }
+
+            switch (dataType)
+            {
+                case FinsDataType.Word:
+                    if (point.Scale is { } wordScale)
+                    {
+                        map.Word(point.Name, area, (ushort)point.Address, wordScale);
+                    }
+                    else
+                    {
+                        map.Word(point.Name, area, (ushort)point.Address);
+                    }
+
+                    break;
+                case FinsDataType.Int16:
+                    map.Int16(point.Name, area, (ushort)point.Address, point.Scale, alarmLimits);
+                    break;
+                case FinsDataType.UInt32:
+                    map.UInt32(point.Name, area, (ushort)point.Address, point.Scale, alarmLimits);
+                    break;
+                case FinsDataType.Int32:
+                    map.Int32(point.Name, area, (ushort)point.Address, point.Scale, alarmLimits);
+                    break;
+                case FinsDataType.Real:
+                    map.Real(point.Name, area, (ushort)point.Address, point.Scale, alarmLimits);
+                    break;
+            }
+
+            ApplyFinsAlarmLimits(map, point, alarmLimits);
+            ApplyFinsWritable(map, point);
+        }
+    }
+
     private static PointAlarmLimits? CreateAlarmLimits(PointConfiguration point)
         => point.LowAlarmLimit is not null || point.HighAlarmLimit is not null
             ? new PointAlarmLimits(point.LowAlarmLimit, point.HighAlarmLimit)
@@ -593,6 +681,22 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyFinsAlarmLimits(FinsPointMap map, PointConfiguration point, PointAlarmLimits? alarmLimits)
+    {
+        if (alarmLimits is not null)
+        {
+            map.WithAlarmLimits(point.Name, alarmLimits.Low, alarmLimits.High);
+        }
+    }
+
+    private static void ApplyFinsWritable(FinsPointMap map, PointConfiguration point)
+    {
+        if (point.Writable)
+        {
+            map.Writable(point.Name);
+        }
+    }
+
     private static Mc3EOptions CreateMcOptions(DeviceConfiguration device)
         => new()
         {
@@ -614,6 +718,25 @@ public static class ZeusHostBuilderConfigurationExtensions
             LocalTsap = (ushort)device.LocalTsap,
             RemoteTsap = device.RemoteTsap is { } remoteTsap ? (ushort)remoteTsap : null,
             RequestedPduLength = (ushort)device.RequestedPduLength
+        };
+
+    private static FinsTransport CreateFinsTransport(string normalizedType)
+        => ZeusConfigurationLoader.IsFinsTcpDeviceType(normalizedType) ? FinsTransport.Tcp : FinsTransport.Udp;
+
+    private static FinsOptions CreateFinsOptions(DeviceConfiguration device)
+        => new()
+        {
+            DestinationNetwork = (byte)device.DestinationNetwork,
+            DestinationNode = (byte)device.DestinationNode,
+            DestinationUnit = (byte)device.DestinationUnit,
+            SourceNetwork = (byte)device.SourceNetwork,
+            SourceNode = (byte)device.SourceNode,
+            SourceUnit = (byte)device.SourceUnit,
+            GatewayCount = (byte)device.GatewayCount,
+            InformationControlField = (byte)device.InformationControlField,
+            TcpRequestedClientNode = (byte)device.TcpRequestedClientNode,
+            UseTcpNodeAddressHandshake = device.UseTcpNodeAddressHandshake,
+            WordOrder = ZeusConfigurationLoader.ParseFinsWordOrder(device.WordOrder, "device.wordOrder")
         };
 }
 

@@ -1,0 +1,35 @@
+{
+  "acquisition": {
+    "intervalMilliseconds": 200,
+    "pollImmediately": true
+  },
+  "channels": [
+    {
+      "name": "fins-link",
+      "type": "udp",
+      "host": "192.168.250.1",
+      "port": 9600,
+      "localPort": 0
+    }
+  ],
+  "devices": [
+    {
+      "name": "plc",
+      "channel": "fins-link",
+      "type": "omron-fins-udp",
+      "sourceNode": 10,
+      "destinationNode": 1,
+      "sourceNetwork": 0,
+      "destinationNetwork": 0,
+      "sourceUnit": 0,
+      "destinationUnit": 0,
+      "wordOrder": "high-word-first",
+      "points": [
+        { "name": "temperature", "area": "dm", "address": 100, "dataType": "word", "scale": 0.1, "writable": true, "lowAlarmLimit": 10, "highAlarmLimit": 80 },
+        { "name": "setpoint", "area": "dm", "address": 101, "dataType": "word", "scale": 0.1, "writable": true },
+        { "name": "running", "area": "cio", "address": 10, "bit": 0, "dataType": "bit", "writable": true },
+        { "name": "flow", "area": "dm", "address": 120, "dataType": "real" }
+      ]
+    }
+  ]
+}

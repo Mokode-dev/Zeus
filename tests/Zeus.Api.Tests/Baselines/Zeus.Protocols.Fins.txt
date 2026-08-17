@@ -1,0 +1,200 @@
+namespace Zeus
+{
+    public sealed class FinsClient : System.IAsyncDisposable
+    {
+        public FinsClient(Zeus.IChannel channel, Zeus.FinsTransport transport, Zeus.FinsOptions? options = null, System.TimeSpan? timeout = default) { }
+        public Zeus.IChannel Channel { get; }
+        public Zeus.FinsOptions Options { get; }
+        public Zeus.FinsTransport Transport { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<byte[]> ExecuteAsync(ushort command, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task FillWordsAsync(Zeus.FinsMemoryAreaCode area, ushort address, ushort count, ushort value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<bool[]> ReadBitsAsync(Zeus.FinsMemoryAreaCode area, ushort address, byte bitOffset, ushort count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<Zeus.FinsMemoryValue[]> ReadMultipleAsync(System.Collections.Generic.IReadOnlyList<Zeus.FinsMemoryAddress> addresses, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadWordsAsync(Zeus.FinsMemoryAreaCode area, ushort address, ushort count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteBitsAsync(Zeus.FinsMemoryAreaCode area, ushort address, byte bitOffset, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteWordsAsync(Zeus.FinsMemoryAreaCode area, ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public enum FinsDataType
+    {
+        Bit = 0,
+        Word = 1,
+        Int16 = 2,
+        UInt32 = 3,
+        Int32 = 4,
+        Real = 5,
+    }
+    public sealed class FinsDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
+    {
+        public FinsDevice(string name, Zeus.IChannel channel, Zeus.FinsTransport transport, Zeus.FinsOptions? options = null, System.TimeSpan? timeout = default, Zeus.FinsPointMap? pointMap = null) { }
+        public Zeus.FinsClient Client { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
+        public Zeus.FinsTransport Transport { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<byte[]> ExecuteAsync(ushort command, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task FillWordsAsync(Zeus.FinsMemoryAreaCode area, ushort address, ushort count, ushort value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<bool[]> ReadBitsAsync(Zeus.FinsMemoryAreaCode area, ushort address, byte bitOffset, ushort count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<bool[]> ReadCioBitsAsync(ushort address, byte bitOffset, ushort count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadDataMemoryWordsAsync(ushort address, ushort count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<Zeus.FinsMemoryValue[]> ReadMultipleAsync(System.Collections.Generic.IReadOnlyList<Zeus.FinsMemoryAddress> addresses, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadWordsAsync(Zeus.FinsMemoryAreaCode area, ushort address, ushort count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteBitAsync(Zeus.FinsMemoryAreaCode area, ushort address, byte bitOffset, bool value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteBitsAsync(Zeus.FinsMemoryAreaCode area, ushort address, byte bitOffset, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteCioBitsAsync(ushort address, byte bitOffset, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDataMemoryWordsAsync(ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteWordsAsync(Zeus.FinsMemoryAreaCode area, ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class FinsException : Zeus.ZeusProtocolException
+    {
+        public FinsException(ushort command, ushort endCode) { }
+        public ushort Command { get; }
+        public ushort EndCode { get; }
+    }
+    public readonly struct FinsMemoryAddress : System.IEquatable<Zeus.FinsMemoryAddress>
+    {
+        public FinsMemoryAddress(Zeus.FinsMemoryAreaCode Area, ushort WordAddress, byte BitOffset = 0) { }
+        public Zeus.FinsMemoryAreaCode Area { get; init; }
+        public byte BitOffset { get; init; }
+        public ushort WordAddress { get; init; }
+        public override string ToString() { }
+    }
+    public readonly struct FinsMemoryAreaCode : System.IEquatable<Zeus.FinsMemoryAreaCode>
+    {
+        public FinsMemoryAreaCode(byte Code, Zeus.FinsMemoryAreaKind Kind, string Name) { }
+        public bool IsBit { get; }
+        public bool IsWord { get; }
+        public byte Code { get; init; }
+        public Zeus.FinsMemoryAreaKind Kind { get; init; }
+        public string Name { get; init; }
+        public static Zeus.FinsMemoryAreaCode AuxiliaryBit { get; }
+        public static Zeus.FinsMemoryAreaCode AuxiliaryWord { get; }
+        public static Zeus.FinsMemoryAreaCode CioBit { get; }
+        public static Zeus.FinsMemoryAreaCode CioWord { get; }
+        public static Zeus.FinsMemoryAreaCode CurrentEmBit { get; }
+        public static Zeus.FinsMemoryAreaCode CurrentEmWord { get; }
+        public static Zeus.FinsMemoryAreaCode DataMemoryBit { get; }
+        public static Zeus.FinsMemoryAreaCode DataMemoryWord { get; }
+        public static Zeus.FinsMemoryAreaCode HoldingBit { get; }
+        public static Zeus.FinsMemoryAreaCode HoldingWord { get; }
+        public static Zeus.FinsMemoryAreaCode TimerCounterFlag { get; }
+        public static Zeus.FinsMemoryAreaCode TimerCounterValue { get; }
+        public static Zeus.FinsMemoryAreaCode WorkBit { get; }
+        public static Zeus.FinsMemoryAreaCode WorkWord { get; }
+        public override string ToString() { }
+        public static Zeus.FinsMemoryAreaCode EmBankBit(int bank) { }
+        public static Zeus.FinsMemoryAreaCode EmBankWord(int bank) { }
+    }
+    public enum FinsMemoryAreaKind
+    {
+        Bit = 0,
+        Word = 1,
+    }
+    public sealed class FinsMemoryValue
+    {
+        public FinsMemoryValue(Zeus.FinsMemoryAddress address, bool? bitValue, ushort? wordValue) { }
+        public Zeus.FinsMemoryAddress Address { get; }
+        public bool? BitValue { get; }
+        public ushort? WordValue { get; }
+    }
+    public sealed class FinsOptions
+    {
+        public FinsOptions() { }
+        public byte DestinationNetwork { get; set; }
+        public byte DestinationNode { get; set; }
+        public byte DestinationUnit { get; set; }
+        public byte GatewayCount { get; set; }
+        public byte InformationControlField { get; set; }
+        public byte SourceNetwork { get; set; }
+        public byte SourceNode { get; set; }
+        public byte SourceUnit { get; set; }
+        public byte TcpRequestedClientNode { get; set; }
+        public bool UseTcpNodeAddressHandshake { get; set; }
+        public Zeus.FinsWordOrder WordOrder { get; set; }
+    }
+    public sealed class FinsPointMap
+    {
+        public FinsPointMap() { }
+        public Zeus.FinsPointMap AuxiliaryBit(string name, ushort address, byte bitOffset) { }
+        public Zeus.FinsPointMap AuxiliaryWord(string name, ushort address) { }
+        public Zeus.FinsPointMap Bit(string name, Zeus.FinsMemoryAreaCode area, ushort address, byte bitOffset = 0) { }
+        public Zeus.FinsPointMap CioBit(string name, ushort address, byte bitOffset) { }
+        public Zeus.FinsPointMap CioWord(string name, ushort address) { }
+        public Zeus.FinsPointMap CurrentEmBit(string name, ushort address, byte bitOffset) { }
+        public Zeus.FinsPointMap CurrentEmWord(string name, ushort address) { }
+        public Zeus.FinsPointMap DmBit(string name, ushort address, byte bitOffset) { }
+        public Zeus.FinsPointMap DmWord(string name, ushort address) { }
+        public Zeus.FinsPointMap DmWord(string name, ushort address, double scale) { }
+        public Zeus.FinsPointMap EmBit(string name, int bank, ushort address, byte bitOffset) { }
+        public Zeus.FinsPointMap EmWord(string name, int bank, ushort address) { }
+        public Zeus.FinsPointMap HoldingBit(string name, ushort address, byte bitOffset) { }
+        public Zeus.FinsPointMap HoldingWord(string name, ushort address) { }
+        public Zeus.FinsPointMap Int16(string name, Zeus.FinsMemoryAreaCode area, ushort address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.FinsPointMap Int32(string name, Zeus.FinsMemoryAreaCode area, ushort address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.FinsPointMap Real(string name, Zeus.FinsMemoryAreaCode area, ushort address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.FinsPointMap TimerCounterFlag(string name, ushort address) { }
+        public Zeus.FinsPointMap TimerCounterValue(string name, ushort address) { }
+        public Zeus.FinsPointMap UInt32(string name, Zeus.FinsMemoryAreaCode area, ushort address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.FinsPointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
+        public Zeus.FinsPointMap Word(string name, Zeus.FinsMemoryAreaCode area, ushort address) { }
+        public Zeus.FinsPointMap Word(string name, Zeus.FinsMemoryAreaCode area, ushort address, double scale) { }
+        public Zeus.FinsPointMap Word(string name, Zeus.FinsMemoryAreaCode area, ushort address, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.FinsPointMap Word(string name, Zeus.FinsMemoryAreaCode area, ushort address, double scale, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.FinsPointMap WorkBit(string name, ushort address, byte bitOffset) { }
+        public Zeus.FinsPointMap WorkWord(string name, ushort address) { }
+        public Zeus.FinsPointMap Writable(string name) { }
+    }
+    public sealed class FinsPointSpec
+    {
+        public ushort Address { get; }
+        public Zeus.PointAlarmLimits? AlarmLimits { get; }
+        public Zeus.FinsMemoryAreaCode Area { get; }
+        public byte BitOffset { get; }
+        public Zeus.FinsDataType DataType { get; }
+        public bool IsBit { get; }
+        public Zeus.PointValueKind Kind { get; }
+        public string Name { get; }
+        public double? Scale { get; }
+        public int WordCount { get; }
+        public bool Writable { get; }
+    }
+    public sealed class FinsSlaveMemory
+    {
+        public FinsSlaveMemory(int cioWords = 4096, int workWords = 4096, int holdingWords = 4096, int auxiliaryWords = 1024, int dataMemoryWords = 32768, int timerCounterWords = 4096, int currentEmWords = 32768, int emBankWords = 32768) { }
+        public ushort[] AuxiliaryWords { get; }
+        public ushort[] CioWords { get; }
+        public ushort[] CurrentEmWords { get; }
+        public ushort[] DataMemoryWords { get; }
+        public ushort[] HoldingWords { get; }
+        public bool[] TimerCounterFlags { get; }
+        public ushort[] TimerCounterValues { get; }
+        public ushort[] WorkWords { get; }
+        public ushort[] GetEmBank(int bank) { }
+    }
+    public sealed class FinsSlaveResponder : Zeus.IVirtualResponder
+    {
+        public FinsSlaveResponder(Zeus.FinsTransport transport = 0, Zeus.FinsSlaveMemory? memory = null, Zeus.FinsOptions? options = null) { }
+        public Zeus.FinsSlaveMemory Memory { get; }
+        public System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request) { }
+    }
+    public enum FinsTransport
+    {
+        Udp = 0,
+        Tcp = 1,
+    }
+    public enum FinsWordOrder
+    {
+        HighWordFirst = 0,
+        LowWordFirst = 1,
+    }
+    public static class ZeusHostBuilderFinsExtensions
+    {
+        public static Zeus.FinsDevice AddOmronFins(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.FinsTransport transport = 0, Zeus.FinsOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.FinsPointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddOmronFins(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.FinsTransport transport = 0, Zeus.FinsOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.FinsPointMap>? points = null) { }
+        public static Zeus.FinsDevice AddOmronFinsTcp(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.FinsOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.FinsPointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddOmronFinsTcp(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.FinsOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.FinsPointMap>? points = null) { }
+        public static Zeus.FinsDevice AddOmronFinsUdp(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.FinsOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.FinsPointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddOmronFinsUdp(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.FinsOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.FinsPointMap>? points = null) { }
+    }
+}

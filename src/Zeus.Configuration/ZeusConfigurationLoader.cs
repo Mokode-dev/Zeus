@@ -182,6 +182,10 @@ public static class ZeusConfigurationLoader
             {
                 ValidatePoints(device.Points, path);
             }
+            else if (IsFinsDeviceType(type))
+            {
+                ValidateFinsDevice(device, path);
+            }
             else if (IsS7DeviceType(type))
             {
                 ValidateS7Device(device, path);
@@ -192,7 +196,7 @@ public static class ZeusConfigurationLoader
             }
             else
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc、siemens-s7。");
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc、siemens-s7、omron-fins。");
             }
         }
     }
@@ -205,9 +209,9 @@ public static class ZeusConfigurationLoader
         }
 
         var responder = Normalize(channel.Responder);
-        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7"))
+        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins"))
         {
-            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7，或省略以回显写入。");
+            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins，或省略以回显写入。");
         }
 
         if (responder is "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7")
@@ -216,6 +220,16 @@ public static class ZeusConfigurationLoader
         }
 
         var transport = Normalize(channel.Transport);
+        if (responder is "fins" or "omron-fins" or "omronfins")
+        {
+            if (transport is not ("udp" or "tcp" or "rtu"))
+            {
+                throw new ZeusException($"{path}.transport「{channel.Transport}」不受支持。FINS 虚拟从站可选 udp、tcp。");
+            }
+
+            return;
+        }
+
         if (transport is not ("rtu" or "tcp"))
         {
             throw new ZeusException($"{path}.transport「{channel.Transport}」不受支持。可选 rtu、tcp。");
@@ -368,6 +382,27 @@ public static class ZeusConfigurationLoader
         ValidateS7Points(device.Points, path);
     }
 
+    private static void ValidateFinsDevice(DeviceConfiguration device, string path)
+    {
+        ValidateByte(device.DestinationNetwork, $"{path}.destinationNetwork");
+        ValidateByte(device.DestinationNode, $"{path}.destinationNode");
+        ValidateByte(device.DestinationUnit, $"{path}.destinationUnit");
+        ValidateByte(device.SourceNetwork, $"{path}.sourceNetwork");
+        ValidateByte(device.SourceNode, $"{path}.sourceNode");
+        ValidateByte(device.SourceUnit, $"{path}.sourceUnit");
+        ValidateByte(device.GatewayCount, $"{path}.gatewayCount");
+        ValidateByte(device.InformationControlField, $"{path}.informationControlField");
+        ValidateByte(device.TcpRequestedClientNode, $"{path}.tcpRequestedClientNode");
+        ParseFinsWordOrder(device.WordOrder, $"{path}.wordOrder");
+
+        if (device.TimeoutMilliseconds is <= 0)
+        {
+            throw new ZeusException($"{path}.timeoutMilliseconds 必须大于 0。");
+        }
+
+        ValidateFinsPoints(device.Points, path);
+    }
+
     private static void ValidateMcPoints(List<PointConfiguration> points, string devicePath, McFrameType frameType)
     {
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -503,6 +538,78 @@ public static class ZeusConfigurationLoader
         }
     }
 
+    private static void ValidateFinsPoints(List<PointConfiguration> points, string devicePath)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var path = $"{devicePath}.points[{i}]";
+            EnsureName(point.Name, path);
+            if (!names.Add(point.Name.Trim()))
+            {
+                throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
+            }
+
+            var dataType = ParseFinsDataType(point.DataType, $"{path}.dataType");
+            var area = ParseFinsMemoryAreaCode(point.Area ?? point.Table, dataType, $"{path}.area");
+            if (point.Address is < 0 or > ushort.MaxValue)
+            {
+                throw new ZeusException($"{path}.address 必须介于 0 与 65535 之间。");
+            }
+
+            if (dataType == FinsDataType.Bit)
+            {
+                if (!area.IsBit)
+                {
+                    throw new ZeusException($"{path}.area「{point.Area ?? point.Table}」不是 FINS 位区。");
+                }
+
+                if (point.BitOffset is < 0 or > 15)
+                {
+                    throw new ZeusException($"{path}.bit 必须介于 0 与 15 之间。");
+                }
+            }
+            else
+            {
+                if (!area.IsWord)
+                {
+                    throw new ZeusException($"{path}.area「{point.Area ?? point.Table}」不是 FINS 字区。");
+                }
+
+                if (point.BitOffset != 0)
+                {
+                    throw new ZeusException($"{path}.bit 只能用于 FINS bit 点。");
+                }
+            }
+
+            if (point.Scale is <= 0)
+            {
+                throw new ZeusException($"{path}.scale 必须大于 0。");
+            }
+
+            ValidateAlarmLimit(point.LowAlarmLimit, $"{path}.lowAlarmLimit");
+            ValidateAlarmLimit(point.HighAlarmLimit, $"{path}.highAlarmLimit");
+            if (point.LowAlarmLimit > point.HighAlarmLimit)
+            {
+                throw new ZeusException($"{path}.lowAlarmLimit 不能高于 highAlarmLimit。");
+            }
+
+            if (dataType == FinsDataType.Bit)
+            {
+                if (point.Scale is not null)
+                {
+                    throw new ZeusException($"{path} 是 FINS bit 点，不能配置 scale。");
+                }
+
+                if (point.LowAlarmLimit is not null || point.HighAlarmLimit is not null)
+                {
+                    throw new ZeusException($"{path} 是 FINS bit 点，不能配置 lowAlarmLimit 或 highAlarmLimit。");
+                }
+            }
+        }
+    }
+
     private static void ValidateAlarmLimit(double? value, string path)
     {
         if (value is { } number && !double.IsFinite(number))
@@ -533,6 +640,12 @@ public static class ZeusConfigurationLoader
 
     internal static bool IsS7DeviceType(string type)
         => type is "siemens-s7" or "siemenss7" or "s7" or "s7-comm" or "s7comm";
+
+    internal static bool IsFinsDeviceType(string type)
+        => type is "omron-fins" or "omronfins" or "fins" or "fins-udp" or "finsudp" or "omron-fins-udp" or "omronfinsudp" or "fins-tcp" or "finstcp" or "omron-fins-tcp" or "omronfinstcp";
+
+    internal static bool IsFinsTcpDeviceType(string type)
+        => type is "fins-tcp" or "finstcp" or "omron-fins-tcp" or "omronfinstcp";
 
     internal static McFrameType ParseMcFrameType(string? value, string path)
     {
@@ -608,6 +721,56 @@ public static class ZeusConfigurationLoader
             "dint" or "int32" => S7DataType.DInt,
             "real" or "float" or "single" => S7DataType.Real,
             _ => throw new ZeusException($"{path}「{value}」不受支持。可选 bool、byte、word、dword、int、dint、real。")
+        };
+    }
+
+    internal static FinsDataType ParseFinsDataType(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "word" or "w" or "uint16" or "ushort" => FinsDataType.Word,
+            "bit" or "bool" or "boolean" => FinsDataType.Bit,
+            "int" or "int16" or "short" => FinsDataType.Int16,
+            "uint32" or "udint" or "dword" or "dw" => FinsDataType.UInt32,
+            "int32" or "dint" => FinsDataType.Int32,
+            "real" or "float" or "single" => FinsDataType.Real,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。FINS 可选 bit、word、int16、uint32、int32、real。")
+        };
+    }
+
+    internal static FinsWordOrder ParseFinsWordOrder(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "highwordfirst" or "highfirst" or "big" or "bigendian" => FinsWordOrder.HighWordFirst,
+            "lowwordfirst" or "lowfirst" or "little" or "littleendian" => FinsWordOrder.LowWordFirst,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。可选 high-word-first、low-word-first。")
+        };
+    }
+
+    internal static FinsMemoryAreaCode ParseFinsMemoryAreaCode(string? value, FinsDataType dataType, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        var bit = dataType == FinsDataType.Bit || token.EndsWith("bit", StringComparison.Ordinal);
+        var word = dataType != FinsDataType.Bit || token.EndsWith("word", StringComparison.Ordinal);
+        var compact = token.Replace("word", string.Empty, StringComparison.Ordinal).Replace("bit", string.Empty, StringComparison.Ordinal);
+        if (compact.StartsWith("em", StringComparison.Ordinal) && compact.Length > 2 && int.TryParse(compact[2..], out var bank))
+        {
+            return bit ? FinsMemoryAreaCode.EmBankBit(bank) : FinsMemoryAreaCode.EmBankWord(bank);
+        }
+
+        return compact switch
+        {
+            "cio" or "" => bit ? FinsMemoryAreaCode.CioBit : FinsMemoryAreaCode.CioWord,
+            "wr" or "work" => bit ? FinsMemoryAreaCode.WorkBit : FinsMemoryAreaCode.WorkWord,
+            "hr" or "holding" => bit ? FinsMemoryAreaCode.HoldingBit : FinsMemoryAreaCode.HoldingWord,
+            "ar" or "aux" or "auxiliary" => bit ? FinsMemoryAreaCode.AuxiliaryBit : FinsMemoryAreaCode.AuxiliaryWord,
+            "dm" or "data" or "datamemory" => bit ? FinsMemoryAreaCode.DataMemoryBit : FinsMemoryAreaCode.DataMemoryWord,
+            "tc" or "timcnt" or "timercounter" or "timer" or "counter" => bit ? FinsMemoryAreaCode.TimerCounterFlag : FinsMemoryAreaCode.TimerCounterValue,
+            "em" or "currentem" or "emcurrent" => bit ? FinsMemoryAreaCode.CurrentEmBit : FinsMemoryAreaCode.CurrentEmWord,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。FINS 可选 cio、wr、hr、ar、dm、tc、em、em0–em18。")
         };
     }
 

@@ -25,8 +25,13 @@ namespace Zeus
     {
         public DeviceConfiguration() { }
         public string Channel { get; set; }
+        public int DestinationNetwork { get; set; }
+        public int DestinationNode { get; set; }
+        public int DestinationUnit { get; set; }
         public string Encoding { get; set; }
         public string FrameType { get; set; }
+        public int GatewayCount { get; set; }
+        public int InformationControlField { get; set; }
         public int IoNumber { get; set; }
         public int LocalTsap { get; set; }
         public int MonitoringTimer { get; set; }
@@ -39,10 +44,16 @@ namespace Zeus
         public int RequestedPduLength { get; set; }
         public int SerialNumber { get; set; }
         public int Slot { get; set; }
+        public int SourceNetwork { get; set; }
+        public int SourceNode { get; set; }
+        public int SourceUnit { get; set; }
         public int StationNumber { get; set; }
+        public int TcpRequestedClientNode { get; set; }
         public int? TimeoutMilliseconds { get; set; }
         public string Type { get; set; }
         public byte UnitId { get; set; }
+        public bool UseTcpNodeAddressHandshake { get; set; }
+        public string WordOrder { get; set; }
     }
     public sealed class PointConfiguration
     {

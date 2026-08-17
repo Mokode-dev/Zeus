@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Omron FINS 示例：虚拟 PLC + DM/CIO 点表采集 + 点名写回 + 直接协议读写。 -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Zeus.Samples.Console.Fins</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Zeus.Communications\Zeus.Communications.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Hosting\Zeus.Hosting.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Protocols.Fins\Zeus.Protocols.Fins.csproj" />
+  </ItemGroup>
+
+</Project>

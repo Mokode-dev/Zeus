@@ -15,6 +15,7 @@
     <ProjectReference Include="..\Zeus.Core\Zeus.Core.csproj" />
     <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
     <ProjectReference Include="..\Zeus.Protocols.Mc\Zeus.Protocols.Mc.csproj" />
+    <ProjectReference Include="..\Zeus.Protocols.Fins\Zeus.Protocols.Fins.csproj" />
     <ProjectReference Include="..\Zeus.Protocols.Modbus\Zeus.Protocols.Modbus.csproj" />
     <ProjectReference Include="..\Zeus.Protocols.S7\Zeus.Protocols.S7.csproj" />
   </ItemGroup>

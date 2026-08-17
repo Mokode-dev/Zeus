@@ -1,5 +1,25 @@
 # 更新记录
 
+## 0.7.0
+
+新增完整 Omron FINS 协议栈，覆盖 FINS/UDP、FINS/TCP、点表采集、点名写回、虚拟 PLC、JSON 配置与现场示例配置。
+
+### 包含
+
+- Omron FINS：新增 `Zeus.Protocols.Fins`，支持 FINS/UDP 与 FINS/TCP
+- FINS/TCP：支持节点地址握手，可自动接收并应用客户端节点号与服务端节点号
+- FINS 命令：支持 Memory Area Read / Write / Fill / Multiple Memory Area Read，并保留原始命令执行入口
+- FINS 内存区：支持 CIO、WR、HR、AR、DM、TIM/CNT、当前 EM 与 EM Bank 0–18 的字/位访问
+- FINS 点表：支持 `Bit`、`Word`、`Int16`、`UInt32`、`Int32`、`Real`，并支持 32 位值字序配置、工程值缩放、报警限与按点名写回
+- 虚拟 PLC：新增 FINS 虚拟从站，可在无硬件环境验证 UDP/TCP、读写、填充、多点读和点表采集
+- 配置：JSON 支持声明 `omron-fins-udp` / `omron-fins-tcp` 设备、FINS 路由字段、字序、节点握手参数和 FINS 点表
+- 示例与文档：新增 FINS 控制台示例、真实 UDP/TCP 配置样例、Omron FINS 指南和 NuGet 安装说明
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.6 已发布的类型、成员和扩展方法签名
+- `0.7.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.6.0
 
 补齐点表到桌面界面的绑定能力，让值、报警、错误和写回按钮可以直接从 `IPointTable` 驱动。
