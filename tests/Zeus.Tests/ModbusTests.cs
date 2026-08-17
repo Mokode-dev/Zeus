@@ -132,6 +132,37 @@ public sealed class ModbusTests
     }
 
     /// <summary>
+    /// 诊断类功能码应能读取异常状态、执行回显并报告服务器 ID。
+    /// </summary>
+    [Fact]
+    public async Task RtuDevice_ReadsDiagnosticsAndServerId()
+    {
+        var memory = new ModbusSlaveMemory
+        {
+            ExceptionStatus = 0b_0000_0101,
+            ServerId = 0x42,
+            ServerRunIndicatorStatus = true,
+            ServerIdAdditionalData = [0x10, 0x20, 0x30]
+        };
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddVirtualChannel("bus", new ModbusSlaveResponder(1, ModbusTransport.Rtu, memory));
+            builder.AddModbusRtu("meter", "bus");
+        });
+
+        await host.StartAsync();
+        var meter = host.Devices.Get<ModbusDevice>("meter");
+
+        Assert.Equal((byte)0b_0000_0101, await meter.ReadExceptionStatusAsync());
+        Assert.Equal((ushort)0xA55A, await meter.DiagnosticsReturnQueryDataAsync(0xA55A));
+
+        var serverId = await meter.ReportServerIdAsync();
+        Assert.Equal((byte)0x42, serverId.ServerId);
+        Assert.True(serverId.RunIndicatorStatus);
+        Assert.Equal(new byte[] { 0x10, 0x20, 0x30 }, serverId.AdditionalData);
+    }
+
+    /// <summary>
     /// 越界地址必须变成可识别的 <see cref="ModbusException"/>。
     /// </summary>
     [Fact]

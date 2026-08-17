@@ -66,8 +66,11 @@ public sealed class ModbusSlaveResponder : IVirtualResponder
             ModbusFunction.ReadInputRegisters => ReadRegisters(pdu, _memory.InputRegisters),
             ModbusFunction.WriteSingleCoil => WriteSingleCoil(pdu),
             ModbusFunction.WriteSingleRegister => WriteSingleRegister(pdu),
+            ModbusFunction.ReadExceptionStatus => ReadExceptionStatus(pdu),
+            ModbusFunction.Diagnostics => Diagnostics(pdu),
             ModbusFunction.WriteMultipleCoils => WriteMultipleCoils(pdu),
             ModbusFunction.WriteMultipleRegisters => WriteMultipleRegisters(pdu),
+            ModbusFunction.ReportServerId => ReportServerId(pdu),
             ModbusFunction.MaskWriteRegister => MaskWriteRegister(pdu),
             ModbusFunction.ReadWriteMultipleRegisters => ReadWriteMultipleRegisters(pdu),
             _ => throw new ModbusException(_unitId, pdu[0], ModbusExceptionCode.IllegalFunction)
@@ -167,6 +170,55 @@ public sealed class ModbusSlaveResponder : IVirtualResponder
         EnsureRange(address, 1, _memory.HoldingRegisters.Length, ModbusFunction.WriteSingleRegister);
         _memory.HoldingRegisters[address] = value;
         return pdu.ToArray();
+    }
+
+    private byte[] ReadExceptionStatus(byte[] pdu)
+    {
+        if (pdu.Length != 1)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.ReadExceptionStatus, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        return [ModbusFunction.ReadExceptionStatus, _memory.ExceptionStatus];
+    }
+
+    private byte[] Diagnostics(byte[] pdu)
+    {
+        if (pdu.Length < 5)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.Diagnostics, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        var subFunction = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(1, 2));
+        if (subFunction != 0x0000)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.Diagnostics, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        return pdu.ToArray();
+    }
+
+    private byte[] ReportServerId(byte[] pdu)
+    {
+        if (pdu.Length != 1)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.ReportServerId, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        var additionalData = _memory.ServerIdAdditionalData;
+        var byteCount = 2 + additionalData.Length;
+        if (byteCount > 251)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.ReportServerId, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        var response = new byte[2 + byteCount];
+        response[0] = ModbusFunction.ReportServerId;
+        response[1] = (byte)byteCount;
+        response[2] = _memory.ServerId;
+        response[3] = (byte)(_memory.ServerRunIndicatorStatus ? 0xFF : 0x00);
+        additionalData.CopyTo(response.AsSpan(4));
+        return response;
     }
 
     private byte[] WriteMultipleRegisters(byte[] pdu)

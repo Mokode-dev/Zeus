@@ -35,4 +35,16 @@ public sealed class ModbusSlaveMemory
 
     /// <summary>离散输入。</summary>
     public bool[] DiscreteInputs { get; }
+
+    /// <summary>功能码 0x07 返回的异常状态字节。</summary>
+    public byte ExceptionStatus { get; set; }
+
+    /// <summary>功能码 0x11 返回的服务器 ID。</summary>
+    public byte ServerId { get; set; } = 0xFF;
+
+    /// <summary>功能码 0x11 返回的运行指示状态。</summary>
+    public bool ServerRunIndicatorStatus { get; set; } = true;
+
+    /// <summary>功能码 0x11 返回的厂商自定义附加数据。</summary>
+    public byte[] ServerIdAdditionalData { get; set; } = [];
 }

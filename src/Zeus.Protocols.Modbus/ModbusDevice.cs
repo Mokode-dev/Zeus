@@ -62,6 +62,18 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IPointWriter,
     public Task<bool[]> ReadDiscreteInputsAsync(ushort address, ushort quantity, CancellationToken cancellationToken = default)
         => _client.ReadDiscreteInputsAsync(UnitId, address, quantity, cancellationToken);
 
+    /// <summary>读异常状态（功能码 0x07）。</summary>
+    public Task<byte> ReadExceptionStatusAsync(CancellationToken cancellationToken = default)
+        => _client.ReadExceptionStatusAsync(UnitId, cancellationToken);
+
+    /// <summary>执行诊断回显（功能码 0x08，子功能 0x0000）。</summary>
+    public Task<ushort> DiagnosticsReturnQueryDataAsync(ushort data, CancellationToken cancellationToken = default)
+        => _client.DiagnosticsReturnQueryDataAsync(UnitId, data, cancellationToken);
+
+    /// <summary>报告服务器 ID（功能码 0x11）。</summary>
+    public Task<ModbusServerId> ReportServerIdAsync(CancellationToken cancellationToken = default)
+        => _client.ReportServerIdAsync(UnitId, cancellationToken);
+
     /// <summary>写单个保持寄存器。</summary>
     public Task WriteSingleRegisterAsync(ushort address, ushort value, CancellationToken cancellationToken = default)
         => _client.WriteSingleRegisterAsync(UnitId, address, value, cancellationToken);

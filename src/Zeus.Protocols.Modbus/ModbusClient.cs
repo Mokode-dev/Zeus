@@ -118,6 +118,55 @@ public sealed class ModbusClient : IAsyncDisposable
     public Task<bool[]> ReadDiscreteInputsAsync(byte unitId, ushort address, ushort quantity, CancellationToken cancellationToken = default)
         => ReadBitsAsync(unitId, ModbusFunction.ReadDiscreteInputs, address, quantity, cancellationToken);
 
+    /// <summary>读异常状态（功能码 0x07）。</summary>
+    public async Task<byte> ReadExceptionStatusAsync(byte unitId, CancellationToken cancellationToken = default)
+    {
+        var response = await ExecuteAsync(unitId, new byte[] { ModbusFunction.ReadExceptionStatus }, cancellationToken).ConfigureAwait(false);
+        if (response.Length < 2 || response[0] != ModbusFunction.ReadExceptionStatus)
+        {
+            throw new ZeusProtocolException("读异常状态的响应长度异常。请核对从站功能码 0x07 实现。");
+        }
+
+        return response[1];
+    }
+
+    /// <summary>执行诊断回显（功能码 0x08，子功能 0x0000）。</summary>
+    public async Task<ushort> DiagnosticsReturnQueryDataAsync(
+        byte unitId,
+        ushort data,
+        CancellationToken cancellationToken = default)
+    {
+        var pdu = new byte[5];
+        pdu[0] = ModbusFunction.Diagnostics;
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(1, 2), 0x0000);
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(3, 2), data);
+        var response = await ExecuteAsync(unitId, pdu, cancellationToken).ConfigureAwait(false);
+        EnsureEcho(pdu, response, "诊断回显");
+        return ModbusCodec.ReadUInt16BigEndian(response.AsSpan(3, 2));
+    }
+
+    /// <summary>报告服务器 ID（功能码 0x11）。</summary>
+    public async Task<ModbusServerId> ReportServerIdAsync(byte unitId, CancellationToken cancellationToken = default)
+    {
+        var response = await ExecuteAsync(unitId, new byte[] { ModbusFunction.ReportServerId }, cancellationToken).ConfigureAwait(false);
+        if (response.Length < 4 || response[0] != ModbusFunction.ReportServerId)
+        {
+            throw new ZeusProtocolException("报告服务器 ID 的响应长度异常。请核对从站功能码 0x11 实现。");
+        }
+
+        var byteCount = response[1];
+        if (byteCount < 2 || response.Length < 2 + byteCount)
+        {
+            throw new ZeusProtocolException("报告服务器 ID 的字节数异常。请核对从站功能码 0x11 实现。");
+        }
+
+        var additionalLength = byteCount - 2;
+        var additionalData = additionalLength == 0
+            ? Array.Empty<byte>()
+            : response.AsSpan(4, additionalLength).ToArray();
+        return new ModbusServerId(response[2], response[3] != 0, additionalData);
+    }
+
     /// <summary>写单个保持寄存器。</summary>
     public async Task WriteSingleRegisterAsync(byte unitId, ushort address, ushort value, CancellationToken cancellationToken = default)
     {

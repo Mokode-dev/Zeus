@@ -48,6 +48,8 @@ internal static class ModbusCodec
                 5 + (ReadUInt16BigEndian(requestPdu.Slice(3, 2)) * 2),
             ModbusFunction.ReadWriteMultipleRegisters when requestPdu.Length >= 5 =>
                 5 + (ReadUInt16BigEndian(requestPdu.Slice(3, 2)) * 2),
+            ModbusFunction.ReadExceptionStatus => 5,
+            ModbusFunction.Diagnostics => requestPdu.Length + 3,
             ModbusFunction.MaskWriteRegister => 10,
             _ => 8
         };
@@ -88,6 +90,16 @@ internal static class ModbusCodec
 
         var isException = (buffer[1] & 0x80) != 0;
         var needed = isException ? 5 : ExpectedRtuResponseLength(requestPdu);
+        if (!isException && requestPdu.Length > 0 && requestPdu[0] == ModbusFunction.ReportServerId)
+        {
+            if (buffer.Count < 3)
+            {
+                return false;
+            }
+
+            needed = 5 + buffer[2];
+        }
+
         if (buffer.Count < needed)
         {
             return false;

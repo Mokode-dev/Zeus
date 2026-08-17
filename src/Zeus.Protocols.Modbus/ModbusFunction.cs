@@ -23,11 +23,20 @@ public static class ModbusFunction
     /// <summary>写单个保持寄存器。</summary>
     public const byte WriteSingleRegister = 0x06;
 
+    /// <summary>读异常状态。</summary>
+    public const byte ReadExceptionStatus = 0x07;
+
+    /// <summary>诊断。</summary>
+    public const byte Diagnostics = 0x08;
+
     /// <summary>写多个线圈。</summary>
     public const byte WriteMultipleCoils = 0x0F;
 
     /// <summary>写多个保持寄存器。</summary>
     public const byte WriteMultipleRegisters = 0x10;
+
+    /// <summary>报告服务器 ID。</summary>
+    public const byte ReportServerId = 0x11;
 
     /// <summary>掩码写保持寄存器。</summary>
     public const byte MaskWriteRegister = 0x16;
