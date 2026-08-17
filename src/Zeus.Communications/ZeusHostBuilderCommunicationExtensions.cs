@@ -123,6 +123,45 @@ public static class ZeusHostBuilderCommunicationExtensions
     }
 
     /// <summary>
+    /// 注册 TCP 服务端通道。
+    /// </summary>
+    /// <param name="builder">宿主构建器。</param>
+    /// <param name="name">通道名。</param>
+    /// <param name="localPort">本地监听端口。</param>
+    /// <returns>同一构建器。</returns>
+    public static ZeusHostBuilder AddTcpServer(this ZeusHostBuilder builder, string name, int localPort)
+    {
+        return builder.AddTcpServer(name, options => options.LocalPort = localPort);
+    }
+
+    /// <summary>
+    /// 以选项回调注册 TCP 服务端。
+    /// </summary>
+    /// <param name="builder">宿主构建器。</param>
+    /// <param name="name">通道名。</param>
+    /// <param name="configure">配置本地监听参数。</param>
+    /// <returns>同一构建器。</returns>
+    public static ZeusHostBuilder AddTcpServer(
+        this ZeusHostBuilder builder,
+        string name,
+        Action<TcpServerOptions> configure)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var options = new TcpServerOptions();
+        configure(options);
+
+        builder.Register((services, channels, _) =>
+        {
+            var logger = services.GetService<ILogger<TcpServerChannel>>();
+            channels.Add(new TcpServerChannel(name, options, logger));
+        });
+
+        return builder;
+    }
+
+    /// <summary>
     /// 注册 UDP 客户端通道。
     /// </summary>
     /// <param name="builder">宿主构建器。</param>
@@ -278,6 +317,32 @@ public static class ZeusHostBuilderCommunicationExtensions
         configure(options);
         var logger = host.Services.GetService<ILogger<TcpClientChannel>>();
         return AddAndMaybeOpenAsync(host, new TcpClientChannel(name, options, logger), cancellationToken);
+    }
+
+    /// <summary>
+    /// 在已构建的宿主上登记 TCP 服务端通道。
+    /// </summary>
+    public static Task<TcpServerChannel> AddTcpServerAsync(
+        this IZeusHost host,
+        string name,
+        int localPort,
+        CancellationToken cancellationToken = default)
+        => host.AddTcpServerAsync(name, options => options.LocalPort = localPort, cancellationToken);
+
+    /// <summary>
+    /// 以选项回调在已构建的宿主上登记 TCP 服务端通道。
+    /// </summary>
+    public static Task<TcpServerChannel> AddTcpServerAsync(
+        this IZeusHost host,
+        string name,
+        Action<TcpServerOptions> configure,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var options = new TcpServerOptions();
+        configure(options);
+        var logger = host.Services.GetService<ILogger<TcpServerChannel>>();
+        return AddAndMaybeOpenAsync(host, new TcpServerChannel(name, options, logger), cancellationToken);
     }
 
     /// <summary>

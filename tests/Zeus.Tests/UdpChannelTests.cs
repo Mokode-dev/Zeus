@@ -43,18 +43,18 @@ public sealed class UdpChannelTests
     [Fact]
     public async Task UdpServerChannel_ReceivesAndRepliesToLastSender()
     {
-        var port = GetFreeUdpPort();
         using var client = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
         await using var host = ZeusHost.Create(builder => builder.AddUdpServer("server", options =>
         {
             options.LocalAddress = "127.0.0.1";
-            options.LocalPort = port;
+            options.LocalPort = 0;
         }));
         var channel = Assert.IsType<UdpServerChannel>(host.Channels.Get("server"));
         var received = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
         channel.DataReceived += (_, e) => received.TrySetResult(e.Data.ToArray());
 
         await host.StartAsync();
+        var port = channel.LocalEndPoint?.Port ?? throw new InvalidOperationException("UDP 服务端未绑定本地端口。");
         var request = Encoding.ASCII.GetBytes("PING");
         await client.SendAsync(request, new IPEndPoint(IPAddress.Loopback, port));
 
@@ -73,11 +73,10 @@ public sealed class UdpChannelTests
     [Fact]
     public async Task UdpServerChannel_WriteBeforeReceiveThrows()
     {
-        var port = GetFreeUdpPort();
         await using var host = ZeusHost.Create(builder => builder.AddUdpServer("server", options =>
         {
             options.LocalAddress = "127.0.0.1";
-            options.LocalPort = port;
+            options.LocalPort = 0;
         }));
         var channel = host.Channels.Get("server");
 
@@ -92,9 +91,4 @@ public sealed class UdpChannelTests
         await server.SendAsync(request.Buffer, request.Buffer.Length, request.RemoteEndPoint).ConfigureAwait(false);
     }
 
-    private static int GetFreeUdpPort()
-    {
-        using var socket = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
-        return ((IPEndPoint)socket.Client.LocalEndPoint!).Port;
-    }
 }

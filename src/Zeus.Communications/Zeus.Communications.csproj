@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- 传输层：串口、TCP/UDP 与虚拟通道。协议包应只依赖抽象，不直接依赖本程序集的具体类型。 -->
+  <!-- 传输层：串口、TCP/UDP 客户端与服务端、虚拟通道。协议包应只依赖抽象，不直接依赖本程序集的具体类型。 -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Zeus</RootNamespace>
     <AssemblyName>Zeus.Communications</AssemblyName>
-    <Description>Zeus 传输层：串口、TCP/UDP 客户端与可挂从站应答器的虚拟通道。</Description>
-    <PackageDescription>Zeus 传输层：串口、TCP/UDP 客户端与可挂从站应答器的虚拟通道。</PackageDescription>
+    <Description>Zeus 传输层：串口、TCP/UDP 客户端与服务端、可挂从站应答器的虚拟通道。</Description>
+    <PackageDescription>Zeus 传输层：串口、TCP/UDP 客户端与服务端、可挂从站应答器的虚拟通道。</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

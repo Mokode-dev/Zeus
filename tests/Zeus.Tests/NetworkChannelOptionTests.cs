@@ -50,6 +50,30 @@ public sealed class NetworkChannelOptionTests
         ];
         yield return
         [
+            new Action<ZeusHostBuilder>(builder => builder.AddTcpServer("tcp-server", options =>
+            {
+                options.LocalAddress = "not-an-ip";
+            })),
+            new[] { "tcp-server", "TCP 服务端", "本地地址" }
+        ];
+        yield return
+        [
+            new Action<ZeusHostBuilder>(builder => builder.AddTcpServer("tcp-server", options =>
+            {
+                options.LocalPort = -1;
+            })),
+            new[] { "tcp-server", "TCP 服务端", "本地端口" }
+        ];
+        yield return
+        [
+            new Action<ZeusHostBuilder>(builder => builder.AddTcpServer("tcp-server", options =>
+            {
+                options.Backlog = 0;
+            })),
+            new[] { "tcp-server", nameof(TcpServerOptions.Backlog), "大于 0" }
+        ];
+        yield return
+        [
             new Action<ZeusHostBuilder>(builder => builder.AddUdpClient("udp", options =>
             {
                 options.Host = null!;
