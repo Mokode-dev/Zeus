@@ -1,0 +1,25 @@
+{
+  "acquisition": {
+    "intervalMilliseconds": 200,
+    "pollImmediately": true
+  },
+  "channels": [
+    {
+      "name": "enip-link",
+      "type": "virtual",
+      "responder": "ethernet-ip"
+    }
+  ],
+  "devices": [
+    {
+      "name": "plc",
+      "channel": "enip-link",
+      "type": "ethernet-ip",
+      "points": [
+        { "name": "temperature", "tag": "Temperature", "dataType": "int", "scale": 0.1, "writable": true },
+        { "name": "running", "tag": "Running", "dataType": "bool", "writable": true },
+        { "name": "speed", "tagName": "Program:Main.Speed", "dataType": "dint" }
+      ]
+    }
+  ]
+}

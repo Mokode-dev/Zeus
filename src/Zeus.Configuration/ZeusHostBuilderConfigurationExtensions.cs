@@ -246,6 +246,13 @@ public static class ZeusHostBuilderConfigurationExtensions
             return;
         }
 
+        if (ZeusConfigurationLoader.IsEtherNetIpDeviceType(type))
+        {
+            Action<EtherNetIpPointMap>? etherNetIpPoints = device.Points.Count == 0 ? null : map => ApplyEtherNetIpPoints(map, device.Points);
+            host.AddEtherNetIp(device.Name.Trim(), device.Channel.Trim(), null, timeout, etherNetIpPoints);
+            return;
+        }
+
         if (ZeusConfigurationLoader.IsMcDeviceType(type))
         {
             Action<McPointMap>? mcPoints = device.Points.Count == 0 ? null : map => ApplyMcPoints(map, device.Points);
@@ -295,6 +302,8 @@ public static class ZeusHostBuilderConfigurationExtensions
                 ZeusConfigurationLoader.Normalize(point.Table),
                 ZeusConfigurationLoader.Normalize(point.DeviceCode),
                 ZeusConfigurationLoader.Normalize(point.Area),
+                ZeusConfigurationLoader.Normalize(point.TagName),
+                ZeusConfigurationLoader.Normalize(point.Tag),
                 ZeusConfigurationLoader.Normalize(point.DataType),
                 point.DbNumber,
                 point.Address,
@@ -321,6 +330,15 @@ public static class ZeusHostBuilderConfigurationExtensions
                 device.TcpRequestedClientNode,
                 device.UseTcpNodeAddressHandshake,
                 ZeusConfigurationLoader.Normalize(device.WordOrder),
+                points);
+        }
+
+        if (ZeusConfigurationLoader.IsEtherNetIpDeviceType(type))
+        {
+            return string.Join('|',
+                device.Channel.Trim(),
+                type,
+                device.TimeoutMilliseconds,
                 points);
         }
 
@@ -449,6 +467,11 @@ public static class ZeusHostBuilderConfigurationExtensions
             return new FinsSlaveResponder(finsTransport);
         }
 
+        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley")
+        {
+            return new EtherNetIpSlaveResponder();
+        }
+
         var transport = ZeusConfigurationLoader.Normalize(channel.Transport) == "tcp"
             ? ModbusTransport.Tcp
             : ModbusTransport.Rtu;
@@ -466,6 +489,13 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             Action<FinsPointMap>? finsPoints = device.Points.Count == 0 ? null : map => ApplyFinsPoints(map, device.Points);
             builder.AddOmronFins(device.Name.Trim(), device.Channel.Trim(), CreateFinsTransport(type), CreateFinsOptions(device), timeout, finsPoints);
+            return;
+        }
+
+        if (ZeusConfigurationLoader.IsEtherNetIpDeviceType(type))
+        {
+            Action<EtherNetIpPointMap>? etherNetIpPoints = device.Points.Count == 0 ? null : map => ApplyEtherNetIpPoints(map, device.Points);
+            builder.AddEtherNetIp(device.Name.Trim(), device.Channel.Trim(), null, timeout, etherNetIpPoints);
             return;
         }
 
@@ -633,6 +663,21 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyEtherNetIpPoints(EtherNetIpPointMap map, List<PointConfiguration> points)
+    {
+        foreach (var point in points)
+        {
+            var dataType = ZeusConfigurationLoader.ParseEtherNetIpDataType(point.DataType, $"point {point.Name}.dataType");
+            var tagName = string.IsNullOrWhiteSpace(point.TagName)
+                ? string.IsNullOrWhiteSpace(point.Tag) ? point.Name : point.Tag!.Trim()
+                : point.TagName!.Trim();
+            var alarmLimits = CreateAlarmLimits(point);
+            map.Tag(point.Name, tagName, dataType, point.Scale, alarmLimits);
+            ApplyEtherNetIpAlarmLimits(map, point, alarmLimits);
+            ApplyEtherNetIpWritable(map, point);
+        }
+    }
+
     private static PointAlarmLimits? CreateAlarmLimits(PointConfiguration point)
         => point.LowAlarmLimit is not null || point.HighAlarmLimit is not null
             ? new PointAlarmLimits(point.LowAlarmLimit, point.HighAlarmLimit)
@@ -690,6 +735,22 @@ public static class ZeusHostBuilderConfigurationExtensions
     }
 
     private static void ApplyFinsWritable(FinsPointMap map, PointConfiguration point)
+    {
+        if (point.Writable)
+        {
+            map.Writable(point.Name);
+        }
+    }
+
+    private static void ApplyEtherNetIpAlarmLimits(EtherNetIpPointMap map, PointConfiguration point, PointAlarmLimits? alarmLimits)
+    {
+        if (alarmLimits is not null)
+        {
+            map.WithAlarmLimits(point.Name, alarmLimits.Low, alarmLimits.High);
+        }
+    }
+
+    private static void ApplyEtherNetIpWritable(EtherNetIpPointMap map, PointConfiguration point)
     {
         if (point.Writable)
         {

@@ -58,7 +58,7 @@ namespace Zeus
     public sealed class PointConfiguration
     {
         public PointConfiguration() { }
-        [System.Text.Json.Serialization.JsonConverter(typeof(Zeus.FlexibleInt32JsonConverter))]
+        [System.Text.Json.Serialization.JsonConverter(typeof(Zeus.FlexibleInt32JsonConverter?))]
         public int Address { get; set; }
         public string? Area { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("bit")]
@@ -73,6 +73,9 @@ namespace Zeus
         [System.Text.Json.Serialization.JsonPropertyName("scale")]
         public double? Scale { get; set; }
         public string Table { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName("tag")]
+        public string? Tag { get; set; }
+        public string? TagName { get; set; }
         public bool Writable { get; set; }
     }
     public sealed class ReconnectConfiguration

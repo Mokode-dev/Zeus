@@ -22,7 +22,7 @@
 ## ✨ 特性
 
 - 🔌 **通道** — 串口、TCP、UDP 客户端 / 服务端、虚拟通道，同一套 API
-- 📡 **协议** — 自定义帧、Modbus RTU / TCP、Mitsubishi MC 1E/3E/4E Binary/ASCII、Siemens S7 TCP、Omron FINS UDP/TCP，可挂虚拟从站/PLC
+- 📡 **协议** — 自定义帧、Modbus RTU / TCP、Mitsubishi MC 1E/3E/4E Binary/ASCII、Siemens S7 TCP、Omron FINS UDP/TCP、Allen-Bradley EtherNet/IP CIP，可挂虚拟从站/PLC
 - 📊 **采集** — 声明点表后按间隔自动轮询，保留最近成功采样，计算报警限；可写点按名称写回
 - 🧭 **追踪** — 通道级 TX/RX 报文事件、滚动内存记录器、文件日志器与 `ILogger` 结构化日志
 - 🖥️ **界面无关** — 业务代码不绑死 WinForms 或 WPF；点表可直接绑定文本、历史趋势、报警色、启用状态和写回按钮
@@ -65,6 +65,7 @@ app.Points.BindTo("temperature", temperatureLabel);
 | `Zeus.Protocols.Mc` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Mc.svg)](https://www.nuget.org/packages/Zeus.Protocols.Mc) | Mitsubishi MC 1E/3E/4E Binary/ASCII，3E/4E 随机读写 |
 | `Zeus.Protocols.S7` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.S7.svg)](https://www.nuget.org/packages/Zeus.Protocols.S7) | Siemens S7 TCP，读写 DB/I/Q/M 区常用类型 |
 | `Zeus.Protocols.Fins` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Fins.svg)](https://www.nuget.org/packages/Zeus.Protocols.Fins) | Omron FINS UDP/TCP，读写 CIO/WR/HR/AR/DM/EM/TIM-CNT 区 |
+| `Zeus.Protocols.EtherNetIp` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.EtherNetIp.svg)](https://www.nuget.org/packages/Zeus.Protocols.EtherNetIp) | Allen-Bradley EtherNet/IP CIP，读写标量标签与 CIP 属性 |
 | `Zeus.Configuration` | [![nuget](https://img.shields.io/nuget/v/Zeus.Configuration.svg)](https://www.nuget.org/packages/Zeus.Configuration) | JSON 工程配置 |
 | `Zeus.Presentation.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | UI 无关绑定抽象、`PointBindingSource` 与点表快照绑定 |
 | `Zeus.Presentation.WinForms` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg)](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | WinForms 绑定、点表报警色与写回按钮绑定 |

@@ -43,6 +43,10 @@ public sealed class PublicApiBaselineTests
     [Fact]
     public void Fins_matches_baseline() => AssertMatchesBaseline(typeof(FinsDevice).Assembly);
 
+    /// <summary>Allen-Bradley EtherNet/IP 公开表面。</summary>
+    [Fact]
+    public void EtherNetIp_matches_baseline() => AssertMatchesBaseline(typeof(EtherNetIpDevice).Assembly);
+
     /// <summary>Mitsubishi MC 公开表面。</summary>
     [Fact]
     public void Mc_matches_baseline() => AssertMatchesBaseline(typeof(McDevice).Assembly);

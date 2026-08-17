@@ -107,7 +107,7 @@ public sealed class DeviceConfiguration
     /// <summary>绑定的通道名。</summary>
     public string Channel { get; set; } = string.Empty;
 
-    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c> 或 <c>omron-fins</c>。</summary>
+    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c> 或 <c>ethernet-ip</c>。</summary>
     public string Type { get; set; } = "modbus-rtu";
 
     /// <summary>从站/单元标识，默认 1。</summary>
@@ -200,6 +200,13 @@ public sealed class PointConfiguration
     /// <summary>点名。</summary>
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>EtherNet/IP 标签名。省略时使用 <see cref="Name"/>。</summary>
+    public string? TagName { get; set; }
+
+    /// <summary>EtherNet/IP 标签名短写，JSON 字段名为 <c>tag</c>。</summary>
+    [JsonPropertyName("tag")]
+    public string? Tag { get; set; }
+
     /// <summary>
     /// Modbus 数据区：<c>holding</c>、<c>input</c>、<c>coil</c>、<c>discrete</c>。
     /// Mitsubishi MC 也可兼容使用 <c>D</c>、<c>M</c> 等软元件代码；推荐改用 <see cref="DeviceCode"/>。
@@ -231,7 +238,7 @@ public sealed class PointConfiguration
     [JsonPropertyName("bit")]
     public int BitOffset { get; set; }
 
-    /// <summary>Siemens S7 / Omron FINS 数据类型。FINS 支持 <c>bit</c>、<c>word</c>、<c>int16</c>、<c>uint32</c>、<c>int32</c>、<c>real</c>。</summary>
+    /// <summary>Siemens S7 / Omron FINS / EtherNet/IP 数据类型。EtherNet/IP 支持 <c>bool</c>、<c>sint</c>、<c>int</c>、<c>dint</c>、<c>lint</c>、<c>usint</c>、<c>uint</c>、<c>udint</c>、<c>ulint</c>、<c>real</c>、<c>lreal</c>。</summary>
     public string DataType { get; set; } = "word";
 
     /// <summary>

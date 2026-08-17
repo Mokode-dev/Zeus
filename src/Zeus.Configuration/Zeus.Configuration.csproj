@@ -18,6 +18,7 @@
     <ProjectReference Include="..\Zeus.Protocols.Fins\Zeus.Protocols.Fins.csproj" />
     <ProjectReference Include="..\Zeus.Protocols.Modbus\Zeus.Protocols.Modbus.csproj" />
     <ProjectReference Include="..\Zeus.Protocols.S7\Zeus.Protocols.S7.csproj" />
+    <ProjectReference Include="..\Zeus.Protocols.EtherNetIp\Zeus.Protocols.EtherNetIp.csproj" />
   </ItemGroup>
 
 </Project>

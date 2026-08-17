@@ -1,5 +1,24 @@
 # 更新记录
 
+## 0.8.0
+
+新增 Allen-Bradley EtherNet/IP CIP 协议栈，覆盖 Register Session、SendRRData、CIP 标量标签读写、CIP 属性访问、点表采集、点名写回、虚拟 PLC、JSON 配置与控制台示例。
+
+### 包含
+
+- EtherNet/IP：新增 `Zeus.Protocols.EtherNetIp`，支持 TCP 44818 上的 Register Session 与 SendRRData
+- CIP 标签：支持 Read Tag / Write Tag，覆盖 Bool、SInt、Int、DInt、LInt、USInt、UInt、UDInt、ULInt、Real、LReal 标量类型
+- CIP 属性：支持 Get Attribute Single / Set Attribute Single，便于访问标准对象或设备自定义对象
+- 点表与写回：支持标签点工程值缩放、报警限、周期采集和按点名写回
+- 虚拟 PLC：新增 `EtherNetIpSlaveResponder` 与 `EtherNetIpSlaveMemory`，无硬件即可验证标签读写和点表采集
+- 配置：JSON 支持声明 `ethernet-ip` 设备、`responder: "ethernet-ip"` 虚拟 PLC 和 `tag` / `tagName` 标签点
+- 示例与文档：新增 EtherNet/IP 控制台示例、指南、NuGet 安装说明和公开 API 基线
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.7 已发布的类型、成员和扩展方法签名
+- `0.8.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.7.0
 
 新增完整 Omron FINS 协议栈，覆盖 FINS/UDP、FINS/TCP、点表采集、点名写回、虚拟 PLC、JSON 配置与现场示例配置。

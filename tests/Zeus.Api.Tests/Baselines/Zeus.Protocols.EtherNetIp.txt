@@ -1,0 +1,107 @@
+namespace Zeus
+{
+    public sealed class EtherNetIpClient : System.IAsyncDisposable
+    {
+        public EtherNetIpClient(Zeus.IChannel channel, Zeus.EtherNetIpOptions? options = null, System.TimeSpan? timeout = default) { }
+        public Zeus.IChannel Channel { get; }
+        public Zeus.EtherNetIpOptions Options { get; }
+        public uint SessionHandle { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<byte[]> ExecuteCipAsync(byte service, System.ReadOnlyMemory<byte> path, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<byte[]> GetAttributeSingleAsync(ushort classId, uint instanceId, ushort attributeId, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<object> ReadTagAsync(string tagName, Zeus.EtherNetIpDataType dataType, ushort elementCount = 1, double? scale = default, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SetAttributeSingleAsync(ushort classId, uint instanceId, ushort attributeId, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteTagAsync(string tagName, Zeus.EtherNetIpDataType dataType, object value, double? scale = default, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public enum EtherNetIpDataType : ushort
+    {
+        Bool = 193,
+        SInt = 194,
+        Int = 195,
+        DInt = 196,
+        LInt = 197,
+        USInt = 198,
+        UInt = 199,
+        UDInt = 200,
+        ULInt = 201,
+        Real = 202,
+        LReal = 203,
+    }
+    public sealed class EtherNetIpDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
+    {
+        public EtherNetIpDevice(string name, Zeus.IChannel channel, Zeus.EtherNetIpOptions? options = null, System.TimeSpan? timeout = default, Zeus.EtherNetIpPointMap? pointMap = null) { }
+        public Zeus.EtherNetIpClient Client { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<byte[]> ExecuteCipAsync(byte service, System.ReadOnlyMemory<byte> path, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<byte[]> GetAttributeSingleAsync(ushort classId, uint instanceId, ushort attributeId, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<object> ReadTagAsync(string tagName, Zeus.EtherNetIpDataType dataType, ushort elementCount = 1, double? scale = default, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SetAttributeSingleAsync(ushort classId, uint instanceId, ushort attributeId, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteTagAsync(string tagName, Zeus.EtherNetIpDataType dataType, object value, double? scale = default, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class EtherNetIpException : Zeus.ZeusProtocolException
+    {
+        public EtherNetIpException(string message, uint? encapsulationStatus = default, byte? generalStatus = default, System.Collections.Generic.IReadOnlyList<ushort>? additionalStatus = null) { }
+        public System.Collections.Generic.IReadOnlyList<ushort> AdditionalStatus { get; }
+        public uint? EncapsulationStatus { get; }
+        public byte? GeneralStatus { get; }
+    }
+    public sealed class EtherNetIpOptions
+    {
+        public EtherNetIpOptions() { }
+        public ushort CpfTimeout { get; set; }
+        public ushort ProtocolVersion { get; set; }
+    }
+    public sealed class EtherNetIpPointMap
+    {
+        public EtherNetIpPointMap() { }
+        public Zeus.EtherNetIpPointMap Bool(string name, string tagName) { }
+        public Zeus.EtherNetIpPointMap DInt(string name, string tagName, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.EtherNetIpPointMap Int(string name, string tagName, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.EtherNetIpPointMap Real(string name, string tagName, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.EtherNetIpPointMap Tag(string name, string tagName, Zeus.EtherNetIpDataType dataType, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.EtherNetIpPointMap UDInt(string name, string tagName, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.EtherNetIpPointMap UInt(string name, string tagName, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.EtherNetIpPointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
+        public Zeus.EtherNetIpPointMap Writable(string name) { }
+    }
+    public sealed class EtherNetIpPointSpec
+    {
+        public Zeus.PointAlarmLimits? AlarmLimits { get; }
+        public Zeus.EtherNetIpDataType DataType { get; }
+        public Zeus.PointValueKind Kind { get; }
+        public string Name { get; }
+        public double? Scale { get; }
+        public string TagName { get; }
+        public bool Writable { get; }
+    }
+    public sealed class EtherNetIpSlaveMemory
+    {
+        public EtherNetIpSlaveMemory() { }
+        public Zeus.EtherNetIpTagValue GetTag(string tagName) { }
+        public void SetAttribute(ushort classId, uint instanceId, ushort attributeId, System.ReadOnlySpan<byte> value) { }
+        public void SetTag(string tagName, Zeus.EtherNetIpDataType dataType, object value) { }
+        public bool TryGetAttribute(ushort classId, uint instanceId, ushort attributeId, out byte[] value) { }
+        public bool TryGetTag(string tagName, out Zeus.EtherNetIpTagValue value) { }
+    }
+    public sealed class EtherNetIpSlaveResponder : Zeus.IVirtualResponder
+    {
+        public EtherNetIpSlaveResponder(Zeus.EtherNetIpSlaveMemory? memory = null) { }
+        public Zeus.EtherNetIpSlaveMemory Memory { get; }
+        public System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request) { }
+    }
+    public sealed class EtherNetIpTagValue
+    {
+        public Zeus.EtherNetIpDataType DataType { get; }
+        public object Value { get; }
+    }
+    public static class ZeusHostBuilderEtherNetIpExtensions
+    {
+        public static Zeus.EtherNetIpDevice AddAllenBradleyEtherNetIp(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.EtherNetIpOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.EtherNetIpPointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddAllenBradleyEtherNetIp(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.EtherNetIpOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.EtherNetIpPointMap>? points = null) { }
+        public static Zeus.EtherNetIpDevice AddEtherNetIp(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.EtherNetIpOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.EtherNetIpPointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddEtherNetIp(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.EtherNetIpOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.EtherNetIpPointMap>? points = null) { }
+    }
+}

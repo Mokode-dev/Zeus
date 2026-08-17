@@ -190,13 +190,17 @@ public static class ZeusConfigurationLoader
             {
                 ValidateS7Device(device, path);
             }
+            else if (IsEtherNetIpDeviceType(type))
+            {
+                ValidateEtherNetIpDevice(device, path);
+            }
             else if (IsMcDeviceType(type))
             {
                 ValidateMcDevice(device, path);
             }
             else
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc、siemens-s7、omron-fins。");
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc、siemens-s7、omron-fins、ethernet-ip。");
             }
         }
     }
@@ -209,12 +213,12 @@ public static class ZeusConfigurationLoader
         }
 
         var responder = Normalize(channel.Responder);
-        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins"))
+        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley"))
         {
-            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins，或省略以回显写入。");
+            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、ethernet-ip，或省略以回显写入。");
         }
 
-        if (responder is "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7")
+        if (responder is "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley")
         {
             return;
         }
@@ -401,6 +405,16 @@ public static class ZeusConfigurationLoader
         }
 
         ValidateFinsPoints(device.Points, path);
+    }
+
+    private static void ValidateEtherNetIpDevice(DeviceConfiguration device, string path)
+    {
+        if (device.TimeoutMilliseconds is <= 0)
+        {
+            throw new ZeusException($"{path}.timeoutMilliseconds 必须大于 0。");
+        }
+
+        ValidateEtherNetIpPoints(device.Points, path);
     }
 
     private static void ValidateMcPoints(List<PointConfiguration> points, string devicePath, McFrameType frameType)
@@ -610,6 +624,57 @@ public static class ZeusConfigurationLoader
         }
     }
 
+    private static void ValidateEtherNetIpPoints(List<PointConfiguration> points, string devicePath)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var path = $"{devicePath}.points[{i}]";
+            EnsureName(point.Name, path);
+            if (!names.Add(point.Name.Trim()))
+            {
+                throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
+            }
+
+            if (point.TagName is not null && string.IsNullOrWhiteSpace(point.TagName))
+            {
+                throw new ZeusException($"{path}.tagName 不能为空字符串。");
+            }
+
+            if (point.Tag is not null && string.IsNullOrWhiteSpace(point.Tag))
+            {
+                throw new ZeusException($"{path}.tag 不能为空字符串。");
+            }
+
+            var dataType = ParseEtherNetIpDataType(point.DataType, $"{path}.dataType");
+            if (point.Scale is <= 0)
+            {
+                throw new ZeusException($"{path}.scale 必须大于 0。");
+            }
+
+            ValidateAlarmLimit(point.LowAlarmLimit, $"{path}.lowAlarmLimit");
+            ValidateAlarmLimit(point.HighAlarmLimit, $"{path}.highAlarmLimit");
+            if (point.LowAlarmLimit > point.HighAlarmLimit)
+            {
+                throw new ZeusException($"{path}.lowAlarmLimit 不能高于 highAlarmLimit。");
+            }
+
+            if (dataType == EtherNetIpDataType.Bool)
+            {
+                if (point.Scale is not null)
+                {
+                    throw new ZeusException($"{path} 是 EtherNet/IP bool 点，不能配置 scale。");
+                }
+
+                if (point.LowAlarmLimit is not null || point.HighAlarmLimit is not null)
+                {
+                    throw new ZeusException($"{path} 是 EtherNet/IP bool 点，不能配置 lowAlarmLimit 或 highAlarmLimit。");
+                }
+            }
+        }
+    }
+
     private static void ValidateAlarmLimit(double? value, string path)
     {
         if (value is { } number && !double.IsFinite(number))
@@ -646,6 +711,9 @@ public static class ZeusConfigurationLoader
 
     internal static bool IsFinsTcpDeviceType(string type)
         => type is "fins-tcp" or "finstcp" or "omron-fins-tcp" or "omronfinstcp";
+
+    internal static bool IsEtherNetIpDeviceType(string type)
+        => type is "ethernet-ip" or "ethernetip" or "ether-net-ip" or "cip" or "ab-cip" or "abcip" or "allen-bradley" or "allenbradley" or "ab-ethernet-ip" or "abethernetip";
 
     internal static McFrameType ParseMcFrameType(string? value, string path)
     {
@@ -771,6 +839,26 @@ public static class ZeusConfigurationLoader
             "tc" or "timcnt" or "timercounter" or "timer" or "counter" => bit ? FinsMemoryAreaCode.TimerCounterFlag : FinsMemoryAreaCode.TimerCounterValue,
             "em" or "currentem" or "emcurrent" => bit ? FinsMemoryAreaCode.CurrentEmBit : FinsMemoryAreaCode.CurrentEmWord,
             _ => throw new ZeusException($"{path}「{value}」不受支持。FINS 可选 cio、wr、hr、ar、dm、tc、em、em0–em18。")
+        };
+    }
+
+    internal static EtherNetIpDataType ParseEtherNetIpDataType(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "dint" or "int32" => EtherNetIpDataType.DInt,
+            "bool" or "boolean" or "bit" => EtherNetIpDataType.Bool,
+            "sint" or "int8" or "sbyte" => EtherNetIpDataType.SInt,
+            "int" or "int16" or "short" => EtherNetIpDataType.Int,
+            "lint" or "int64" or "long" => EtherNetIpDataType.LInt,
+            "usint" or "uint8" or "byte" => EtherNetIpDataType.USInt,
+            "uint" or "uint16" or "ushort" or "word" => EtherNetIpDataType.UInt,
+            "udint" or "uint32" or "dword" => EtherNetIpDataType.UDInt,
+            "ulint" or "uint64" or "ulong" => EtherNetIpDataType.ULInt,
+            "real" or "float" or "single" => EtherNetIpDataType.Real,
+            "lreal" or "double" => EtherNetIpDataType.LReal,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。EtherNet/IP 可选 bool、sint、int、dint、lint、usint、uint、udint、ulint、real、lreal。")
         };
     }
 

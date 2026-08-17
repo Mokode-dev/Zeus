@@ -28,6 +28,7 @@ await app.StartAsync();
 | `Zeus.Protocols.Mc` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Mc.svg)](https://www.nuget.org/packages/Zeus.Protocols.Mc) | Mitsubishi MC 1E/3E/4E Binary/ASCII，3E/4E 随机读写 |
 | `Zeus.Protocols.S7` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.S7.svg)](https://www.nuget.org/packages/Zeus.Protocols.S7) | Siemens S7 TCP，读写 DB/I/Q/M 区常用类型 |
 | `Zeus.Protocols.Fins` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Fins.svg)](https://www.nuget.org/packages/Zeus.Protocols.Fins) | Omron FINS UDP/TCP，读写 CIO/WR/HR/AR/DM/EM/TIM-CNT 区 |
+| `Zeus.Protocols.EtherNetIp` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.EtherNetIp.svg)](https://www.nuget.org/packages/Zeus.Protocols.EtherNetIp) | Allen-Bradley EtherNet/IP CIP，读写标量标签与 CIP 属性 |
 | `Zeus.Configuration` | [![nuget](https://img.shields.io/nuget/v/Zeus.Configuration.svg)](https://www.nuget.org/packages/Zeus.Configuration) | JSON 工程配置 |
 | `Zeus.Presentation.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | UI 无关绑定抽象、`PointBindingSource` 与点表快照绑定 |
 | `Zeus.Presentation.WinForms` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg)](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | WinForms 绑定、点表报警色与写回按钮绑定 |
@@ -35,7 +36,7 @@ await app.StartAsync();
 
 点表支持最近成功采样历史、报警限，以及按点名写回可写点，适合在界面上直接显示当前值、采集错误和高低报，并下发设定值。
 
-0.7 起支持 Omron FINS UDP/TCP、FINS/TCP 节点地址握手、FINS 虚拟 PLC 与 JSON 配置；0.6 起支持点表 `PointBindingSource`、`PointHistoryBindingSource`、快照绑定、历史绑定、报警色绑定和写回按钮绑定；0.5 起支持 TCP 服务端、Mitsubishi MC、Siemens S7 TCP 与虚拟 PLC；0.4 起支持 Modbus 功能码 17、UDP 服务端、`ChannelTraceLogger` 与 `BindEnabled`；0.3 起可写点走 `Points.WriteAsync`；0.2 起宿主停止后可再次启动，通道故障默认自动重连，运行中可增删通道与设备，JSON 监视会同步拓扑。
+0.8 起支持 Allen-Bradley EtherNet/IP CIP、标签读写、CIP 属性访问、虚拟 PLC 与 JSON 配置；0.7 起支持 Omron FINS UDP/TCP、FINS/TCP 节点地址握手、FINS 虚拟 PLC 与 JSON 配置；0.6 起支持点表 `PointBindingSource`、`PointHistoryBindingSource`、快照绑定、历史绑定、报警色绑定和写回按钮绑定；0.5 起支持 TCP 服务端、Mitsubishi MC、Siemens S7 TCP 与虚拟 PLC；0.4 起支持 Modbus 功能码 17、UDP 服务端、`ChannelTraceLogger` 与 `BindEnabled`；0.3 起可写点走 `Points.WriteAsync`；0.2 起宿主停止后可再次启动，通道故障默认自动重连，运行中可增删通道与设备，JSON 监视会同步拓扑。
 
 通道支持 `PacketTraced` 报文追踪事件与 `ChannelTraceBuffer` 滚动内存记录器，可直接接入通信诊断窗口或现场故障快照。
 
