@@ -190,6 +190,94 @@ public sealed class PresentationBindingTests
     }
 
     /// <summary>
+    /// BindHistory 应立即推送当前历史，并且只在成功采样进入历史时继续推送。
+    /// </summary>
+    [Fact]
+    public void BindHistory_PushesCurrentHistoryAndSuccessfulChanges()
+    {
+        var table = new PointTable();
+        table.Register(new PointDefinition(
+            "temperature",
+            "oven",
+            PointValueKind.Double,
+            new PointAlarmLimits(high: 10),
+            writable: false));
+        table.Publish("oven.temperature", 8d);
+        table.Publish("oven.temperature", 9d);
+
+        var histories = new List<IReadOnlyList<PointSnapshot>>();
+        using var binding = table.BindHistory(
+            "temperature",
+            ImmediateUiDispatcher.Instance,
+            history => histories.Add(history.ToArray()));
+
+        Assert.Single(histories);
+        Assert.Equal(new object?[] { 8d, 9d }, histories[0].Select(item => item.Value));
+
+        table.PublishError("oven.temperature", "sensor offline");
+        Assert.Single(histories);
+
+        table.Publish("oven.temperature", 12d);
+
+        Assert.Equal(2, histories.Count);
+        Assert.Equal(new object?[] { 8d, 9d, 12d }, histories[^1].Select(item => item.Value));
+        Assert.Equal(PointAlarmState.High, histories[^1][^1].AlarmState);
+
+        binding.Dispose();
+        table.Publish("oven.temperature", 7d);
+        Assert.Equal(2, histories.Count);
+    }
+
+    /// <summary>
+    /// PointHistoryBindingSource 应投影历史、最新值和最新报警状态，并跟随点表历史容量裁剪。
+    /// </summary>
+    [Fact]
+    public void PointHistoryBindingSource_ProjectsHistoryProperties()
+    {
+        var table = new PointTable(historyCapacity: 2);
+        table.Register(new PointDefinition(
+            "temperature",
+            "oven",
+            PointValueKind.Double,
+            new PointAlarmLimits(high: 10),
+            writable: false));
+        table.Publish("oven.temperature", 8d);
+
+        using var source = table.AsHistoryBindingSource("oven.temperature", ImmediateUiDispatcher.Instance);
+        var names = new List<string>();
+        source.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is not null)
+            {
+                names.Add(e.PropertyName);
+            }
+        };
+
+        Assert.Equal(1, source.Count);
+        Assert.True(source.HasSamples);
+        Assert.Equal(8d, source.LatestValue);
+        Assert.Equal(PointAlarmState.Normal, source.LatestAlarmState);
+
+        table.Publish("oven.temperature", 12d);
+
+        Assert.Equal(2, source.Count);
+        Assert.Equal(12d, source.LatestValue);
+        Assert.Equal(PointAlarmState.High, source.LatestAlarmState);
+        Assert.True(source.IsLatestAlarmed);
+        Assert.Contains(nameof(PointHistoryBindingSource.History), names);
+        Assert.Contains(nameof(PointHistoryBindingSource.LatestAlarmState), names);
+
+        table.Publish("oven.temperature", 6d);
+
+        Assert.Equal(new object?[] { 12d, 6d }, source.History.Select(item => item.Value));
+        Assert.Equal(6d, source.LatestValue);
+
+        source.Dispose();
+        table.Publish("oven.temperature", 7d);
+        Assert.Equal(6d, source.LatestValue);
+    }
+
+    /// <summary>
     /// 点表 BindEnabled 默认只在点可写且当前无错误时启用。
     /// </summary>
     [Fact]

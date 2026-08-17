@@ -37,6 +37,7 @@ public partial class MainWindow : Window
         _points.BindTo("temperature", TemperatureText, FormatTemperature);
         _points.BindAlarmBackground("temperature", TemperatureText);
         _points.BindSnapshot("temperature", AlarmText, snapshot => AlarmText.Text = snapshot.AlarmState.ToString());
+        _points.BindHistory("temperature", this, history => HistoryText.Text = FormatHistory(history));
     }
 
     /// <summary>
@@ -72,5 +73,18 @@ public partial class MainWindow : Window
         }
 
         return Convert.ToDouble(value, CultureInfo.InvariantCulture).ToString("0.0", CultureInfo.InvariantCulture) + " C";
+    }
+
+    private static string FormatHistory(IReadOnlyList<PointSnapshot> history)
+    {
+        if (history.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var items = history
+            .TakeLast(4)
+            .Select(snapshot => FormatTemperature(snapshot.Value) + " " + snapshot.AlarmState);
+        return string.Join(" -> ", items);
     }
 }

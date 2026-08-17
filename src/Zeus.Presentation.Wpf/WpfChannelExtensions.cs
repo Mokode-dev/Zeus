@@ -134,6 +134,39 @@ public static class WpfChannelExtensions
     }
 
     /// <summary>
+    /// 把点表中指定点的最近成功采样历史推到界面线程。
+    /// </summary>
+    /// <param name="table">宿主点表。</param>
+    /// <param name="pointName">短名或 <c>设备.点</c>。</param>
+    /// <param name="element">用于取得 <c>Dispatcher</c> 的窗口或控件。</param>
+    /// <param name="setHistory">在界面线程上接收历史，顺序从旧到新。</param>
+    public static IUiBinding BindHistory(
+        this IPointTable table,
+        string pointName,
+        FrameworkElement element,
+        Action<IReadOnlyList<PointSnapshot>> setHistory)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        ArgumentNullException.ThrowIfNull(setHistory);
+        return table.BindHistory(pointName, new WpfUiDispatcher(element.Dispatcher), setHistory);
+    }
+
+    /// <summary>
+    /// 创建单个点的历史采样投影，属性变更封送到该元素所在的界面线程。
+    /// </summary>
+    /// <param name="table">宿主点表。</param>
+    /// <param name="pointName">短名或 <c>设备.点</c>。</param>
+    /// <param name="element">用于取得 <c>Dispatcher</c> 的窗口或控件。</param>
+    public static PointHistoryBindingSource AsHistoryBindingSource(
+        this IPointTable table,
+        string pointName,
+        FrameworkElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return table.AsHistoryBindingSource(pointName, new WpfUiDispatcher(element.Dispatcher));
+    }
+
+    /// <summary>
     /// 按点快照控制元素 <see cref="UIElement.IsEnabled"/>。默认仅可写且无错误时启用。
     /// </summary>
     /// <param name="table">宿主点表。</param>

@@ -2,11 +2,12 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Zeus WPF QuickStart"
-        Height="340"
+        Height="380"
         Width="520"
         WindowStartupLocation="CenterScreen">
     <Grid Margin="16">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -37,8 +38,11 @@
         <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="报警" />
         <TextBlock x:Name="AlarmText" Grid.Row="5" Grid.Column="1" VerticalAlignment="Center" />
 
+        <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="历史" />
+        <TextBlock x:Name="HistoryText" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center" />
+
         <Button x:Name="ToggleTemperatureButton"
-                Grid.Row="6"
+                Grid.Row="7"
                 Grid.Column="1"
                 Margin="0,8,0,0"
                 Content="模拟高温"

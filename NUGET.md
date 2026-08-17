@@ -34,7 +34,7 @@ await app.StartAsync();
 
 点表支持最近成功采样历史、报警限，以及按点名写回可写点，适合在界面上直接显示当前值、采集错误和高低报，并下发设定值。
 
-0.6 起支持点表 `PointBindingSource`、快照绑定、报警色绑定和写回按钮绑定；0.5 起支持 TCP 服务端、Mitsubishi MC、Siemens S7 TCP 与虚拟 PLC；0.4 起支持 Modbus 功能码 17、UDP 服务端、`ChannelTraceLogger` 与 `BindEnabled`；0.3 起可写点走 `Points.WriteAsync`；0.2 起宿主停止后可再次启动，通道故障默认自动重连，运行中可增删通道与设备，JSON 监视会同步拓扑。
+0.6 起支持点表 `PointBindingSource`、`PointHistoryBindingSource`、快照绑定、历史绑定、报警色绑定和写回按钮绑定；0.5 起支持 TCP 服务端、Mitsubishi MC、Siemens S7 TCP 与虚拟 PLC；0.4 起支持 Modbus 功能码 17、UDP 服务端、`ChannelTraceLogger` 与 `BindEnabled`；0.3 起可写点走 `Points.WriteAsync`；0.2 起宿主停止后可再次启动，通道故障默认自动重连，运行中可增删通道与设备，JSON 监视会同步拓扑。
 
 0.2 起宿主停止后可再次启动；通道故障默认自动重连；运行中可增删通道与设备；JSON 监视会同步拓扑。
 

@@ -159,6 +159,45 @@ public static class WinFormsChannelExtensions
     }
 
     /// <summary>
+    /// 把点表中指定点的最近成功采样历史推到界面线程。
+    /// </summary>
+    /// <param name="table">宿主点表。</param>
+    /// <param name="pointName">短名或 <c>设备.点</c>。</param>
+    /// <param name="control">用于取得 UI 线程的控件。</param>
+    /// <param name="setHistory">在界面线程上接收历史，顺序从旧到新。</param>
+    public static IUiBinding BindHistory(
+        this IPointTable table,
+        string pointName,
+        Control control,
+        Action<IReadOnlyList<PointSnapshot>> setHistory)
+    {
+        ArgumentNullException.ThrowIfNull(control);
+        ArgumentNullException.ThrowIfNull(setHistory);
+        return table.BindHistory(pointName, new WinFormsUiDispatcher(control), history =>
+        {
+            if (!control.IsDisposed)
+            {
+                setHistory(history);
+            }
+        });
+    }
+
+    /// <summary>
+    /// 创建单个点的历史采样投影，属性变更封送到该控件所在的界面线程。
+    /// </summary>
+    /// <param name="table">宿主点表。</param>
+    /// <param name="pointName">短名或 <c>设备.点</c>。</param>
+    /// <param name="control">用于取得 UI 线程的控件，通常是窗体本身。</param>
+    public static PointHistoryBindingSource AsHistoryBindingSource(
+        this IPointTable table,
+        string pointName,
+        Control control)
+    {
+        ArgumentNullException.ThrowIfNull(control);
+        return table.AsHistoryBindingSource(pointName, new WinFormsUiDispatcher(control));
+    }
+
+    /// <summary>
     /// 按点快照控制控件 <see cref="Control.Enabled"/>。默认仅可写且无错误时启用。
     /// </summary>
     /// <param name="table">宿主点表。</param>

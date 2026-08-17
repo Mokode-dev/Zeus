@@ -7,6 +7,7 @@
 ### 包含
 
 - 界面绑定：新增 `PointBindingSource`，投影单点的 `Value`、`Text`、`Error`、`AlarmState`、`IsAlarmed`、`UpdatedAt` 与 `Writable`
+- 界面绑定：新增 `PointHistoryBindingSource` 与 `BindHistory`，可把点表最近成功采样历史推到趋势图或报警时间线
 - 界面绑定：新增 `IPointTable.BindSnapshot`，可把完整 `PointSnapshot` 封送到 UI 线程
 - 界面绑定：新增点表级 `BindEnabled`，默认按“可写且无错误”控制按钮或控件启用状态
 - WinForms / WPF：新增点表 `AsBindingSource`、报警前景/背景色绑定和 `BindWriteBack` 按钮写回辅助方法

@@ -53,6 +53,62 @@ public static class PointTableUiExtensions
     }
 
     /// <summary>
+    /// 把指定点的最近成功采样历史推到界面，订阅时会立即推送当前历史。
+    /// </summary>
+    /// <param name="table">宿主点表。</param>
+    /// <param name="pointName">短名或 <c>设备.点</c>。</param>
+    /// <param name="dispatcher">界面调度器。</param>
+    /// <param name="setHistory">在界面线程上接收历史，顺序从旧到新。</param>
+    /// <returns>绑定句柄。</returns>
+    public static IUiBinding BindHistory(
+        this IPointTable table,
+        string pointName,
+        IUiDispatcher dispatcher,
+        Action<IReadOnlyList<PointSnapshot>> setHistory)
+    {
+        ArgumentNullException.ThrowIfNull(table);
+        ArgumentNullException.ThrowIfNull(dispatcher);
+        ArgumentNullException.ThrowIfNull(setHistory);
+        var key = PointUiFormatting.NormalizePointName(pointName);
+
+        void Apply(IReadOnlyList<PointSnapshot> history)
+        {
+            if (dispatcher.CheckAccess())
+            {
+                setHistory(history);
+                return;
+            }
+
+            dispatcher.Post(() => setHistory(history));
+        }
+
+        void PushHistory(PointDefinition definition)
+        {
+            Apply(table.GetHistory(definition.QualifiedName).ToArray());
+        }
+
+        void OnChanged(object? sender, PointChangedEventArgs e)
+        {
+            if (e.Current.Error is null && PointUiFormatting.Matches(e.Current.Definition, key))
+            {
+                PushHistory(e.Current.Definition);
+            }
+        }
+
+        if (table.All.FirstOrDefault(item => PointUiFormatting.Matches(item.Definition, key)) is { } existing)
+        {
+            PushHistory(existing.Definition);
+        }
+        else
+        {
+            Apply(Array.Empty<PointSnapshot>());
+        }
+
+        table.Changed += OnChanged;
+        return new DelegateUiBinding(() => table.Changed -= OnChanged);
+    }
+
+    /// <summary>
     /// 把指定点的值格式化为文本并推到界面。点尚无值时先推送空字符串。
     /// </summary>
     /// <param name="table">宿主点表。</param>
@@ -114,5 +170,20 @@ public static class PointTableUiExtensions
     {
         ArgumentNullException.ThrowIfNull(table);
         return new PointBindingSource(table, pointName, dispatcher, formatter);
+    }
+
+    /// <summary>
+    /// 创建单个点的历史采样投影，属性变更会封送到 <paramref name="dispatcher"/>。
+    /// </summary>
+    /// <param name="table">宿主点表。</param>
+    /// <param name="pointName">短名或 <c>设备.点</c>。</param>
+    /// <param name="dispatcher">界面调度器。测试可传入 <see cref="ImmediateUiDispatcher"/>。</param>
+    public static PointHistoryBindingSource AsHistoryBindingSource(
+        this IPointTable table,
+        string pointName,
+        IUiDispatcher? dispatcher = null)
+    {
+        ArgumentNullException.ThrowIfNull(table);
+        return new PointHistoryBindingSource(table, pointName, dispatcher);
     }
 }

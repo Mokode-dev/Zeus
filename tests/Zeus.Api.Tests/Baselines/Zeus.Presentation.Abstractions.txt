@@ -63,10 +63,27 @@ namespace Zeus
         public void Dispose() { }
         public System.Threading.Tasks.Task WriteAsync(object value, System.Threading.CancellationToken cancellationToken = default) { }
     }
+    public sealed class PointHistoryBindingSource : System.ComponentModel.INotifyPropertyChanged, System.IDisposable
+    {
+        public PointHistoryBindingSource(Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher? dispatcher = null) { }
+        public int Count { get; }
+        public bool HasSamples { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> History { get; }
+        public bool IsLatestAlarmed { get; }
+        public Zeus.PointSnapshot? Latest { get; }
+        public Zeus.PointAlarmState LatestAlarmState { get; }
+        public System.DateTimeOffset? LatestUpdatedAt { get; }
+        public object? LatestValue { get; }
+        public string PointName { get; }
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+        public void Dispose() { }
+    }
     public static class PointTableUiExtensions
     {
         public static Zeus.PointBindingSource AsBindingSource(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher? dispatcher = null, System.Func<object?, string>? formatter = null) { }
+        public static Zeus.PointHistoryBindingSource AsHistoryBindingSource(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher? dispatcher = null) { }
         public static Zeus.IUiBinding BindEnabled(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<bool> setEnabled, System.Func<Zeus.PointSnapshot, bool>? isEnabled = null) { }
+        public static Zeus.IUiBinding BindHistory(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot>> setHistory) { }
         public static Zeus.IUiBinding BindSnapshot(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<Zeus.PointSnapshot> setSnapshot) { }
         public static Zeus.IUiBinding BindText(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<string> setText, System.Func<object?, string>? formatter = null) { }
     }
