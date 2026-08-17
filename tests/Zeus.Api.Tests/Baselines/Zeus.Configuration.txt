@@ -28,12 +28,17 @@ namespace Zeus
         public string Encoding { get; set; }
         public string FrameType { get; set; }
         public int IoNumber { get; set; }
+        public int LocalTsap { get; set; }
         public int MonitoringTimer { get; set; }
         public string Name { get; set; }
         public int NetworkNumber { get; set; }
         public int PcNumber { get; set; }
         public System.Collections.Generic.List<Zeus.PointConfiguration> Points { get; set; }
+        public int Rack { get; set; }
+        public int? RemoteTsap { get; set; }
+        public int RequestedPduLength { get; set; }
         public int SerialNumber { get; set; }
+        public int Slot { get; set; }
         public int StationNumber { get; set; }
         public int? TimeoutMilliseconds { get; set; }
         public string Type { get; set; }
@@ -44,6 +49,12 @@ namespace Zeus
         public PointConfiguration() { }
         [System.Text.Json.Serialization.JsonConverter(typeof(Zeus.FlexibleInt32JsonConverter))]
         public int Address { get; set; }
+        public string? Area { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName("bit")]
+        public int BitOffset { get; set; }
+        public string DataType { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName("db")]
+        public int DbNumber { get; set; }
         public string? DeviceCode { get; set; }
         public double? HighAlarmLimit { get; set; }
         public double? LowAlarmLimit { get; set; }

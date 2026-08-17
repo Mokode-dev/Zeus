@@ -2,14 +2,15 @@
 
 ## 0.5.0
 
-补齐 TCP 服务端通道、Mitsubishi MC 协议与 Modbus 诊断能力，同时完善 JSON 配置声明。
+补齐 TCP 服务端通道、Mitsubishi MC、Siemens S7 与 Modbus 诊断能力，同时完善 JSON 配置声明。
 
 ### 包含
 
 - 通信：新增 `TcpServerChannel`、`TcpServerOptions`、`AddTcpServer` 与 `AddTcpServerAsync`，支持多客户端接收、最近客户端回复与广播
 - Modbus：新增功能码 07、08、11，支持异常状态、诊断回显和服务器 ID 读取
 - 三菱 MC：新增 `Zeus.Protocols.Mc`，支持 MC 1E/3E/4E Binary/ASCII、X/Y/M/D/W/R/ZR 常用软元件、3E/4E 随机读写和虚拟 PLC 联调
-- 配置：JSON 支持声明 Mitsubishi MC 设备、MC 虚拟 PLC、帧型、编码、3E/4E 路由字段，以及 MC 点表采集和按点名写回
+- Siemens S7：新增 `Zeus.Protocols.S7`，支持 S7 TCP 握手、Read/Write Var、DB/I/Q/M 区 Bool/Byte/Word/DWord/Int/DInt/Real 读写、点表采集、点名写回和虚拟 PLC 联调
+- 配置：JSON 支持声明 Mitsubishi MC 与 Siemens S7 设备、虚拟 PLC、协议选项、点表采集和按点名写回
 
 ### 兼容承诺
 

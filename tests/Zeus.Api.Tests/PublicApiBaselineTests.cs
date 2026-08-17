@@ -43,6 +43,10 @@ public sealed class PublicApiBaselineTests
     [Fact]
     public void Mc_matches_baseline() => AssertMatchesBaseline(typeof(McDevice).Assembly);
 
+    /// <summary>Siemens S7 公开表面。</summary>
+    [Fact]
+    public void S7_matches_baseline() => AssertMatchesBaseline(typeof(S7Device).Assembly);
+
     /// <summary>UI 无关绑定抽象公开表面。</summary>
     [Fact]
     public void PresentationAbstractions_matches_baseline() => AssertMatchesBaseline(typeof(IUiDispatcher).Assembly);

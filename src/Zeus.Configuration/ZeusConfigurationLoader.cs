@@ -182,13 +182,17 @@ public static class ZeusConfigurationLoader
             {
                 ValidatePoints(device.Points, path);
             }
+            else if (IsS7DeviceType(type))
+            {
+                ValidateS7Device(device, path);
+            }
             else if (IsMcDeviceType(type))
             {
                 ValidateMcDevice(device, path);
             }
             else
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc。");
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc、siemens-s7。");
             }
         }
     }
@@ -201,12 +205,12 @@ public static class ZeusConfigurationLoader
         }
 
         var responder = Normalize(channel.Responder);
-        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc"))
+        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7"))
         {
-            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc，或省略以回显写入。");
+            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7，或省略以回显写入。");
         }
 
-        if (responder is "mc" or "mitsubishi-mc" or "mitsubishimc")
+        if (responder is "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7")
         {
             return;
         }
@@ -337,6 +341,33 @@ public static class ZeusConfigurationLoader
         ValidateMcPoints(device.Points, path, frameType);
     }
 
+    private static void ValidateS7Device(DeviceConfiguration device, string path)
+    {
+        ValidateByte(device.Rack, $"{path}.rack");
+        if (device.Slot is < 0 or > 31)
+        {
+            throw new ZeusException($"{path}.slot 必须介于 0 与 31 之间。");
+        }
+
+        ValidateUInt16(device.LocalTsap, $"{path}.localTsap");
+        if (device.RemoteTsap is { } remoteTsap)
+        {
+            ValidateUInt16(remoteTsap, $"{path}.remoteTsap");
+        }
+
+        if (device.RequestedPduLength is < 128 or > 960)
+        {
+            throw new ZeusException($"{path}.requestedPduLength 必须介于 128 与 960 之间。");
+        }
+
+        if (device.TimeoutMilliseconds is <= 0)
+        {
+            throw new ZeusException($"{path}.timeoutMilliseconds 必须大于 0。");
+        }
+
+        ValidateS7Points(device.Points, path);
+    }
+
     private static void ValidateMcPoints(List<PointConfiguration> points, string devicePath, McFrameType frameType)
     {
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -391,6 +422,87 @@ public static class ZeusConfigurationLoader
         }
     }
 
+    private static void ValidateS7Points(List<PointConfiguration> points, string devicePath)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var path = $"{devicePath}.points[{i}]";
+            EnsureName(point.Name, path);
+            if (!names.Add(point.Name.Trim()))
+            {
+                throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
+            }
+
+            if (string.IsNullOrWhiteSpace(point.Area))
+            {
+                throw new ZeusException($"{path}.area 必须指定。S7 可选 db、m、i、q。");
+            }
+
+            var area = ParseS7Area(point.Area, $"{path}.area");
+            var dataType = ParseS7DataType(point.DataType, $"{path}.dataType");
+            if (point.Address is < 0 or > 0x1FFFFF)
+            {
+                throw new ZeusException($"{path}.address 必须介于 0 与 2097151 之间。");
+            }
+
+            if (area == S7Area.DataBlock)
+            {
+                if (point.DbNumber is <= 0 or > ushort.MaxValue)
+                {
+                    throw new ZeusException($"{path}.db 必须介于 1 与 65535 之间。");
+                }
+            }
+            else if (point.DbNumber != 0)
+            {
+                throw new ZeusException($"{path}.db 只能用于 S7 DB 区。");
+            }
+
+            if (dataType == S7DataType.Bool)
+            {
+                if (point.BitOffset is < 0 or > 7)
+                {
+                    throw new ZeusException($"{path}.bit 必须介于 0 与 7 之间。");
+                }
+            }
+            else if (point.BitOffset != 0)
+            {
+                throw new ZeusException($"{path}.bit 只能用于 S7 bool 点。");
+            }
+
+            if (point.Scale is <= 0)
+            {
+                throw new ZeusException($"{path}.scale 必须大于 0。");
+            }
+
+            ValidateAlarmLimit(point.LowAlarmLimit, $"{path}.lowAlarmLimit");
+            ValidateAlarmLimit(point.HighAlarmLimit, $"{path}.highAlarmLimit");
+            if (point.LowAlarmLimit > point.HighAlarmLimit)
+            {
+                throw new ZeusException($"{path}.lowAlarmLimit 不能高于 highAlarmLimit。");
+            }
+
+            if (dataType == S7DataType.Bool)
+            {
+                if (point.Scale is not null)
+                {
+                    throw new ZeusException($"{path} 是 S7 bool 点，不能配置 scale。");
+                }
+
+                if (point.LowAlarmLimit is not null || point.HighAlarmLimit is not null)
+                {
+                    throw new ZeusException($"{path} 是 S7 bool 点，不能配置 lowAlarmLimit 或 highAlarmLimit。");
+                }
+            }
+
+            if (point.Writable && area == S7Area.Inputs)
+            {
+                throw new ZeusException($"{path}.area 为 I 输入区，该区域只读，不能设置 writable: true。");
+            }
+        }
+    }
+
     private static void ValidateAlarmLimit(double? value, string path)
     {
         if (value is { } number && !double.IsFinite(number))
@@ -418,6 +530,9 @@ public static class ZeusConfigurationLoader
 
     internal static bool IsMcDeviceType(string type)
         => type is "mitsubishi-mc" or "mitsubishimc" or "mc" or "melsec-mc" or "melsecmc" or "mc-3e" or "mc3e";
+
+    internal static bool IsS7DeviceType(string type)
+        => type is "siemens-s7" or "siemenss7" or "s7" or "s7-comm" or "s7comm";
 
     internal static McFrameType ParseMcFrameType(string? value, string path)
     {
@@ -466,6 +581,35 @@ public static class ZeusConfigurationLoader
 
     internal static bool IsMcBitDeviceCode(McDeviceCode deviceCode)
         => deviceCode is McDeviceCode.InternalRelay or McDeviceCode.InputRelay or McDeviceCode.OutputRelay;
+
+    internal static S7Area ParseS7Area(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "db" or "datablock" or "data" => S7Area.DataBlock,
+            "m" or "marker" or "markers" or "merker" or "merkers" => S7Area.Merkers,
+            "i" or "input" or "inputs" => S7Area.Inputs,
+            "q" or "output" or "outputs" => S7Area.Outputs,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。可选 db、m、i、q。")
+        };
+    }
+
+    internal static S7DataType ParseS7DataType(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "bool" or "bit" => S7DataType.Bool,
+            "byte" or "b" => S7DataType.Byte,
+            "word" or "w" or "uint16" or "ushort" => S7DataType.Word,
+            "dword" or "dw" or "uint32" or "uint" => S7DataType.DWord,
+            "int" or "int16" or "short" => S7DataType.Int,
+            "dint" or "int32" => S7DataType.DInt,
+            "real" or "float" or "single" => S7DataType.Real,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。可选 bool、byte、word、dword、int、dint、real。")
+        };
+    }
 
     private static void ValidateByte(int value, string path)
     {

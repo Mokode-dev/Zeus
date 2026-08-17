@@ -107,7 +107,7 @@ public sealed class DeviceConfiguration
     /// <summary>绑定的通道名。</summary>
     public string Channel { get; set; } = string.Empty;
 
-    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c> 或 <c>mitsubishi-mc</c>。</summary>
+    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>mitsubishi-mc</c> 或 <c>siemens-s7</c>。</summary>
     public string Type { get; set; } = "modbus-rtu";
 
     /// <summary>从站/单元标识，默认 1。</summary>
@@ -140,6 +140,21 @@ public sealed class DeviceConfiguration
     /// <summary>MC 4E 序列号，默认 0。仅 Mitsubishi MC。</summary>
     public int SerialNumber { get; set; }
 
+    /// <summary>S7 机架号，默认 0。仅 Siemens S7。</summary>
+    public int Rack { get; set; }
+
+    /// <summary>S7 槽号，默认 1。仅 Siemens S7。</summary>
+    public int Slot { get; set; } = 1;
+
+    /// <summary>S7 本地 TSAP，默认 0x0100。仅 Siemens S7。</summary>
+    public int LocalTsap { get; set; } = 0x0100;
+
+    /// <summary>S7 远端 TSAP；省略时由 rack/slot 自动计算。仅 Siemens S7。</summary>
+    public int? RemoteTsap { get; set; }
+
+    /// <summary>S7 请求协商的 PDU 长度，默认 480。仅 Siemens S7。</summary>
+    public int RequestedPduLength { get; set; } = 480;
+
     /// <summary>周期采集点。</summary>
     public List<PointConfiguration> Points { get; set; } = [];
 }
@@ -167,6 +182,23 @@ public sealed class PointConfiguration
     /// <summary>0 基地址。</summary>
     [JsonConverter(typeof(FlexibleInt32JsonConverter))]
     public int Address { get; set; }
+
+    /// <summary>
+    /// Siemens S7 存储区：<c>db</c>、<c>m</c>、<c>i</c>、<c>q</c>。
+    /// Modbus 与 Mitsubishi MC 点忽略该字段。
+    /// </summary>
+    public string? Area { get; set; }
+
+    /// <summary>Siemens S7 DB 块号。JSON 字段名为 <c>db</c>。</summary>
+    [JsonPropertyName("db")]
+    public int DbNumber { get; set; }
+
+    /// <summary>Siemens S7 Bool 位偏移，0–7。JSON 字段名为 <c>bit</c>。</summary>
+    [JsonPropertyName("bit")]
+    public int BitOffset { get; set; }
+
+    /// <summary>Siemens S7 数据类型：<c>bool</c>、<c>byte</c>、<c>word</c>、<c>dword</c>、<c>int</c>、<c>dint</c>、<c>real</c>。</summary>
+    public string DataType { get; set; } = "word";
 
     /// <summary>
     /// 寄存器换算系数。例如 0.1 表示原始值乘 0.1 后写入点表。

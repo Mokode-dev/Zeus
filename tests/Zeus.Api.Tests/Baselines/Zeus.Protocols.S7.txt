@@ -1,0 +1,153 @@
+namespace Zeus
+{
+    public enum S7Area
+    {
+        Inputs = 0,
+        Outputs = 1,
+        Merkers = 2,
+        DataBlock = 3,
+    }
+    public sealed class S7Client : System.IAsyncDisposable
+    {
+        public S7Client(Zeus.IChannel channel, Zeus.S7Options? options = null, System.TimeSpan? timeout = default) { }
+        public Zeus.IChannel Channel { get; }
+        public Zeus.S7Options Options { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<bool> ReadBoolAsync(Zeus.S7Area area, int byteOffset, int bitOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<byte> ReadByteAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<byte[]> ReadBytesAsync(Zeus.S7Area area, int byteOffset, ushort length, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<int> ReadDIntAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<uint> ReadDWordAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<short> ReadIntAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<float> ReadRealAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort> ReadWordAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteBoolAsync(Zeus.S7Area area, int byteOffset, int bitOffset, bool value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteByteAsync(Zeus.S7Area area, int byteOffset, byte value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteBytesAsync(Zeus.S7Area area, int byteOffset, System.Collections.Generic.IReadOnlyList<byte> values, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDIntAsync(Zeus.S7Area area, int byteOffset, int value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDWordAsync(Zeus.S7Area area, int byteOffset, uint value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteIntAsync(Zeus.S7Area area, int byteOffset, short value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteRealAsync(Zeus.S7Area area, int byteOffset, float value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteWordAsync(Zeus.S7Area area, int byteOffset, ushort value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public enum S7DataType
+    {
+        Bool = 0,
+        Byte = 1,
+        Word = 2,
+        DWord = 3,
+        Int = 4,
+        DInt = 5,
+        Real = 6,
+    }
+    public sealed class S7Device : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
+    {
+        public S7Device(string name, Zeus.IChannel channel, Zeus.S7Options? options = null, System.TimeSpan? timeout = default, Zeus.S7PointMap? pointMap = null) { }
+        public Zeus.S7Client Client { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<bool> ReadBoolAsync(Zeus.S7Area area, int byteOffset, int bitOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<byte> ReadByteAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<int> ReadDIntAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<uint> ReadDWordAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<byte[]> ReadDataBlockBytesAsync(int dbNumber, int byteOffset, ushort length, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<short> ReadIntAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<byte[]> ReadMarkerBytesAsync(int byteOffset, ushort length, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<float> ReadRealAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort> ReadWordAsync(Zeus.S7Area area, int byteOffset, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteBoolAsync(Zeus.S7Area area, int byteOffset, int bitOffset, bool value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteByteAsync(Zeus.S7Area area, int byteOffset, byte value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDIntAsync(Zeus.S7Area area, int byteOffset, int value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDWordAsync(Zeus.S7Area area, int byteOffset, uint value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDataBlockBytesAsync(int dbNumber, int byteOffset, System.Collections.Generic.IReadOnlyList<byte> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteIntAsync(Zeus.S7Area area, int byteOffset, short value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteMarkerBytesAsync(int byteOffset, System.Collections.Generic.IReadOnlyList<byte> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteRealAsync(Zeus.S7Area area, int byteOffset, float value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteWordAsync(Zeus.S7Area area, int byteOffset, ushort value, int dbNumber = 0, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class S7Options
+    {
+        public S7Options() { }
+        public ushort LocalTsap { get; set; }
+        public byte Rack { get; set; }
+        public ushort? RemoteTsap { get; set; }
+        public ushort RequestedPduLength { get; set; }
+        public byte Slot { get; set; }
+    }
+    public sealed class S7PointMap
+    {
+        public S7PointMap() { }
+        public Zeus.S7PointMap DbBool(string name, int dbNumber, int byteOffset, int bitOffset) { }
+        public Zeus.S7PointMap DbByte(string name, int dbNumber, int byteOffset) { }
+        public Zeus.S7PointMap DbDInt(string name, int dbNumber, int byteOffset) { }
+        public Zeus.S7PointMap DbDInt(string name, int dbNumber, int byteOffset, double scale) { }
+        public Zeus.S7PointMap DbDWord(string name, int dbNumber, int byteOffset) { }
+        public Zeus.S7PointMap DbInt(string name, int dbNumber, int byteOffset) { }
+        public Zeus.S7PointMap DbInt(string name, int dbNumber, int byteOffset, double scale) { }
+        public Zeus.S7PointMap DbReal(string name, int dbNumber, int byteOffset) { }
+        public Zeus.S7PointMap DbReal(string name, int dbNumber, int byteOffset, double scale) { }
+        public Zeus.S7PointMap DbWord(string name, int dbNumber, int byteOffset) { }
+        public Zeus.S7PointMap DbWord(string name, int dbNumber, int byteOffset, double scale) { }
+        public Zeus.S7PointMap InputBool(string name, int byteOffset, int bitOffset) { }
+        public Zeus.S7PointMap InputByte(string name, int byteOffset) { }
+        public Zeus.S7PointMap InputDInt(string name, int byteOffset) { }
+        public Zeus.S7PointMap InputDWord(string name, int byteOffset) { }
+        public Zeus.S7PointMap InputInt(string name, int byteOffset) { }
+        public Zeus.S7PointMap InputReal(string name, int byteOffset) { }
+        public Zeus.S7PointMap InputWord(string name, int byteOffset) { }
+        public Zeus.S7PointMap MarkerBool(string name, int byteOffset, int bitOffset) { }
+        public Zeus.S7PointMap MarkerByte(string name, int byteOffset) { }
+        public Zeus.S7PointMap MarkerDInt(string name, int byteOffset) { }
+        public Zeus.S7PointMap MarkerDWord(string name, int byteOffset) { }
+        public Zeus.S7PointMap MarkerInt(string name, int byteOffset) { }
+        public Zeus.S7PointMap MarkerReal(string name, int byteOffset) { }
+        public Zeus.S7PointMap MarkerWord(string name, int byteOffset) { }
+        public Zeus.S7PointMap OutputBool(string name, int byteOffset, int bitOffset) { }
+        public Zeus.S7PointMap OutputByte(string name, int byteOffset) { }
+        public Zeus.S7PointMap OutputDInt(string name, int byteOffset) { }
+        public Zeus.S7PointMap OutputDWord(string name, int byteOffset) { }
+        public Zeus.S7PointMap OutputInt(string name, int byteOffset) { }
+        public Zeus.S7PointMap OutputReal(string name, int byteOffset) { }
+        public Zeus.S7PointMap OutputWord(string name, int byteOffset) { }
+        public Zeus.S7PointMap Point(string name, Zeus.S7Area area, Zeus.S7DataType dataType, int byteOffset, int dbNumber = 0, int bitOffset = 0, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.S7PointMap ScaledPoint(string name, Zeus.S7Area area, Zeus.S7DataType dataType, int byteOffset, double scale, int dbNumber = 0, int bitOffset = 0, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.S7PointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
+        public Zeus.S7PointMap Writable(string name) { }
+    }
+    public sealed class S7PointSpec
+    {
+        public Zeus.PointAlarmLimits? AlarmLimits { get; }
+        public Zeus.S7Area Area { get; }
+        public int BitOffset { get; }
+        public int ByteLength { get; }
+        public int ByteOffset { get; }
+        public Zeus.S7DataType DataType { get; }
+        public int DbNumber { get; }
+        public Zeus.PointValueKind Kind { get; }
+        public string Name { get; }
+        public double? Scale { get; }
+        public bool Writable { get; }
+    }
+    public sealed class S7SlaveMemory
+    {
+        public S7SlaveMemory(int inputs = 1024, int outputs = 1024, int markers = 4096, int defaultDataBlockSize = 4096) { }
+        public int DefaultDataBlockSize { get; }
+        public byte[] Inputs { get; }
+        public byte[] Markers { get; }
+        public byte[] Outputs { get; }
+        public byte[] GetDataBlock(int dbNumber, int minimumSize = 0) { }
+    }
+    public sealed class S7SlaveResponder : Zeus.IVirtualResponder
+    {
+        public S7SlaveResponder(Zeus.S7SlaveMemory? memory = null, Zeus.S7Options? options = null) { }
+        public Zeus.S7SlaveMemory Memory { get; }
+        public System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request) { }
+    }
+    public static class ZeusHostBuilderS7Extensions
+    {
+        public static Zeus.S7Device AddSiemensS7(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.S7Options? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.S7PointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddSiemensS7(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.S7Options? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.S7PointMap>? points = null) { }
+    }
+}

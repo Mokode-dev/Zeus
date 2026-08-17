@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\src\Zeus.Protocols.Framing\Zeus.Protocols.Framing.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.Mc\Zeus.Protocols.Mc.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.Modbus\Zeus.Protocols.Modbus.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Protocols.S7\Zeus.Protocols.S7.csproj" />
   </ItemGroup>
 
   <ItemGroup>

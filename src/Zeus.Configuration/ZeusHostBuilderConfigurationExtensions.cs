@@ -246,6 +246,13 @@ public static class ZeusHostBuilderConfigurationExtensions
             return;
         }
 
+        if (ZeusConfigurationLoader.IsS7DeviceType(type))
+        {
+            Action<S7PointMap>? s7Points = device.Points.Count == 0 ? null : map => ApplyS7Points(map, device.Points);
+            host.AddSiemensS7(device.Name.Trim(), device.Channel.Trim(), CreateS7Options(device), timeout, s7Points);
+            return;
+        }
+
         var isTcp = ZeusConfigurationLoader.IsModbusTcpDeviceType(type);
         Action<ModbusPointMap>? points = device.Points.Count == 0 ? null : map => ApplyPoints(map, device.Points);
         if (isTcp)
@@ -276,7 +283,19 @@ public static class ZeusHostBuilderConfigurationExtensions
     private static string DeviceFingerprint(DeviceConfiguration device)
     {
         var points = string.Join(';', device.Points.Select(point =>
-            string.Join(':', point.Name, ZeusConfigurationLoader.Normalize(point.Table), ZeusConfigurationLoader.Normalize(point.DeviceCode), point.Address, point.Scale, point.LowAlarmLimit, point.HighAlarmLimit, point.Writable)));
+            string.Join(':',
+                point.Name,
+                ZeusConfigurationLoader.Normalize(point.Table),
+                ZeusConfigurationLoader.Normalize(point.DeviceCode),
+                ZeusConfigurationLoader.Normalize(point.Area),
+                ZeusConfigurationLoader.Normalize(point.DataType),
+                point.DbNumber,
+                point.Address,
+                point.BitOffset,
+                point.Scale,
+                point.LowAlarmLimit,
+                point.HighAlarmLimit,
+                point.Writable)));
         var type = ZeusConfigurationLoader.Normalize(device.Type);
         if (ZeusConfigurationLoader.IsMcDeviceType(type))
         {
@@ -292,6 +311,20 @@ public static class ZeusHostBuilderConfigurationExtensions
                 device.StationNumber,
                 device.MonitoringTimer,
                 device.SerialNumber,
+                points);
+        }
+
+        if (ZeusConfigurationLoader.IsS7DeviceType(type))
+        {
+            return string.Join('|',
+                device.Channel.Trim(),
+                type,
+                device.TimeoutMilliseconds,
+                device.Rack,
+                device.Slot,
+                device.LocalTsap,
+                device.RemoteTsap,
+                device.RequestedPduLength,
                 points);
         }
 
@@ -376,6 +409,11 @@ public static class ZeusHostBuilderConfigurationExtensions
             return new McSlaveResponder();
         }
 
+        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "s7" or "siemens-s7" or "siemenss7")
+        {
+            return new S7SlaveResponder();
+        }
+
         var transport = ZeusConfigurationLoader.Normalize(channel.Transport) == "tcp"
             ? ModbusTransport.Tcp
             : ModbusTransport.Rtu;
@@ -393,6 +431,13 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             Action<McPointMap>? mcPoints = device.Points.Count == 0 ? null : map => ApplyMcPoints(map, device.Points);
             builder.AddMitsubishiMc(device.Name.Trim(), device.Channel.Trim(), CreateMcOptions(device), timeout, mcPoints);
+            return;
+        }
+
+        if (ZeusConfigurationLoader.IsS7DeviceType(type))
+        {
+            Action<S7PointMap>? s7Points = device.Points.Count == 0 ? null : map => ApplyS7Points(map, device.Points);
+            builder.AddSiemensS7(device.Name.Trim(), device.Channel.Trim(), CreateS7Options(device), timeout, s7Points);
             return;
         }
 
@@ -480,6 +525,26 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyS7Points(S7PointMap map, List<PointConfiguration> points)
+    {
+        foreach (var point in points)
+        {
+            var area = ZeusConfigurationLoader.ParseS7Area(point.Area, $"point {point.Name}.area");
+            var dataType = ZeusConfigurationLoader.ParseS7DataType(point.DataType, $"point {point.Name}.dataType");
+            var alarmLimits = CreateAlarmLimits(point);
+            if (point.Scale is { } scale)
+            {
+                map.ScaledPoint(point.Name, area, dataType, point.Address, scale, point.DbNumber, point.BitOffset, alarmLimits);
+            }
+            else
+            {
+                map.Point(point.Name, area, dataType, point.Address, point.DbNumber, point.BitOffset, alarmLimits);
+            }
+
+            ApplyS7Writable(map, point);
+        }
+    }
+
     private static PointAlarmLimits? CreateAlarmLimits(PointConfiguration point)
         => point.LowAlarmLimit is not null || point.HighAlarmLimit is not null
             ? new PointAlarmLimits(point.LowAlarmLimit, point.HighAlarmLimit)
@@ -520,6 +585,14 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyS7Writable(S7PointMap map, PointConfiguration point)
+    {
+        if (point.Writable)
+        {
+            map.Writable(point.Name);
+        }
+    }
+
     private static Mc3EOptions CreateMcOptions(DeviceConfiguration device)
         => new()
         {
@@ -531,6 +604,16 @@ public static class ZeusHostBuilderConfigurationExtensions
             StationNumber = (byte)device.StationNumber,
             MonitoringTimer = (ushort)device.MonitoringTimer,
             SerialNumber = (ushort)device.SerialNumber
+        };
+
+    private static S7Options CreateS7Options(DeviceConfiguration device)
+        => new()
+        {
+            Rack = (byte)device.Rack,
+            Slot = (byte)device.Slot,
+            LocalTsap = (ushort)device.LocalTsap,
+            RemoteTsap = device.RemoteTsap is { } remoteTsap ? (ushort)remoteTsap : null,
+            RequestedPduLength = (ushort)device.RequestedPduLength
         };
 }
 
