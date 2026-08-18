@@ -274,6 +274,13 @@ public static class ZeusHostBuilderConfigurationExtensions
             return;
         }
 
+        if (ZeusConfigurationLoader.IsIec104DeviceType(type))
+        {
+            Action<Iec104PointMap>? iec104Points = device.Points.Count == 0 ? null : map => ApplyIec104Points(map, device.Points);
+            host.AddIec104(device.Name.Trim(), device.Channel.Trim(), CreateIec104Options(device), timeout, iec104Points);
+            return;
+        }
+
         if (ZeusConfigurationLoader.IsMcDeviceType(type))
         {
             Action<McPointMap>? mcPoints = device.Points.Count == 0 ? null : map => ApplyMcPoints(map, device.Points);
@@ -309,7 +316,7 @@ public static class ZeusHostBuilderConfigurationExtensions
         var type = ZeusConfigurationLoader.Normalize(channel.Type);
         return type switch
         {
-            "virtual" => string.Join('|', type, ZeusConfigurationLoader.Normalize(channel.Responder), channel.UnitId, ZeusConfigurationLoader.Normalize(channel.Transport), channel.MeterAddress?.Trim()),
+            "virtual" => string.Join('|', type, ZeusConfigurationLoader.Normalize(channel.Responder), channel.UnitId, ZeusConfigurationLoader.Normalize(channel.Transport), channel.MeterAddress?.Trim(), channel.CommonAddress),
             "serial" => string.Join('|', type, channel.PortName?.Trim(), channel.BaudRate),
             "tcp" => string.Join('|', type, channel.Host?.Trim(), channel.Port),
             "tcp-server" or "tcpserver" => string.Join('|', "tcp-server", channel.LocalAddress?.Trim(), EffectiveTcpServerPort(channel)),
@@ -400,6 +407,18 @@ public static class ZeusHostBuilderConfigurationExtensions
                 device.WakeUpPreambleCount,
                 device.Password.Trim(),
                 device.OperatorCode.Trim(),
+                points);
+        }
+
+        if (ZeusConfigurationLoader.IsIec104DeviceType(type))
+        {
+            return string.Join('|',
+                device.Channel.Trim(),
+                type,
+                device.TimeoutMilliseconds,
+                device.CommonAddress,
+                device.OriginatorAddress,
+                device.InterrogationQualifier,
                 points);
         }
 
@@ -548,6 +567,11 @@ public static class ZeusHostBuilderConfigurationExtensions
             return new Dlt645SlaveResponder(channel.MeterAddress);
         }
 
+        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104")
+        {
+            return new Iec104SlaveResponder(new Iec104Options { CommonAddress = channel.CommonAddress });
+        }
+
         var transport = CreateModbusTransport(ZeusConfigurationLoader.Normalize(channel.Transport));
         return new ModbusSlaveResponder(channel.UnitId, transport);
     }
@@ -591,6 +615,13 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             Action<Dlt645PointMap>? dlt645Points = device.Points.Count == 0 ? null : map => ApplyDlt645Points(map, device.Points);
             builder.AddDlt645(device.Name.Trim(), device.Channel.Trim(), CreateDlt645Options(device), timeout, dlt645Points);
+            return;
+        }
+
+        if (ZeusConfigurationLoader.IsIec104DeviceType(type))
+        {
+            Action<Iec104PointMap>? iec104Points = device.Points.Count == 0 ? null : map => ApplyIec104Points(map, device.Points);
+            builder.AddIec104(device.Name.Trim(), device.Channel.Trim(), CreateIec104Options(device), timeout, iec104Points);
             return;
         }
 
@@ -962,6 +993,35 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyIec104Points(Iec104PointMap map, List<PointConfiguration> points)
+    {
+        foreach (var point in points)
+        {
+            var dataType = ZeusConfigurationLoader.ParseIec104DataType(point.DataType, $"point {point.Name}.dataType");
+            var alarmLimits = CreateAlarmLimits(point);
+            switch (dataType)
+            {
+                case Iec104DataType.SinglePoint:
+                    map.SinglePoint(point.Name, point.Address);
+                    break;
+                case Iec104DataType.Normalized:
+                    map.Normalized(point.Name, point.Address, point.Scale, alarmLimits);
+                    ApplyIec104AlarmLimits(map, point, alarmLimits);
+                    break;
+                case Iec104DataType.Scaled:
+                    map.Scaled(point.Name, point.Address, point.Scale, alarmLimits);
+                    ApplyIec104AlarmLimits(map, point, alarmLimits);
+                    break;
+                case Iec104DataType.ShortFloat:
+                    map.ShortFloat(point.Name, point.Address, point.Scale, alarmLimits);
+                    ApplyIec104AlarmLimits(map, point, alarmLimits);
+                    break;
+            }
+
+            ApplyIec104Writable(map, point);
+        }
+    }
+
     private static PointAlarmLimits? CreateAlarmLimits(PointConfiguration point)
         => point.LowAlarmLimit is not null || point.HighAlarmLimit is not null
             ? new PointAlarmLimits(point.LowAlarmLimit, point.HighAlarmLimit)
@@ -1090,6 +1150,22 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyIec104AlarmLimits(Iec104PointMap map, PointConfiguration point, PointAlarmLimits? alarmLimits)
+    {
+        if (alarmLimits is not null)
+        {
+            map.WithAlarmLimits(point.Name, alarmLimits.Low, alarmLimits.High);
+        }
+    }
+
+    private static void ApplyIec104Writable(Iec104PointMap map, PointConfiguration point)
+    {
+        if (point.Writable)
+        {
+            map.Writable(point.Name);
+        }
+    }
+
     private static Mc3EOptions CreateMcOptions(DeviceConfiguration device)
         => new()
         {
@@ -1153,6 +1229,14 @@ public static class ZeusHostBuilderConfigurationExtensions
             WakeUpPreambleCount = device.WakeUpPreambleCount,
             Password = device.Password.Trim(),
             OperatorCode = device.OperatorCode.Trim()
+        };
+
+    private static Iec104Options CreateIec104Options(DeviceConfiguration device)
+        => new()
+        {
+            CommonAddress = device.CommonAddress,
+            OriginatorAddress = device.OriginatorAddress,
+            InterrogationQualifier = device.InterrogationQualifier
         };
 }
 

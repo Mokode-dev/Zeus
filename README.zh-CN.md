@@ -32,7 +32,7 @@
 ## ✨ 特性
 
 - 🔌 **通道** — 串口、TCP、UDP 客户端 / 服务端、虚拟通道，同一套 API
-- 📡 **协议** — 自定义帧、Modbus RTU / TCP / ASCII、Mitsubishi MC 1E/3E/4E Binary/ASCII、Siemens S7 TCP、Omron FINS UDP/TCP、Omron Host Link ASCII、Panasonic MEWTOCOL-COM、Allen-Bradley EtherNet/IP CIP、DL/T 645-2007，可挂虚拟从站/PLC/表计
+- 📡 **协议** — 自定义帧、Modbus RTU / TCP / ASCII、Mitsubishi MC 1E/3E/4E Binary/ASCII、Siemens S7 TCP、Omron FINS UDP/TCP、Omron Host Link ASCII、Panasonic MEWTOCOL-COM、Allen-Bradley EtherNet/IP CIP、DL/T 645-2007、IEC 60870-5-104，可挂虚拟从站/PLC/表计
 - 📊 **采集** — 声明点表后按间隔自动轮询，保留最近成功采样，计算报警限；可写点按名称写回
 - 🧭 **追踪** — 通道级 TX/RX 报文事件、滚动内存记录器、文件日志器与 `ILogger` 结构化日志
 - 🖥️ **界面无关** — 业务代码不绑死 WinForms 或 WPF；点表可直接绑定文本、历史趋势、报警色、启用状态和写回按钮
@@ -79,6 +79,7 @@ app.Points.BindTo("temperature", temperatureLabel);
 | `Zeus.Protocols.Mewtocol` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Mewtocol.svg)](https://www.nuget.org/packages/Zeus.Protocols.Mewtocol) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Mewtocol.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Mewtocol) | Panasonic MEWTOCOL-COM，读写 DT/LD/FL 数据寄存器和 X/Y/R/L 接点字 |
 | `Zeus.Protocols.EtherNetIp` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.EtherNetIp.svg)](https://www.nuget.org/packages/Zeus.Protocols.EtherNetIp) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.EtherNetIp.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.EtherNetIp) | Allen-Bradley EtherNet/IP CIP，读写标量标签与 CIP 属性 |
 | `Zeus.Protocols.Dlt645` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Dlt645.svg)](https://www.nuget.org/packages/Zeus.Protocols.Dlt645) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Dlt645.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Dlt645) | DL/T 645-2007 电能表，读写 BCD 数据项与原始数据项 |
+| `Zeus.Protocols.Iec104` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Iec104.svg)](https://www.nuget.org/packages/Zeus.Protocols.Iec104) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Iec104.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Iec104) | IEC 60870-5-104，支持总召唤、单点命令与常用测量/设点类型 |
 | `Zeus.Configuration` | [![nuget](https://img.shields.io/nuget/v/Zeus.Configuration.svg)](https://www.nuget.org/packages/Zeus.Configuration) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Configuration.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Configuration) | JSON 工程配置 |
 | `Zeus.Presentation.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Presentation.Abstractions.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | UI 无关绑定抽象、`PointBindingSource` 与点表快照绑定 |
 | `Zeus.Presentation.WinForms` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg)](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Presentation.WinForms.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | WinForms 绑定、点表报警色与写回按钮绑定 |

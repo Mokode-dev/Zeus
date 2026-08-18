@@ -10,6 +10,7 @@ namespace Zeus
     {
         public ChannelConfiguration() { }
         public int BaudRate { get; set; }
+        public int CommonAddress { get; set; }
         public string? Host { get; set; }
         public string? LocalAddress { get; set; }
         public int LocalPort { get; set; }
@@ -26,6 +27,7 @@ namespace Zeus
     {
         public DeviceConfiguration() { }
         public string Channel { get; set; }
+        public int CommonAddress { get; set; }
         public int DestinationNetwork { get; set; }
         public int DestinationNode { get; set; }
         public int DestinationUnit { get; set; }
@@ -33,6 +35,7 @@ namespace Zeus
         public string FrameType { get; set; }
         public int GatewayCount { get; set; }
         public int InformationControlField { get; set; }
+        public int InterrogationQualifier { get; set; }
         public int IoNumber { get; set; }
         public int LocalTsap { get; set; }
         public string MeterAddress { get; set; }
@@ -40,6 +43,7 @@ namespace Zeus
         public string Name { get; set; }
         public int NetworkNumber { get; set; }
         public string OperatorCode { get; set; }
+        public int OriginatorAddress { get; set; }
         public string Password { get; set; }
         public int PcNumber { get; set; }
         public System.Collections.Generic.List<Zeus.PointConfiguration> Points { get; set; }

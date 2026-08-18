@@ -206,13 +206,17 @@ public static class ZeusConfigurationLoader
             {
                 ValidateDlt645Device(device, path);
             }
+            else if (IsIec104DeviceType(type))
+            {
+                ValidateIec104Device(device, path);
+            }
             else if (IsMcDeviceType(type))
             {
                 ValidateMcDevice(device, path);
             }
             else
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、modbus-ascii、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip、dlt645。");
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、modbus-ascii、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip、dlt645、iec104。");
             }
         }
     }
@@ -225,14 +229,20 @@ public static class ZeusConfigurationLoader
         }
 
         var responder = Normalize(channel.Responder);
-        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley" or "dlt645" or "dlt-645" or "dlt645-2007"))
+        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley" or "dlt645" or "dlt-645" or "dlt645-2007" or "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104"))
         {
-            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、mewtocol、ethernet-ip、dlt645，或省略以回显写入。");
+            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、mewtocol、ethernet-ip、dlt645、iec104，或省略以回显写入。");
         }
 
         if (responder is "dlt645" or "dlt-645" or "dlt645-2007")
         {
             ValidateDlt645Address(channel.MeterAddress, $"{path}.meterAddress");
+            return;
+        }
+
+        if (responder is "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104")
+        {
+            ValidateUInt16(channel.CommonAddress, $"{path}.commonAddress");
             return;
         }
 
@@ -506,6 +516,20 @@ public static class ZeusConfigurationLoader
         }
 
         ValidateDlt645Points(device.Points, path);
+    }
+
+    private static void ValidateIec104Device(DeviceConfiguration device, string path)
+    {
+        ValidateUInt16(device.CommonAddress, $"{path}.commonAddress");
+        ValidateByte(device.OriginatorAddress, $"{path}.originatorAddress");
+        ValidateByte(device.InterrogationQualifier, $"{path}.interrogationQualifier");
+
+        if (device.TimeoutMilliseconds is <= 0)
+        {
+            throw new ZeusException($"{path}.timeoutMilliseconds 必须大于 0。");
+        }
+
+        ValidateIec104Points(device.Points, path);
     }
 
     private static void ValidateMcPoints(List<PointConfiguration> points, string devicePath, McFrameType frameType)
@@ -948,6 +972,52 @@ public static class ZeusConfigurationLoader
         }
     }
 
+    private static void ValidateIec104Points(List<PointConfiguration> points, string devicePath)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var path = $"{devicePath}.points[{i}]";
+            EnsureName(point.Name, path);
+            if (!names.Add(point.Name.Trim()))
+            {
+                throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
+            }
+
+            var dataType = ParseIec104DataType(point.DataType, $"{path}.dataType");
+            if (point.Address is < 0 or > 0xFFFFFF)
+            {
+                throw new ZeusException($"{path}.address 必须介于 0 与 16777215 之间，对应 3 字节 IOA。");
+            }
+
+            if (point.Scale is <= 0)
+            {
+                throw new ZeusException($"{path}.scale 必须大于 0。");
+            }
+
+            ValidateAlarmLimit(point.LowAlarmLimit, $"{path}.lowAlarmLimit");
+            ValidateAlarmLimit(point.HighAlarmLimit, $"{path}.highAlarmLimit");
+            if (point.LowAlarmLimit > point.HighAlarmLimit)
+            {
+                throw new ZeusException($"{path}.lowAlarmLimit 不能高于 highAlarmLimit。");
+            }
+
+            if (dataType == Iec104DataType.SinglePoint)
+            {
+                if (point.Scale is not null)
+                {
+                    throw new ZeusException($"{path} 是 IEC104 single-point 点，不能配置 scale。");
+                }
+
+                if (point.LowAlarmLimit is not null || point.HighAlarmLimit is not null)
+                {
+                    throw new ZeusException($"{path} 是 IEC104 single-point 点，不能配置 lowAlarmLimit 或 highAlarmLimit。");
+                }
+            }
+        }
+    }
+
     private static void ValidateAlarmLimit(double? value, string path)
     {
         if (value is { } number && !double.IsFinite(number))
@@ -999,6 +1069,9 @@ public static class ZeusConfigurationLoader
 
     internal static bool IsDlt645DeviceType(string type)
         => type is "dlt645" or "dlt-645" or "dlt645-2007" or "dlt-645-2007" or "dl-t645" or "dl-t-645";
+
+    internal static bool IsIec104DeviceType(string type)
+        => type is "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104" or "iec-60870-104" or "iec60870-104";
 
     internal static McFrameType ParseMcFrameType(string? value, string path)
     {
@@ -1284,6 +1357,19 @@ public static class ZeusConfigurationLoader
             "" or "bcd" or "decimal" or "number" => Dlt645DataType.Bcd,
             "raw" or "bytes" or "rawbytes" or "hex" => Dlt645DataType.RawBytes,
             _ => throw new ZeusException($"{path}「{value}」不受支持。DL/T 645 可选 bcd、raw。")
+        };
+    }
+
+    internal static Iec104DataType ParseIec104DataType(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "singlepoint" or "single" or "sp" or "bool" or "boolean" => Iec104DataType.SinglePoint,
+            "normalized" or "normalize" or "nva" or "measurednormalized" => Iec104DataType.Normalized,
+            "scaled" or "scale" or "sva" or "int16" or "short" => Iec104DataType.Scaled,
+            "shortfloat" or "float" or "real" or "singleprecision" => Iec104DataType.ShortFloat,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。IEC104 可选 single-point、normalized、scaled、short-float。")
         };
     }
 

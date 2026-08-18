@@ -4,6 +4,42 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Zeus.Communications.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Communications) ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Mokode-dev/Zeus/blob/main/code/LICENSE)
 
 
+## 0.13.0
+
+新增 IEC 60870-5-104 协议栈，覆盖 STARTDT 启动、总召唤、单点命令、归一化/标度化/短浮点设点、点表采集、点名写回、虚拟站、JSON 配置与控制台示例。
+
+### 包含
+
+- IEC104：新增 `Zeus.Protocols.Iec104`，支持 I/S/U 帧、STARTDT、总召唤确认和激活终止
+- 信息对象：支持 `M_SP_NA_1`、`M_ME_NA_1`、`M_ME_NB_1`、`M_ME_NC_1` 采集
+- 命令与设点：支持 `C_SC_NA_1`、`C_SE_NA_1`、`C_SE_NB_1`、`C_SE_NC_1` 写回
+- 虚拟站：新增 `Iec104SlaveResponder` 与 `Iec104StationMemory`，无硬件即可验证主站逻辑
+- 配置：JSON 支持声明 `iec104` 设备、`responder: "iec104"` 虚拟站和 IEC104 点表
+- 示例与文档：新增 IEC104 控制台示例、JSON 配置样例、NuGet 安装说明和文档指南
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.12 已发布的类型、成员和扩展方法签名
+- `0.13.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
+## 0.12.0
+
+新增 DL/T 645-2007 电能表协议栈，覆盖电表唤醒前导、BCD 数据项、原始数据项、写数据、点表采集、点名写回、虚拟表计、JSON 配置与控制台示例。
+
+### 包含
+
+- DL/T 645：新增 `Zeus.Protocols.Dlt645`，支持 12 位表地址、前导 `0xFE`、控制码、数据域加减 `0x33` 和校验
+- 数据项：支持四字节 DI 读数据，覆盖 BCD 数据项、原始数据项和可配置数据长度
+- 写回：支持按点名写回 BCD 或原始数据项，并可配置密码与操作者代码
+- 虚拟表计：新增虚拟 DL/T 645 responder，无硬件即可验证采集、写回和点表绑定
+- 配置：JSON 支持声明 `dlt645` 设备、`responder: "dlt645"` 虚拟表计和 DL/T 645 点表
+- 示例与文档：新增 DL/T 645 控制台示例、JSON 配置样例、NuGet 安装说明和文档指南
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.11 已发布的类型、成员和扩展方法签名
+- `0.12.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.11.0
 
 新增 Modbus ASCII 封装，覆盖冒号起始帧、十六进制文本编码、LRC 校验、CRLF 定界、虚拟从站、点表采集和 JSON 配置。

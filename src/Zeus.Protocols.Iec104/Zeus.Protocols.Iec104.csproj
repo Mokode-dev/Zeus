@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- IEC 60870-5-104 客户端、设备封装与内存虚拟站。协议只依赖通道抽象，TCP 传输由 Communications 提供。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Zeus</RootNamespace>
+    <AssemblyName>Zeus.Protocols.Iec104</AssemblyName>
+    <Description>Zeus IEC 60870-5-104 客户端、设备封装与内存虚拟站。</Description>
+    <PackageDescription>Zeus IEC 60870-5-104 客户端、设备封装与内存虚拟站。</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Zeus.Abstractions\Zeus.Abstractions.csproj" />
+    <ProjectReference Include="..\Zeus.Core\Zeus.Core.csproj" />
+    <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -59,6 +59,10 @@ public sealed class PublicApiBaselineTests
     [Fact]
     public void Dlt645_matches_baseline() => AssertMatchesBaseline(typeof(Dlt645Device).Assembly);
 
+    /// <summary>IEC 60870-5-104 公开表面。</summary>
+    [Fact]
+    public void Iec104_matches_baseline() => AssertMatchesBaseline(typeof(Iec104Device).Assembly);
+
     /// <summary>Mitsubishi MC 公开表面。</summary>
     [Fact]
     public void Mc_matches_baseline() => AssertMatchesBaseline(typeof(McDevice).Assembly);

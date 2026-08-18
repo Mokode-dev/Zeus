@@ -1,0 +1,103 @@
+namespace Zeus
+{
+    public enum Iec104CauseOfTransmission : ushort
+    {
+        Periodic = 1,
+        BackgroundScan = 2,
+        Spontaneous = 3,
+        Initialized = 4,
+        Request = 5,
+        Activation = 6,
+        ActivationConfirmation = 7,
+        Deactivation = 8,
+        DeactivationConfirmation = 9,
+        ActivationTermination = 10,
+        InterrogatedByStation = 20,
+    }
+    public sealed class Iec104Client : System.IAsyncDisposable
+    {
+        public Iec104Client(Zeus.IChannel channel, Zeus.Iec104Options? options = null, System.TimeSpan? timeout = default) { }
+        public Zeus.IChannel Channel { get; }
+        public Zeus.Iec104Options Options { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Zeus.Iec104InformationObject>> InterrogateAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SendNormalizedSetpointAsync(int address, double value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SendScaledSetpointAsync(int address, short value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SendShortFloatSetpointAsync(int address, double value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SendSingleCommandAsync(int address, bool command, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task StartDataTransferAsync(System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public enum Iec104DataType
+    {
+        SinglePoint = 1,
+        Normalized = 9,
+        Scaled = 11,
+        ShortFloat = 13,
+    }
+    public sealed class Iec104Device : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
+    {
+        public Iec104Device(string name, Zeus.IChannel channel, Zeus.Iec104Options? options = null, System.TimeSpan? timeout = default, Zeus.Iec104PointMap? pointMap = null) { }
+        public Zeus.Iec104Client Client { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Zeus.Iec104InformationObject>> InterrogateAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SendNormalizedSetpointAsync(int address, double value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SendScaledSetpointAsync(int address, short value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SendShortFloatSetpointAsync(int address, double value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SendSingleCommandAsync(int address, bool command, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class Iec104Exception : Zeus.ZeusProtocolException
+    {
+        public Iec104Exception(byte typeId, Zeus.Iec104CauseOfTransmission cause) { }
+        public Zeus.Iec104CauseOfTransmission Cause { get; }
+        public byte TypeId { get; }
+    }
+    public readonly struct Iec104InformationObject : System.IEquatable<Zeus.Iec104InformationObject>
+    {
+        public Iec104InformationObject(int Address, Zeus.Iec104DataType DataType, object Value, byte Quality = 0, Zeus.Iec104CauseOfTransmission Cause = 20) { }
+        public int Address { get; init; }
+        public Zeus.Iec104CauseOfTransmission Cause { get; init; }
+        public Zeus.Iec104DataType DataType { get; init; }
+        public byte Quality { get; init; }
+        public object Value { get; init; }
+    }
+    public sealed class Iec104Options
+    {
+        public Iec104Options() { }
+        public int CommonAddress { get; set; }
+        public int InterrogationQualifier { get; set; }
+        public int OriginatorAddress { get; set; }
+    }
+    public sealed class Iec104PointMap
+    {
+        public Iec104PointMap() { }
+        public Zeus.Iec104PointMap Normalized(string name, int address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.Iec104PointMap Scaled(string name, int address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.Iec104PointMap ShortFloat(string name, int address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.Iec104PointMap SinglePoint(string name, int address) { }
+        public Zeus.Iec104PointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
+        public Zeus.Iec104PointMap Writable(string name) { }
+    }
+    public sealed class Iec104SlaveResponder : Zeus.IVirtualResponder
+    {
+        public Iec104SlaveResponder(Zeus.Iec104Options? options = null, Zeus.Iec104StationMemory? memory = null) { }
+        public Zeus.Iec104StationMemory Memory { get; }
+        public System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request) { }
+    }
+    public sealed class Iec104StationMemory
+    {
+        public Iec104StationMemory() { }
+        public System.Collections.Generic.IReadOnlyList<Zeus.Iec104InformationObject> Snapshot { get; }
+        public void SetNormalized(int address, double value, byte quality = 0) { }
+        public void SetScaled(int address, short value, byte quality = 0) { }
+        public void SetShortFloat(int address, double value, byte quality = 0) { }
+        public void SetSinglePoint(int address, bool value, byte quality = 0) { }
+    }
+    public static class ZeusHostBuilderIec104Extensions
+    {
+        public static Zeus.Iec104Device AddIec104(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.Iec104Options? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.Iec104PointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddIec104(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.Iec104Options? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.Iec104PointMap>? points = null) { }
+    }
+}
