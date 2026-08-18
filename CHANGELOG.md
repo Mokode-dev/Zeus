@@ -1,5 +1,27 @@
 # 更新记录
 
+<!-- Zeus badges -->
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Zeus.Communications.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Communications) ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Mokode-dev/Zeus/blob/main/code/LICENSE)
+
+
+## 0.9.0
+
+新增 Omron Host Link ASCII 协议栈，覆盖 ASCII 帧 FCS 校验、CIO/LR/HR/AR/DM 常用字区读写、点表采集、点名写回、虚拟 PLC、JSON 配置与控制台示例。
+
+### 包含
+
+- Host Link：新增 `Zeus.Protocols.HostLink`，支持 `@UU` 站号帧、FCS 校验和两位十六进制结束码异常
+- 内存区：支持 CIO/IR、LR、HR、AR、DM 字区读写；位点通过读改写所在字实现
+- 点表与写回：支持 `Bit`、`Word`、`Int16`、`UInt32`、`Int32`、`Real`，并支持 32 位值字序配置、工程值缩放、报警限与按点名写回
+- 虚拟 PLC：新增 `HostLinkSlaveResponder` 与 `HostLinkSlaveMemory`，无硬件即可验证 Host Link 帧、点表采集和写回链路
+- 配置：JSON 支持声明 `omron-host-link` 设备、`responder: "host-link"` 虚拟 PLC 和 Host Link 点表
+- 示例与文档：新增 Host Link 控制台示例、真实串口配置样例、Omron Host Link 指南和 NuGet 安装说明
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.8 已发布的类型、成员和扩展方法签名
+- `0.9.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.8.0
 
 新增 Allen-Bradley EtherNet/IP CIP 协议栈，覆盖 Register Session、SendRRData、CIP 标量标签读写、CIP 属性访问、点表采集、点名写回、虚拟 PLC、JSON 配置与控制台示例。

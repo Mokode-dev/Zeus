@@ -246,6 +246,13 @@ public static class ZeusHostBuilderConfigurationExtensions
             return;
         }
 
+        if (ZeusConfigurationLoader.IsHostLinkDeviceType(type))
+        {
+            Action<HostLinkPointMap>? hostLinkPoints = device.Points.Count == 0 ? null : map => ApplyHostLinkPoints(map, device.Points);
+            host.AddOmronHostLink(device.Name.Trim(), device.Channel.Trim(), CreateHostLinkOptions(device), timeout, hostLinkPoints);
+            return;
+        }
+
         if (ZeusConfigurationLoader.IsEtherNetIpDeviceType(type))
         {
             Action<EtherNetIpPointMap>? etherNetIpPoints = device.Points.Count == 0 ? null : map => ApplyEtherNetIpPoints(map, device.Points);
@@ -329,6 +336,17 @@ public static class ZeusHostBuilderConfigurationExtensions
                 device.InformationControlField,
                 device.TcpRequestedClientNode,
                 device.UseTcpNodeAddressHandshake,
+                ZeusConfigurationLoader.Normalize(device.WordOrder),
+                points);
+        }
+
+        if (ZeusConfigurationLoader.IsHostLinkDeviceType(type))
+        {
+            return string.Join('|',
+                device.Channel.Trim(),
+                type,
+                device.UnitId,
+                device.TimeoutMilliseconds,
                 ZeusConfigurationLoader.Normalize(device.WordOrder),
                 points);
         }
@@ -467,6 +485,11 @@ public static class ZeusHostBuilderConfigurationExtensions
             return new FinsSlaveResponder(finsTransport);
         }
 
+        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "host-link" or "hostlink" or "omron-host-link" or "omronhostlink")
+        {
+            return new HostLinkSlaveResponder(channel.UnitId);
+        }
+
         if (ZeusConfigurationLoader.Normalize(channel.Responder) is "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley")
         {
             return new EtherNetIpSlaveResponder();
@@ -489,6 +512,13 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             Action<FinsPointMap>? finsPoints = device.Points.Count == 0 ? null : map => ApplyFinsPoints(map, device.Points);
             builder.AddOmronFins(device.Name.Trim(), device.Channel.Trim(), CreateFinsTransport(type), CreateFinsOptions(device), timeout, finsPoints);
+            return;
+        }
+
+        if (ZeusConfigurationLoader.IsHostLinkDeviceType(type))
+        {
+            Action<HostLinkPointMap>? hostLinkPoints = device.Points.Count == 0 ? null : map => ApplyHostLinkPoints(map, device.Points);
+            builder.AddOmronHostLink(device.Name.Trim(), device.Channel.Trim(), CreateHostLinkOptions(device), timeout, hostLinkPoints);
             return;
         }
 
@@ -663,6 +693,52 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyHostLinkPoints(HostLinkPointMap map, List<PointConfiguration> points)
+    {
+        foreach (var point in points)
+        {
+            var dataType = ZeusConfigurationLoader.ParseHostLinkDataType(point.DataType, $"point {point.Name}.dataType");
+            var area = ZeusConfigurationLoader.ParseHostLinkArea(point.Area ?? point.Table, $"point {point.Name}.area");
+            var alarmLimits = CreateAlarmLimits(point);
+            if (dataType == HostLinkDataType.Bit)
+            {
+                map.Bit(point.Name, area, (ushort)point.Address, (byte)point.BitOffset);
+                ApplyHostLinkWritable(map, point);
+                continue;
+            }
+
+            switch (dataType)
+            {
+                case HostLinkDataType.Word:
+                    if (point.Scale is { } wordScale)
+                    {
+                        map.Word(point.Name, area, (ushort)point.Address, wordScale);
+                    }
+                    else
+                    {
+                        map.Word(point.Name, area, (ushort)point.Address);
+                    }
+
+                    break;
+                case HostLinkDataType.Int16:
+                    map.Int16(point.Name, area, (ushort)point.Address, point.Scale, alarmLimits);
+                    break;
+                case HostLinkDataType.UInt32:
+                    map.UInt32(point.Name, area, (ushort)point.Address, point.Scale, alarmLimits);
+                    break;
+                case HostLinkDataType.Int32:
+                    map.Int32(point.Name, area, (ushort)point.Address, point.Scale, alarmLimits);
+                    break;
+                case HostLinkDataType.Real:
+                    map.Real(point.Name, area, (ushort)point.Address, point.Scale, alarmLimits);
+                    break;
+            }
+
+            ApplyHostLinkAlarmLimits(map, point, alarmLimits);
+            ApplyHostLinkWritable(map, point);
+        }
+    }
+
     private static void ApplyEtherNetIpPoints(EtherNetIpPointMap map, List<PointConfiguration> points)
     {
         foreach (var point in points)
@@ -742,6 +818,22 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyHostLinkAlarmLimits(HostLinkPointMap map, PointConfiguration point, PointAlarmLimits? alarmLimits)
+    {
+        if (alarmLimits is not null)
+        {
+            map.WithAlarmLimits(point.Name, alarmLimits.Low, alarmLimits.High);
+        }
+    }
+
+    private static void ApplyHostLinkWritable(HostLinkPointMap map, PointConfiguration point)
+    {
+        if (point.Writable)
+        {
+            map.Writable(point.Name);
+        }
+    }
+
     private static void ApplyEtherNetIpAlarmLimits(EtherNetIpPointMap map, PointConfiguration point, PointAlarmLimits? alarmLimits)
     {
         if (alarmLimits is not null)
@@ -798,6 +890,13 @@ public static class ZeusHostBuilderConfigurationExtensions
             TcpRequestedClientNode = (byte)device.TcpRequestedClientNode,
             UseTcpNodeAddressHandshake = device.UseTcpNodeAddressHandshake,
             WordOrder = ZeusConfigurationLoader.ParseFinsWordOrder(device.WordOrder, "device.wordOrder")
+        };
+
+    private static HostLinkOptions CreateHostLinkOptions(DeviceConfiguration device)
+        => new()
+        {
+            UnitNumber = device.UnitId,
+            WordOrder = ZeusConfigurationLoader.ParseHostLinkWordOrder(device.WordOrder, "device.wordOrder")
         };
 }
 

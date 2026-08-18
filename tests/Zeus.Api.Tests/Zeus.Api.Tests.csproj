@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\src\Zeus.Presentation.Wpf\Zeus.Presentation.Wpf.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.Framing\Zeus.Protocols.Framing.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.Fins\Zeus.Protocols.Fins.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Protocols.HostLink\Zeus.Protocols.HostLink.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.Mc\Zeus.Protocols.Mc.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.Modbus\Zeus.Protocols.Modbus.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.S7\Zeus.Protocols.S7.csproj" />

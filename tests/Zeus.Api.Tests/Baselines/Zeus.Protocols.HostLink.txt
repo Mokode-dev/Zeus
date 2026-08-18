@@ -1,0 +1,123 @@
+namespace Zeus
+{
+    public enum HostLinkArea
+    {
+        Cio = 0,
+        Link = 1,
+        Holding = 2,
+        Auxiliary = 3,
+        DataMemory = 4,
+    }
+    public sealed class HostLinkClient : System.IAsyncDisposable
+    {
+        public HostLinkClient(Zeus.IChannel channel, Zeus.HostLinkOptions? options = null, System.TimeSpan? timeout = default) { }
+        public Zeus.IChannel Channel { get; }
+        public Zeus.HostLinkOptions Options { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<string> ExecuteAsync(string command, string text, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadWordsAsync(Zeus.HostLinkArea area, ushort address, ushort count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteWordsAsync(Zeus.HostLinkArea area, ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public enum HostLinkDataType
+    {
+        Bit = 0,
+        Word = 1,
+        Int16 = 2,
+        UInt32 = 3,
+        Int32 = 4,
+        Real = 5,
+    }
+    public sealed class HostLinkDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
+    {
+        public HostLinkDevice(string name, Zeus.IChannel channel, Zeus.HostLinkOptions? options = null, System.TimeSpan? timeout = default, Zeus.HostLinkPointMap? pointMap = null) { }
+        public Zeus.HostLinkClient Client { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<string> ExecuteAsync(string command, string text, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadCioWordsAsync(ushort address, ushort count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadDataMemoryWordsAsync(ushort address, ushort count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadWordsAsync(Zeus.HostLinkArea area, ushort address, ushort count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteCioWordsAsync(ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDataMemoryWordsAsync(ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteWordsAsync(Zeus.HostLinkArea area, ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class HostLinkException : Zeus.ZeusProtocolException
+    {
+        public HostLinkException(string command, byte endCode) { }
+        public string Command { get; }
+        public byte EndCode { get; }
+    }
+    public sealed class HostLinkOptions
+    {
+        public HostLinkOptions() { }
+        public byte UnitNumber { get; set; }
+        public Zeus.HostLinkWordOrder WordOrder { get; set; }
+    }
+    public sealed class HostLinkPointMap
+    {
+        public HostLinkPointMap() { }
+        public Zeus.HostLinkPointMap AuxiliaryBit(string name, ushort address, byte bitOffset) { }
+        public Zeus.HostLinkPointMap AuxiliaryWord(string name, ushort address) { }
+        public Zeus.HostLinkPointMap Bit(string name, Zeus.HostLinkArea area, ushort address, byte bitOffset) { }
+        public Zeus.HostLinkPointMap CioBit(string name, ushort address, byte bitOffset) { }
+        public Zeus.HostLinkPointMap CioWord(string name, ushort address) { }
+        public Zeus.HostLinkPointMap DmBit(string name, ushort address, byte bitOffset) { }
+        public Zeus.HostLinkPointMap DmWord(string name, ushort address) { }
+        public Zeus.HostLinkPointMap DmWord(string name, ushort address, double scale) { }
+        public Zeus.HostLinkPointMap HoldingBit(string name, ushort address, byte bitOffset) { }
+        public Zeus.HostLinkPointMap HoldingWord(string name, ushort address) { }
+        public Zeus.HostLinkPointMap Int16(string name, Zeus.HostLinkArea area, ushort address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.HostLinkPointMap Int32(string name, Zeus.HostLinkArea area, ushort address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.HostLinkPointMap LinkBit(string name, ushort address, byte bitOffset) { }
+        public Zeus.HostLinkPointMap LinkWord(string name, ushort address) { }
+        public Zeus.HostLinkPointMap Real(string name, Zeus.HostLinkArea area, ushort address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.HostLinkPointMap UInt32(string name, Zeus.HostLinkArea area, ushort address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.HostLinkPointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
+        public Zeus.HostLinkPointMap Word(string name, Zeus.HostLinkArea area, ushort address) { }
+        public Zeus.HostLinkPointMap Word(string name, Zeus.HostLinkArea area, ushort address, double scale) { }
+        public Zeus.HostLinkPointMap Word(string name, Zeus.HostLinkArea area, ushort address, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.HostLinkPointMap Word(string name, Zeus.HostLinkArea area, ushort address, double scale, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.HostLinkPointMap Writable(string name) { }
+    }
+    public sealed class HostLinkPointSpec
+    {
+        public ushort Address { get; }
+        public Zeus.PointAlarmLimits? AlarmLimits { get; }
+        public Zeus.HostLinkArea Area { get; }
+        public byte BitOffset { get; }
+        public Zeus.HostLinkDataType DataType { get; }
+        public bool IsBit { get; }
+        public Zeus.PointValueKind Kind { get; }
+        public string Name { get; }
+        public double? Scale { get; }
+        public int WordCount { get; }
+        public bool Writable { get; }
+    }
+    public sealed class HostLinkSlaveMemory
+    {
+        public HostLinkSlaveMemory(int cioWords = 10000, int linkWords = 10000, int holdingWords = 10000, int auxiliaryWords = 10000, int dataMemoryWords = 10000) { }
+        public ushort[] AuxiliaryWords { get; }
+        public ushort[] CioWords { get; }
+        public ushort[] DataMemoryWords { get; }
+        public ushort[] HoldingWords { get; }
+        public ushort[] LinkWords { get; }
+    }
+    public sealed class HostLinkSlaveResponder : Zeus.IVirtualResponder
+    {
+        public HostLinkSlaveResponder(byte unitNumber = 0, Zeus.HostLinkSlaveMemory? memory = null) { }
+        public Zeus.HostLinkSlaveMemory Memory { get; }
+        public System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request) { }
+    }
+    public enum HostLinkWordOrder
+    {
+        HighWordFirst = 0,
+        LowWordFirst = 1,
+    }
+    public static class ZeusHostBuilderHostLinkExtensions
+    {
+        public static Zeus.HostLinkDevice AddOmronHostLink(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.HostLinkOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.HostLinkPointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddOmronHostLink(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.HostLinkOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.HostLinkPointMap>? points = null) { }
+    }
+}

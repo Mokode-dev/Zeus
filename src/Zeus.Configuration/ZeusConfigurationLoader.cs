@@ -186,6 +186,10 @@ public static class ZeusConfigurationLoader
             {
                 ValidateFinsDevice(device, path);
             }
+            else if (IsHostLinkDeviceType(type))
+            {
+                ValidateHostLinkDevice(device, path);
+            }
             else if (IsS7DeviceType(type))
             {
                 ValidateS7Device(device, path);
@@ -200,7 +204,7 @@ public static class ZeusConfigurationLoader
             }
             else
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc、siemens-s7、omron-fins、ethernet-ip。");
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、ethernet-ip。");
             }
         }
     }
@@ -213,9 +217,19 @@ public static class ZeusConfigurationLoader
         }
 
         var responder = Normalize(channel.Responder);
-        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley"))
+        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley"))
         {
-            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、ethernet-ip，或省略以回显写入。");
+            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、ethernet-ip，或省略以回显写入。");
+        }
+
+        if (responder is "host-link" or "hostlink" or "omron-host-link" or "omronhostlink")
+        {
+            if (channel.UnitId > 31)
+            {
+                throw new ZeusException($"{path}.unitId 必须介于 0 与 31 之间。Host Link 虚拟 PLC 使用两位十进制单元号。");
+            }
+
+            return;
         }
 
         if (responder is "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley")
@@ -405,6 +419,23 @@ public static class ZeusConfigurationLoader
         }
 
         ValidateFinsPoints(device.Points, path);
+    }
+
+    private static void ValidateHostLinkDevice(DeviceConfiguration device, string path)
+    {
+        if (device.UnitId > 31)
+        {
+            throw new ZeusException($"{path}.unitId 必须介于 0 与 31 之间。Host Link 单元号使用两位十进制站号。");
+        }
+
+        ParseHostLinkWordOrder(device.WordOrder, $"{path}.wordOrder");
+
+        if (device.TimeoutMilliseconds is <= 0)
+        {
+            throw new ZeusException($"{path}.timeoutMilliseconds 必须大于 0。");
+        }
+
+        ValidateHostLinkPoints(device.Points, path);
     }
 
     private static void ValidateEtherNetIpDevice(DeviceConfiguration device, string path)
@@ -624,6 +655,65 @@ public static class ZeusConfigurationLoader
         }
     }
 
+    private static void ValidateHostLinkPoints(List<PointConfiguration> points, string devicePath)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var path = $"{devicePath}.points[{i}]";
+            EnsureName(point.Name, path);
+            if (!names.Add(point.Name.Trim()))
+            {
+                throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
+            }
+
+            var dataType = ParseHostLinkDataType(point.DataType, $"{path}.dataType");
+            ParseHostLinkArea(point.Area ?? point.Table, $"{path}.area");
+            if (point.Address is < 0 or > 9999)
+            {
+                throw new ZeusException($"{path}.address 必须介于 0 与 9999 之间。");
+            }
+
+            if (dataType == HostLinkDataType.Bit)
+            {
+                if (point.BitOffset is < 0 or > 15)
+                {
+                    throw new ZeusException($"{path}.bit 必须介于 0 与 15 之间。");
+                }
+            }
+            else if (point.BitOffset != 0)
+            {
+                throw new ZeusException($"{path}.bit 只能用于 Host Link bit 点。");
+            }
+
+            if (point.Scale is <= 0)
+            {
+                throw new ZeusException($"{path}.scale 必须大于 0。");
+            }
+
+            ValidateAlarmLimit(point.LowAlarmLimit, $"{path}.lowAlarmLimit");
+            ValidateAlarmLimit(point.HighAlarmLimit, $"{path}.highAlarmLimit");
+            if (point.LowAlarmLimit > point.HighAlarmLimit)
+            {
+                throw new ZeusException($"{path}.lowAlarmLimit 不能高于 highAlarmLimit。");
+            }
+
+            if (dataType == HostLinkDataType.Bit)
+            {
+                if (point.Scale is not null)
+                {
+                    throw new ZeusException($"{path} 是 Host Link bit 点，不能配置 scale。");
+                }
+
+                if (point.LowAlarmLimit is not null || point.HighAlarmLimit is not null)
+                {
+                    throw new ZeusException($"{path} 是 Host Link bit 点，不能配置 lowAlarmLimit 或 highAlarmLimit。");
+                }
+            }
+        }
+    }
+
     private static void ValidateEtherNetIpPoints(List<PointConfiguration> points, string devicePath)
     {
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -711,6 +801,9 @@ public static class ZeusConfigurationLoader
 
     internal static bool IsFinsTcpDeviceType(string type)
         => type is "fins-tcp" or "finstcp" or "omron-fins-tcp" or "omronfinstcp";
+
+    internal static bool IsHostLinkDeviceType(string type)
+        => type is "omron-host-link" or "omronhostlink" or "host-link" or "hostlink" or "omron-hostlink";
 
     internal static bool IsEtherNetIpDeviceType(string type)
         => type is "ethernet-ip" or "ethernetip" or "ether-net-ip" or "cip" or "ab-cip" or "abcip" or "allen-bradley" or "allenbradley" or "ab-ethernet-ip" or "abethernetip";
@@ -807,6 +900,35 @@ public static class ZeusConfigurationLoader
         };
     }
 
+    internal static HostLinkDataType ParseHostLinkDataType(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "word" or "w" or "uint16" or "ushort" => HostLinkDataType.Word,
+            "bit" or "bool" or "boolean" => HostLinkDataType.Bit,
+            "int" or "int16" or "short" => HostLinkDataType.Int16,
+            "uint32" or "udint" or "dword" or "dw" => HostLinkDataType.UInt32,
+            "int32" or "dint" => HostLinkDataType.Int32,
+            "real" or "float" or "single" => HostLinkDataType.Real,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。Host Link 可选 bit、word、int16、uint32、int32、real。")
+        };
+    }
+
+    internal static HostLinkArea ParseHostLinkArea(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "cio" or "ir" or "inputoutput" => HostLinkArea.Cio,
+            "lr" or "link" => HostLinkArea.Link,
+            "hr" or "holding" => HostLinkArea.Holding,
+            "ar" or "aux" or "auxiliary" => HostLinkArea.Auxiliary,
+            "dm" or "data" or "datamemory" => HostLinkArea.DataMemory,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。Host Link 可选 cio、lr、hr、ar、dm。")
+        };
+    }
+
     internal static FinsWordOrder ParseFinsWordOrder(string? value, string path)
     {
         var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
@@ -814,6 +936,17 @@ public static class ZeusConfigurationLoader
         {
             "" or "highwordfirst" or "highfirst" or "big" or "bigendian" => FinsWordOrder.HighWordFirst,
             "lowwordfirst" or "lowfirst" or "little" or "littleendian" => FinsWordOrder.LowWordFirst,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。可选 high-word-first、low-word-first。")
+        };
+    }
+
+    internal static HostLinkWordOrder ParseHostLinkWordOrder(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "highwordfirst" or "highfirst" or "big" or "bigendian" => HostLinkWordOrder.HighWordFirst,
+            "lowwordfirst" or "lowfirst" or "little" or "littleendian" => HostLinkWordOrder.LowWordFirst,
             _ => throw new ZeusException($"{path}「{value}」不受支持。可选 high-word-first、low-word-first。")
         };
     }

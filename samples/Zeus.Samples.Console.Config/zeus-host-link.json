@@ -1,0 +1,29 @@
+{
+  "acquisition": {
+    "intervalMilliseconds": 200,
+    "pollImmediately": true
+  },
+  "channels": [
+    {
+      "name": "host-link",
+      "type": "serial",
+      "portName": "COM3",
+      "baudRate": 9600
+    }
+  ],
+  "devices": [
+    {
+      "name": "plc",
+      "channel": "host-link",
+      "type": "omron-host-link",
+      "unitId": 0,
+      "wordOrder": "high-word-first",
+      "points": [
+        { "name": "temperature", "area": "dm", "address": 100, "dataType": "word", "scale": 0.1, "writable": true, "lowAlarmLimit": 10, "highAlarmLimit": 80 },
+        { "name": "setpoint", "area": "dm", "address": 101, "dataType": "word", "scale": 0.1, "writable": true },
+        { "name": "running", "area": "cio", "address": 10, "bit": 0, "dataType": "bit", "writable": true },
+        { "name": "flow", "area": "dm", "address": 120, "dataType": "real" }
+      ]
+    }
+  ]
+}
