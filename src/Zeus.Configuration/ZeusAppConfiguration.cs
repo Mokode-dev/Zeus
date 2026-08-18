@@ -85,7 +85,7 @@ public sealed class ChannelConfiguration
     public int LocalPort { get; set; }
 
     /// <summary>
-    /// 虚拟通道挂接的从站。支持 <c>modbus</c>、<c>mc</c>、<c>s7</c>、<c>fins</c>、<c>host-link</c>、<c>mewtocol</c>。
+    /// 虚拟通道挂接的从站。支持 <c>modbus</c>、<c>mc</c>、<c>s7</c>、<c>fins</c>、<c>host-link</c>、<c>mewtocol</c>、<c>dlt645</c>。
     /// </summary>
     public string? Responder { get; set; }
 
@@ -94,6 +94,9 @@ public sealed class ChannelConfiguration
 
     /// <summary>虚拟从站封装：<c>rtu</c>、<c>tcp</c> 或 <c>ascii</c>，默认 rtu。</summary>
     public string Transport { get; set; } = "rtu";
+
+    /// <summary>DL/T 645 虚拟表计地址，12 位十进制字符串，默认 000000000001。</summary>
+    public string MeterAddress { get; set; } = "000000000001";
 }
 
 /// <summary>
@@ -107,7 +110,7 @@ public sealed class DeviceConfiguration
     /// <summary>绑定的通道名。</summary>
     public string Channel { get; set; } = string.Empty;
 
-    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>modbus-ascii</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c>、<c>omron-host-link</c>、<c>panasonic-mewtocol</c> 或 <c>ethernet-ip</c>。</summary>
+    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>modbus-ascii</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c>、<c>omron-host-link</c>、<c>panasonic-mewtocol</c>、<c>ethernet-ip</c> 或 <c>dlt645</c>。</summary>
     public string Type { get; set; } = "modbus-rtu";
 
     /// <summary>从站/单元标识，默认 1。Host Link 使用 0-31 单元号；MEWTOCOL 使用 1-99 站号。</summary>
@@ -188,6 +191,18 @@ public sealed class DeviceConfiguration
     /// <summary>FINS / Host Link / MEWTOCOL 32 位值字序：<c>high-word-first</c> 或 <c>low-word-first</c>。</summary>
     public string WordOrder { get; set; } = "high-word-first";
 
+    /// <summary>DL/T 645 表地址，12 位十进制字符串。仅 DL/T 645。</summary>
+    public string MeterAddress { get; set; } = "000000000001";
+
+    /// <summary>DL/T 645 写数据密码，8 位十进制 BCD。仅 DL/T 645。</summary>
+    public string Password { get; set; } = "00000000";
+
+    /// <summary>DL/T 645 写数据操作者代码，8 位十进制 BCD。仅 DL/T 645。</summary>
+    public string OperatorCode { get; set; } = "00000000";
+
+    /// <summary>DL/T 645 帧前导 0xFE 数量，默认 4。仅 DL/T 645。</summary>
+    public int WakeUpPreambleCount { get; set; } = 4;
+
     /// <summary>周期采集点。</summary>
     public List<PointConfiguration> Points { get; set; } = [];
 }
@@ -239,8 +254,11 @@ public sealed class PointConfiguration
     [JsonPropertyName("bit")]
     public int BitOffset { get; set; }
 
-    /// <summary>Siemens S7 / Omron FINS / Host Link / MEWTOCOL / EtherNet/IP 数据类型。EtherNet/IP 支持 <c>bool</c>、<c>sint</c>、<c>int</c>、<c>dint</c>、<c>lint</c>、<c>usint</c>、<c>uint</c>、<c>udint</c>、<c>ulint</c>、<c>real</c>、<c>lreal</c>。</summary>
+    /// <summary>Siemens S7 / Omron FINS / Host Link / MEWTOCOL / EtherNet/IP / DL/T 645 数据类型。DL/T 645 支持 <c>bcd</c>、<c>raw</c>。</summary>
     public string DataType { get; set; } = "word";
+
+    /// <summary>DL/T 645 数据项有效载荷长度，不含 4 字节数据项标识，默认 4。</summary>
+    public int DataLength { get; set; } = 4;
 
     /// <summary>
     /// 寄存器换算系数。例如 0.1 表示原始值乘 0.1 后写入点表。

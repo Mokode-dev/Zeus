@@ -202,13 +202,17 @@ public static class ZeusConfigurationLoader
             {
                 ValidateEtherNetIpDevice(device, path);
             }
+            else if (IsDlt645DeviceType(type))
+            {
+                ValidateDlt645Device(device, path);
+            }
             else if (IsMcDeviceType(type))
             {
                 ValidateMcDevice(device, path);
             }
             else
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、modbus-ascii、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip。");
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、modbus-ascii、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip、dlt645。");
             }
         }
     }
@@ -221,9 +225,15 @@ public static class ZeusConfigurationLoader
         }
 
         var responder = Normalize(channel.Responder);
-        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley"))
+        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley" or "dlt645" or "dlt-645" or "dlt645-2007"))
         {
-            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、mewtocol、ethernet-ip，或省略以回显写入。");
+            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、mewtocol、ethernet-ip、dlt645，或省略以回显写入。");
+        }
+
+        if (responder is "dlt645" or "dlt-645" or "dlt645-2007")
+        {
+            ValidateDlt645Address(channel.MeterAddress, $"{path}.meterAddress");
+            return;
         }
 
         if (responder is "host-link" or "hostlink" or "omron-host-link" or "omronhostlink")
@@ -477,6 +487,25 @@ public static class ZeusConfigurationLoader
         }
 
         ValidateEtherNetIpPoints(device.Points, path);
+    }
+
+    private static void ValidateDlt645Device(DeviceConfiguration device, string path)
+    {
+        ValidateDlt645Address(device.MeterAddress, $"{path}.meterAddress");
+        ValidateDlt645BcdText(device.Password, 8, $"{path}.password");
+        ValidateDlt645BcdText(device.OperatorCode, 8, $"{path}.operatorCode");
+
+        if (device.WakeUpPreambleCount is < 0 or > 16)
+        {
+            throw new ZeusException($"{path}.wakeUpPreambleCount 必须介于 0 与 16 之间。");
+        }
+
+        if (device.TimeoutMilliseconds is <= 0)
+        {
+            throw new ZeusException($"{path}.timeoutMilliseconds 必须大于 0。");
+        }
+
+        ValidateDlt645Points(device.Points, path);
     }
 
     private static void ValidateMcPoints(List<PointConfiguration> points, string devicePath, McFrameType frameType)
@@ -868,6 +897,57 @@ public static class ZeusConfigurationLoader
         }
     }
 
+    private static void ValidateDlt645Points(List<PointConfiguration> points, string devicePath)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var path = $"{devicePath}.points[{i}]";
+            EnsureName(point.Name, path);
+            if (!names.Add(point.Name.Trim()))
+            {
+                throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
+            }
+
+            var dataType = ParseDlt645DataType(point.DataType, $"{path}.dataType");
+            if (point.Address < 0)
+            {
+                throw new ZeusException($"{path}.address 必须是非负 DL/T 645 数据项标识，例如 0x00000000。");
+            }
+
+            if (point.DataLength is < 1 or > 64)
+            {
+                throw new ZeusException($"{path}.dataLength 必须介于 1 与 64 之间。");
+            }
+
+            if (point.Scale is <= 0)
+            {
+                throw new ZeusException($"{path}.scale 必须大于 0。");
+            }
+
+            ValidateAlarmLimit(point.LowAlarmLimit, $"{path}.lowAlarmLimit");
+            ValidateAlarmLimit(point.HighAlarmLimit, $"{path}.highAlarmLimit");
+            if (point.LowAlarmLimit > point.HighAlarmLimit)
+            {
+                throw new ZeusException($"{path}.lowAlarmLimit 不能高于 highAlarmLimit。");
+            }
+
+            if (dataType == Dlt645DataType.RawBytes)
+            {
+                if (point.Scale is not null)
+                {
+                    throw new ZeusException($"{path} 是 DL/T 645 raw 点，不能配置 scale。");
+                }
+
+                if (point.LowAlarmLimit is not null || point.HighAlarmLimit is not null)
+                {
+                    throw new ZeusException($"{path} 是 DL/T 645 raw 点，不能配置 lowAlarmLimit 或 highAlarmLimit。");
+                }
+            }
+        }
+    }
+
     private static void ValidateAlarmLimit(double? value, string path)
     {
         if (value is { } number && !double.IsFinite(number))
@@ -916,6 +996,9 @@ public static class ZeusConfigurationLoader
 
     internal static bool IsEtherNetIpDeviceType(string type)
         => type is "ethernet-ip" or "ethernetip" or "ether-net-ip" or "cip" or "ab-cip" or "abcip" or "allen-bradley" or "allenbradley" or "ab-ethernet-ip" or "abethernetip";
+
+    internal static bool IsDlt645DeviceType(string type)
+        => type is "dlt645" or "dlt-645" or "dlt645-2007" or "dlt-645-2007" or "dl-t645" or "dl-t-645";
 
     internal static McFrameType ParseMcFrameType(string? value, string path)
     {
@@ -1191,6 +1274,39 @@ public static class ZeusConfigurationLoader
             "lreal" or "double" => EtherNetIpDataType.LReal,
             _ => throw new ZeusException($"{path}「{value}」不受支持。EtherNet/IP 可选 bool、sint、int、dint、lint、usint、uint、udint、ulint、real、lreal。")
         };
+    }
+
+    internal static Dlt645DataType ParseDlt645DataType(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "bcd" or "decimal" or "number" => Dlt645DataType.Bcd,
+            "raw" or "bytes" or "rawbytes" or "hex" => Dlt645DataType.RawBytes,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。DL/T 645 可选 bcd、raw。")
+        };
+    }
+
+    private static void ValidateDlt645Address(string? value, string path)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ZeusException($"{path} 不能为空，应为 12 位十进制字符串，例如 000000000001。");
+        }
+
+        var normalized = value.Trim().Replace(" ", string.Empty, StringComparison.Ordinal).Replace("-", string.Empty, StringComparison.Ordinal);
+        if (normalized.Length != 12 || normalized.Any(ch => ch is < '0' or > '9'))
+        {
+            throw new ZeusException($"{path}「{value}」无效，应为 12 位十进制字符串，例如 000000000001。");
+        }
+    }
+
+    private static void ValidateDlt645BcdText(string? value, int length, string path)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length != length || value.Trim().Any(ch => ch is < '0' or > '9'))
+        {
+            throw new ZeusException($"{path} 必须是 {length} 位十进制字符串。");
+        }
     }
 
     private static void ValidateByte(int value, string path)

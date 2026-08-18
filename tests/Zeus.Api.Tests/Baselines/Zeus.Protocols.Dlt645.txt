@@ -1,0 +1,88 @@
+namespace Zeus
+{
+    public sealed class Dlt645Client : System.IAsyncDisposable
+    {
+        public Dlt645Client(Zeus.IChannel channel, Zeus.Dlt645Options? options = null, System.TimeSpan? timeout = default) { }
+        public Zeus.IChannel Channel { get; }
+        public Zeus.Dlt645Options Options { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<double> ReadBcdAsync(uint dataIdentifier, int byteLength, double scale, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<byte[]> ReadDataAsync(uint dataIdentifier, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteBcdAsync(uint dataIdentifier, double value, int byteLength, double scale, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDataAsync(uint dataIdentifier, System.Collections.Generic.IReadOnlyList<byte> data, string? password = null, string? operatorCode = null, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public enum Dlt645DataType
+    {
+        Bcd = 0,
+        RawBytes = 1,
+    }
+    public sealed class Dlt645Device : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
+    {
+        public Dlt645Device(string name, Zeus.IChannel channel, Zeus.Dlt645Options? options = null, System.TimeSpan? timeout = default, Zeus.Dlt645PointMap? pointMap = null) { }
+        public Zeus.Dlt645Client Client { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<double> ReadBcdAsync(uint dataIdentifier, int byteLength, double scale, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<byte[]> ReadDataAsync(uint dataIdentifier, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteBcdAsync(uint dataIdentifier, double value, int byteLength, double scale, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDataAsync(uint dataIdentifier, System.Collections.Generic.IReadOnlyList<byte> data, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class Dlt645Exception : Zeus.ZeusProtocolException
+    {
+        public Dlt645Exception(byte command, byte errorCode) { }
+        public byte Command { get; }
+        public byte ErrorCode { get; }
+    }
+    public sealed class Dlt645Options
+    {
+        public Dlt645Options() { }
+        public string MeterAddress { get; set; }
+        public string OperatorCode { get; set; }
+        public string Password { get; set; }
+        public int WakeUpPreambleCount { get; set; }
+    }
+    public sealed class Dlt645PointMap
+    {
+        public Dlt645PointMap() { }
+        public Zeus.Dlt645PointMap Bcd(string name, uint dataIdentifier, int dataLength = 4, double scale = 0.01, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.Dlt645PointMap CurrentA(string name = "currentA") { }
+        public Zeus.Dlt645PointMap RawBytes(string name, uint dataIdentifier, int dataLength) { }
+        public Zeus.Dlt645PointMap TotalActiveEnergy(string name = "totalActiveEnergy") { }
+        public Zeus.Dlt645PointMap VoltageA(string name = "voltageA") { }
+        public Zeus.Dlt645PointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
+        public Zeus.Dlt645PointMap Writable(string name) { }
+    }
+    public sealed class Dlt645PointSpec
+    {
+        public Zeus.PointAlarmLimits? AlarmLimits { get; }
+        public uint DataIdentifier { get; }
+        public int DataLength { get; }
+        public Zeus.Dlt645DataType DataType { get; }
+        public Zeus.PointValueKind Kind { get; }
+        public string Name { get; }
+        public double Scale { get; }
+        public bool Writable { get; }
+    }
+    public sealed class Dlt645SlaveMemory
+    {
+        public Dlt645SlaveMemory() { }
+        public System.Collections.Generic.IReadOnlyCollection<uint> DataIdentifiers { get; }
+        public double GetBcd(uint dataIdentifier, int byteLength = 4, double scale = 0.01) { }
+        public void SetBcd(uint dataIdentifier, double value, int byteLength = 4, double scale = 0.01) { }
+        public void SetData(uint dataIdentifier, System.Collections.Generic.IReadOnlyList<byte> data) { }
+        public bool TryGetData(uint dataIdentifier, out byte[] data) { }
+    }
+    public sealed class Dlt645SlaveResponder : Zeus.IVirtualResponder
+    {
+        public Dlt645SlaveResponder(string meterAddress = "000000000001", Zeus.Dlt645SlaveMemory? memory = null) { }
+        public Zeus.Dlt645SlaveMemory Memory { get; }
+        public System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request) { }
+    }
+    public static class ZeusHostBuilderDlt645Extensions
+    {
+        public static Zeus.Dlt645Device AddDlt645(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.Dlt645Options? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.Dlt645PointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddDlt645(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.Dlt645Options? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.Dlt645PointMap>? points = null) { }
+    }
+}

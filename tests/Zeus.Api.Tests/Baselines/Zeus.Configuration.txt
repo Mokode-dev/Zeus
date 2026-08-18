@@ -13,6 +13,7 @@ namespace Zeus
         public string? Host { get; set; }
         public string? LocalAddress { get; set; }
         public int LocalPort { get; set; }
+        public string MeterAddress { get; set; }
         public string Name { get; set; }
         public int Port { get; set; }
         public string? PortName { get; set; }
@@ -34,9 +35,12 @@ namespace Zeus
         public int InformationControlField { get; set; }
         public int IoNumber { get; set; }
         public int LocalTsap { get; set; }
+        public string MeterAddress { get; set; }
         public int MonitoringTimer { get; set; }
         public string Name { get; set; }
         public int NetworkNumber { get; set; }
+        public string OperatorCode { get; set; }
+        public string Password { get; set; }
         public int PcNumber { get; set; }
         public System.Collections.Generic.List<Zeus.PointConfiguration> Points { get; set; }
         public int Rack { get; set; }
@@ -53,6 +57,7 @@ namespace Zeus
         public string Type { get; set; }
         public byte UnitId { get; set; }
         public bool UseTcpNodeAddressHandshake { get; set; }
+        public int WakeUpPreambleCount { get; set; }
         public string WordOrder { get; set; }
     }
     public sealed class PointConfiguration
@@ -63,6 +68,7 @@ namespace Zeus
         public string? Area { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("bit")]
         public int BitOffset { get; set; }
+        public int DataLength { get; set; }
         public string DataType { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("db")]
         public int DbNumber { get; set; }

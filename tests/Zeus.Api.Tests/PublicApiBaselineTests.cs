@@ -55,6 +55,10 @@ public sealed class PublicApiBaselineTests
     [Fact]
     public void EtherNetIp_matches_baseline() => AssertMatchesBaseline(typeof(EtherNetIpDevice).Assembly);
 
+    /// <summary>DL/T 645-2007 公开表面。</summary>
+    [Fact]
+    public void Dlt645_matches_baseline() => AssertMatchesBaseline(typeof(Dlt645Device).Assembly);
+
     /// <summary>Mitsubishi MC 公开表面。</summary>
     [Fact]
     public void Mc_matches_baseline() => AssertMatchesBaseline(typeof(McDevice).Assembly);

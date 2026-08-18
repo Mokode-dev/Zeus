@@ -13,13 +13,13 @@
     <Product>Zeus</Product>
     <Description>面向 .NET 的 UI 无关上位机开发框架。把复杂留给 Zeus，把简单留给用户。</Description>
     <Copyright>Copyright © Zeus</Copyright>
-    <Version>0.11.0</Version>
+    <Version>0.12.0</Version>
     <NeutralLanguage>zh-Hans</NeutralLanguage>
     <IsPackable>false</IsPackable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageTags>zeus;host;modbus;mitsubishi;mc;siemens;s7;omron;fins;host-link;panasonic;mewtocol;ethernet-ip;cip;allen-bradley;serial;tcp;udp;winforms;wpf;industrial;scada</PackageTags>
-    <PackageReleaseNotes>0.11.0：新增 Modbus ASCII 封装，支持冒号起始、十六进制文本、LRC 校验和 CRLF 定界，并接入虚拟从站、点表采集、JSON 配置与文档。</PackageReleaseNotes>
+    <PackageTags>zeus;host;modbus;mitsubishi;mc;siemens;s7;omron;fins;host-link;panasonic;mewtocol;ethernet-ip;cip;allen-bradley;dlt645;electric-meter;serial;tcp;udp;winforms;wpf;industrial;scada</PackageTags>
+    <PackageReleaseNotes>0.12.0：新增 DL/T 645-2007 电能表协议栈，支持表地址帧、0x33 数据偏移、BCD 数据项读写、虚拟表计、点表采集、JSON 配置与文档。</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Mokode-dev/Zeus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Mokode-dev/Zeus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

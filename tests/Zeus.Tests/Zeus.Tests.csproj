@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\src\Zeus.Protocols.S7\Zeus.Protocols.S7.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.EtherNetIp\Zeus.Protocols.EtherNetIp.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.Mewtocol\Zeus.Protocols.Mewtocol.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Protocols.Dlt645\Zeus.Protocols.Dlt645.csproj" />
   </ItemGroup>
 
   <ItemGroup>

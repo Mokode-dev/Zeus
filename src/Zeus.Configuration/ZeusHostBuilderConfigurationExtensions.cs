@@ -267,6 +267,13 @@ public static class ZeusHostBuilderConfigurationExtensions
             return;
         }
 
+        if (ZeusConfigurationLoader.IsDlt645DeviceType(type))
+        {
+            Action<Dlt645PointMap>? dlt645Points = device.Points.Count == 0 ? null : map => ApplyDlt645Points(map, device.Points);
+            host.AddDlt645(device.Name.Trim(), device.Channel.Trim(), CreateDlt645Options(device), timeout, dlt645Points);
+            return;
+        }
+
         if (ZeusConfigurationLoader.IsMcDeviceType(type))
         {
             Action<McPointMap>? mcPoints = device.Points.Count == 0 ? null : map => ApplyMcPoints(map, device.Points);
@@ -302,7 +309,7 @@ public static class ZeusHostBuilderConfigurationExtensions
         var type = ZeusConfigurationLoader.Normalize(channel.Type);
         return type switch
         {
-            "virtual" => string.Join('|', type, ZeusConfigurationLoader.Normalize(channel.Responder), channel.UnitId, ZeusConfigurationLoader.Normalize(channel.Transport)),
+            "virtual" => string.Join('|', type, ZeusConfigurationLoader.Normalize(channel.Responder), channel.UnitId, ZeusConfigurationLoader.Normalize(channel.Transport), channel.MeterAddress?.Trim()),
             "serial" => string.Join('|', type, channel.PortName?.Trim(), channel.BaudRate),
             "tcp" => string.Join('|', type, channel.Host?.Trim(), channel.Port),
             "tcp-server" or "tcpserver" => string.Join('|', "tcp-server", channel.LocalAddress?.Trim(), EffectiveTcpServerPort(channel)),
@@ -323,6 +330,7 @@ public static class ZeusHostBuilderConfigurationExtensions
                 ZeusConfigurationLoader.Normalize(point.TagName),
                 ZeusConfigurationLoader.Normalize(point.Tag),
                 ZeusConfigurationLoader.Normalize(point.DataType),
+                point.DataLength,
                 point.DbNumber,
                 point.Address,
                 point.BitOffset,
@@ -379,6 +387,19 @@ public static class ZeusHostBuilderConfigurationExtensions
                 device.Channel.Trim(),
                 type,
                 device.TimeoutMilliseconds,
+                points);
+        }
+
+        if (ZeusConfigurationLoader.IsDlt645DeviceType(type))
+        {
+            return string.Join('|',
+                device.Channel.Trim(),
+                type,
+                device.TimeoutMilliseconds,
+                device.MeterAddress.Trim(),
+                device.WakeUpPreambleCount,
+                device.Password.Trim(),
+                device.OperatorCode.Trim(),
                 points);
         }
 
@@ -522,6 +543,11 @@ public static class ZeusHostBuilderConfigurationExtensions
             return new EtherNetIpSlaveResponder();
         }
 
+        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "dlt645" or "dlt-645" or "dlt645-2007")
+        {
+            return new Dlt645SlaveResponder(channel.MeterAddress);
+        }
+
         var transport = CreateModbusTransport(ZeusConfigurationLoader.Normalize(channel.Transport));
         return new ModbusSlaveResponder(channel.UnitId, transport);
     }
@@ -558,6 +584,13 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             Action<EtherNetIpPointMap>? etherNetIpPoints = device.Points.Count == 0 ? null : map => ApplyEtherNetIpPoints(map, device.Points);
             builder.AddEtherNetIp(device.Name.Trim(), device.Channel.Trim(), null, timeout, etherNetIpPoints);
+            return;
+        }
+
+        if (ZeusConfigurationLoader.IsDlt645DeviceType(type))
+        {
+            Action<Dlt645PointMap>? dlt645Points = device.Points.Count == 0 ? null : map => ApplyDlt645Points(map, device.Points);
+            builder.AddDlt645(device.Name.Trim(), device.Channel.Trim(), CreateDlt645Options(device), timeout, dlt645Points);
             return;
         }
 
@@ -909,6 +942,26 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyDlt645Points(Dlt645PointMap map, List<PointConfiguration> points)
+    {
+        foreach (var point in points)
+        {
+            var dataType = ZeusConfigurationLoader.ParseDlt645DataType(point.DataType, $"point {point.Name}.dataType");
+            var dataIdentifier = checked((uint)point.Address);
+            var alarmLimits = CreateAlarmLimits(point);
+            if (dataType == Dlt645DataType.RawBytes)
+            {
+                map.RawBytes(point.Name, dataIdentifier, point.DataLength);
+                ApplyDlt645Writable(map, point);
+                continue;
+            }
+
+            map.Bcd(point.Name, dataIdentifier, point.DataLength, point.Scale ?? 0.01, alarmLimits);
+            ApplyDlt645AlarmLimits(map, point, alarmLimits);
+            ApplyDlt645Writable(map, point);
+        }
+    }
+
     private static PointAlarmLimits? CreateAlarmLimits(PointConfiguration point)
         => point.LowAlarmLimit is not null || point.HighAlarmLimit is not null
             ? new PointAlarmLimits(point.LowAlarmLimit, point.HighAlarmLimit)
@@ -1021,6 +1074,22 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyDlt645AlarmLimits(Dlt645PointMap map, PointConfiguration point, PointAlarmLimits? alarmLimits)
+    {
+        if (alarmLimits is not null)
+        {
+            map.WithAlarmLimits(point.Name, alarmLimits.Low, alarmLimits.High);
+        }
+    }
+
+    private static void ApplyDlt645Writable(Dlt645PointMap map, PointConfiguration point)
+    {
+        if (point.Writable)
+        {
+            map.Writable(point.Name);
+        }
+    }
+
     private static Mc3EOptions CreateMcOptions(DeviceConfiguration device)
         => new()
         {
@@ -1075,6 +1144,15 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             StationNumber = device.UnitId,
             WordOrder = ZeusConfigurationLoader.ParseMewtocolWordOrder(device.WordOrder, "device.wordOrder")
+        };
+
+    private static Dlt645Options CreateDlt645Options(DeviceConfiguration device)
+        => new()
+        {
+            MeterAddress = device.MeterAddress.Trim(),
+            WakeUpPreambleCount = device.WakeUpPreambleCount,
+            Password = device.Password.Trim(),
+            OperatorCode = device.OperatorCode.Trim()
         };
 }
 

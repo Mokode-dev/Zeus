@@ -1,0 +1,40 @@
+{
+  "acquisition": {
+    "intervalMilliseconds": 500,
+    "pollImmediately": true
+  },
+  "channels": [
+    {
+      "name": "meter-link",
+      "type": "virtual",
+      "responder": "dlt645",
+      "meterAddress": "000000000001"
+    }
+  ],
+  "devices": [
+    {
+      "name": "meter",
+      "channel": "meter-link",
+      "type": "dlt645",
+      "meterAddress": "000000000001",
+      "wakeUpPreambleCount": 0,
+      "points": [
+        {
+          "name": "energy",
+          "address": "0x00000000",
+          "dataType": "bcd",
+          "dataLength": 4,
+          "scale": 0.01
+        },
+        {
+          "name": "limit",
+          "address": "0x04000101",
+          "dataType": "bcd",
+          "dataLength": 2,
+          "scale": 0.1,
+          "writable": true
+        }
+      ]
+    }
+  ]
+}
