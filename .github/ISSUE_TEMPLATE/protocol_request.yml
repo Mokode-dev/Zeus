@@ -1,0 +1,86 @@
+name: 🔌 Protocol or Device Support / 协议或设备适配
+description: Request support for a protocol, PLC, instrument, or device. / 请求适配协议、PLC、仪表或设备。
+title: "[Protocol]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please provide enough protocol and device detail to evaluate the integration effort.
+
+        请尽量提供协议和设备资料，便于评估适配工作量。
+  - type: input
+    id: vendor
+    attributes:
+      label: 🏭 Vendor and device / 厂商与设备
+      placeholder: "Panasonic FP-XH / Siemens S7-1200 / Custom meter"
+    validations:
+      required: true
+  - type: input
+    id: protocol
+    attributes:
+      label: 📡 Protocol name / 协议名称
+      placeholder: "MEWTOCOL-COM / Modbus RTU / Private protocol"
+    validations:
+      required: true
+  - type: dropdown
+    id: transport
+    attributes:
+      label: 🔌 Transport / 通信方式
+      options:
+        - Serial / 串口
+        - TCP client / TCP 客户端
+        - TCP server / TCP 服务端
+        - UDP client / UDP 客户端
+        - UDP server / UDP 服务端
+        - Other / 其它
+    validations:
+      required: true
+  - type: textarea
+    id: operations
+    attributes:
+      label: 🧪 Required operations / 需要支持的操作
+      description: List the read/write operations, data areas, tags, or commands you need. / 列出需要的读写操作、数据区、标签或命令。
+      placeholder: |
+        - Read holding registers
+        - Write coils
+        - Read DT data registers
+    validations:
+      required: true
+  - type: textarea
+    id: docs
+    attributes:
+      label: 📚 Protocol documents / 协议资料
+      description: Link public manuals or describe what private documents can be shared. / 链接公开手册，或说明可共享哪些私有资料。
+    validations:
+      required: true
+  - type: textarea
+    id: frames
+    attributes:
+      label: 🧾 Sample frames / 示例报文
+      description: Provide request/response examples if available. / 如有，请提供请求和响应示例。
+      render: text
+  - type: dropdown
+    id: hardware
+    attributes:
+      label: 🔬 Test hardware availability / 测试硬件
+      options:
+        - I can provide remote access or test feedback / 我可以提供远程访问或测试反馈
+        - I can only provide logs and manuals / 我只能提供日志和手册
+        - I do not have hardware available / 暂无可用硬件
+    validations:
+      required: true
+  - type: textarea
+    id: timeline
+    attributes:
+      label: ⏱️ Project timeline / 项目时间要求
+      description: Is this exploratory, planned work, or blocking a delivery? / 这是探索需求、计划需求，还是正在阻塞交付？
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 🔎 Pre-submit checks / 提交前检查
+      options:
+        - label: I checked whether this protocol or device is already supported. / 我已确认该协议或设备目前尚未支持。
+          required: true
+        - label: I can help verify behavior against real device responses. / 我可以协助用真实设备响应验证行为。
+          required: false

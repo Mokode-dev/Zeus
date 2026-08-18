@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Community / QQ 交流群
+    url: https://docs.greekmythology.cn/docs/community
+    about: For general discussion and usage questions that do not need issue tracking. / 不需要进入 Issue 跟踪的一般交流和使用问题。
+  - name: 💖 Sponsor Zeus / 支持 Zeus
+    url: https://docs.greekmythology.cn/docs/sponsor/
+    about: Support open-source maintenance or discuss enterprise support. / 支持开源维护，或沟通企业支持。

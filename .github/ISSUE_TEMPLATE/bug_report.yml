@@ -1,0 +1,98 @@
+name: 🐛 Bug Report / 缺陷反馈
+description: Report a reproducible problem in Zeus. / 反馈可复现的问题。
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Please provide enough detail for maintainers to reproduce it.
+
+        感谢反馈问题。请尽量提供可复现信息，便于维护者快速定位。
+  - type: dropdown
+    id: area
+    attributes:
+      label: 📍 Area / 影响范围
+      description: Which part of Zeus is affected? / 问题主要影响哪个部分？
+      options:
+        - Communications / 通信通道
+        - Protocols / 协议
+        - Acquisition / 采集
+        - Configuration / JSON 配置
+        - Hosting / 宿主与生命周期
+        - Presentation / WinForms 或 WPF 绑定
+        - Samples / 示例项目
+        - Packaging / NuGet 包
+        - Other / 其它
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 📦 Zeus version / Zeus 版本
+      description: NuGet package version, commit hash, or branch. / NuGet 包版本、提交哈希或分支。
+      placeholder: "0.1.0 / main@abc123"
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: 🖥️ Runtime environment / 运行环境
+      description: OS, .NET version, app type, and UI framework if relevant. / 操作系统、.NET 版本、应用类型，以及相关 UI 框架。
+      placeholder: "Windows 11, .NET 8, WinForms"
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: 🧩 What happened? / 问题描述
+      description: Describe the failure clearly. / 清晰说明发生了什么。
+      placeholder: "When I..., Zeus..."
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 🔁 Reproduction steps / 复现步骤
+      description: Provide the smallest steps or sample code that reproduces the issue. / 提供最小复现步骤或示例代码。
+      placeholder: |
+        1. Configure...
+        2. Start...
+        3. Send...
+        4. See error...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ Expected behavior / 期望结果
+      description: What did you expect Zeus to do? / 你期望 Zeus 如何表现？
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: ❌ Actual behavior / 实际结果
+      description: What actually happened? / 实际发生了什么？
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📎 Logs, frames, or screenshots / 日志、报文或截图
+      description: Paste relevant TX/RX frames, stack traces, logs, or screenshots. Remove sensitive data first. / 粘贴相关报文、堆栈、日志或截图；请先去除敏感信息。
+      render: text
+  - type: textarea
+    id: notes
+    attributes:
+      label: 📝 Additional context / 补充信息
+      description: Hardware model, PLC model, network topology, or anything else useful. / 硬件型号、PLC 型号、网络拓扑或其它有用信息。
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 🔎 Pre-submit checks / 提交前检查
+      options:
+        - label: I searched existing issues and did not find a duplicate. / 我已搜索现有 Issue，未发现重复问题。
+          required: true
+        - label: I included a minimal reproduction or enough diagnostic information. / 我已提供最小复现或足够的诊断信息。
+          required: true

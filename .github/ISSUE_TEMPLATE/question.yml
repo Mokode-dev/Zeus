@@ -1,0 +1,37 @@
+name: ❓ Usage Question / 使用问题
+description: Ask a focused question that should be tracked as an issue. / 提交需要跟踪的具体使用问题。
+title: "[Question]: "
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For casual discussion, please use the community link instead. Use this template for focused questions that may become documentation, samples, or fixes.
+
+        一般交流请优先使用社区链接。这个模板适合可能沉淀为文档、示例或修复项的具体问题。
+  - type: textarea
+    id: question
+    attributes:
+      label: ❓ Question / 问题
+      description: State the exact thing you are trying to understand or accomplish. / 说明你具体想理解或实现什么。
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: 🧭 Context / 背景
+      description: Include package, protocol, app type, code snippet, or configuration if relevant. / 如相关，请提供包、协议、应用类型、代码片段或配置。
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: 🛠️ What you tried / 已尝试内容
+      description: What have you already tried, and what result did you get? / 你已经尝试过什么，结果如何？
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 🔎 Pre-submit checks / 提交前检查
+      options:
+        - label: I checked the documentation and samples first. / 我已先查看文档和示例。
+          required: true

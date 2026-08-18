@@ -1,0 +1,62 @@
+name: ✨ Feature Request / 功能建议
+description: Suggest an improvement to Zeus. / 建议一个 Zeus 改进项。
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for product, API, runtime, UI binding, or tooling improvements.
+
+        这个模板用于产品能力、API、运行时、界面绑定或工具链改进建议。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 🎯 Problem / 要解决的问题
+      description: What user problem or project scenario does this solve? / 这个建议要解决什么用户问题或项目场景？
+      placeholder: "When building..., it is difficult to..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 💡 Proposed solution / 建议方案
+      description: Describe the desired behavior, API, configuration, or workflow. / 描述期望的行为、API、配置或工作流。
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 📍 Scope / 范围
+      options:
+        - Core runtime / 运行时核心
+        - Communications / 通信通道
+        - Protocols / 协议
+        - Configuration / 配置
+        - Presentation / 界面绑定
+        - Samples / 示例
+        - Documentation / 文档
+        - Other / 其它
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternatives considered / 已考虑的替代方案
+      description: Existing workarounds, competing APIs, or why the current design is insufficient. / 当前替代做法、竞品 API，或现有设计为何不够。
+  - type: textarea
+    id: impact
+    attributes:
+      label: 📈 Expected value / 预期价值
+      description: Who benefits, and how much project complexity does this remove? / 谁会受益，它能减少多少项目复杂度？
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 🔎 Pre-submit checks / 提交前检查
+      options:
+        - label: I searched existing issues and discussions first. / 我已先搜索现有 Issue 和讨论。
+          required: true
+        - label: I can help test or validate this feature if needed. / 如有需要，我可以协助测试或验证。
+          required: false
