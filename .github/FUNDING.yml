@@ -1,0 +1,4 @@
+# Route GitHub's Sponsor button to the project support page.
+custom:
+  - https://docs.greekmythology.cn/docs/sponsor/
+  - https://afdian.com/a/zeusnet

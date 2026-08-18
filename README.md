@@ -80,6 +80,10 @@ app.Points.BindTo("temperature", temperatureLabel);
 
 加入 QQ 群 `771421105` 可与其它使用者交流，二维码见手册 [社区](https://docs.greekmythology.cn/docs/community)。
 
+## 支持 Zeus
+
+如果 Zeus 对你的项目有帮助，可以通过手册里的 [支持 Zeus](https://docs.greekmythology.cn/docs/sponsor/) 页面或 [爱发电](https://afdian.com/a/zeusnet) 赞助项目，也可以沟通企业支持。普通赞助用于支持开源维护；协议适配、现场联调和项目集成请单独沟通。
+
 ## 📄 许可证
 
 [MIT](LICENSE)
