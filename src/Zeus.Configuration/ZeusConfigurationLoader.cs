@@ -208,7 +208,7 @@ public static class ZeusConfigurationLoader
             }
             else
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip。");
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、modbus-ascii、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip。");
             }
         }
     }
@@ -262,9 +262,9 @@ public static class ZeusConfigurationLoader
             return;
         }
 
-        if (transport is not ("rtu" or "tcp"))
+        if (transport is not ("rtu" or "tcp" or "ascii"))
         {
-            throw new ZeusException($"{path}.transport「{channel.Transport}」不受支持。可选 rtu、tcp。");
+            throw new ZeusException($"{path}.transport「{channel.Transport}」不受支持。可选 rtu、tcp、ascii。");
         }
     }
 
@@ -888,10 +888,13 @@ public static class ZeusConfigurationLoader
         => (value ?? string.Empty).Trim().ToLowerInvariant().Replace("_", "-");
 
     internal static bool IsModbusDeviceType(string type)
-        => type is "modbus-rtu" or "modbusrtu" or "rtu" or "modbus-tcp" or "modbustcp" or "tcp";
+        => type is "modbus-rtu" or "modbusrtu" or "rtu" or "modbus-tcp" or "modbustcp" or "tcp" or "modbus-ascii" or "modbusascii" or "ascii";
 
     internal static bool IsModbusTcpDeviceType(string type)
         => type is "modbus-tcp" or "modbustcp" or "tcp";
+
+    internal static bool IsModbusAsciiDeviceType(string type)
+        => type is "modbus-ascii" or "modbusascii" or "ascii";
 
     internal static bool IsMcDeviceType(string type)
         => type is "mitsubishi-mc" or "mitsubishimc" or "mc" or "melsec-mc" or "melsecmc" or "mc-3e" or "mc3e";

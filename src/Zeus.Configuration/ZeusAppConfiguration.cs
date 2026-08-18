@@ -92,7 +92,7 @@ public sealed class ChannelConfiguration
     /// <summary>虚拟 Modbus 从站地址，默认 1。</summary>
     public byte UnitId { get; set; } = 1;
 
-    /// <summary>虚拟从站封装：<c>rtu</c> 或 <c>tcp</c>，默认 rtu。</summary>
+    /// <summary>虚拟从站封装：<c>rtu</c>、<c>tcp</c> 或 <c>ascii</c>，默认 rtu。</summary>
     public string Transport { get; set; } = "rtu";
 }
 
@@ -107,7 +107,7 @@ public sealed class DeviceConfiguration
     /// <summary>绑定的通道名。</summary>
     public string Channel { get; set; } = string.Empty;
 
-    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c>、<c>omron-host-link</c>、<c>panasonic-mewtocol</c> 或 <c>ethernet-ip</c>。</summary>
+    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>modbus-ascii</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c>、<c>omron-host-link</c>、<c>panasonic-mewtocol</c> 或 <c>ethernet-ip</c>。</summary>
     public string Type { get; set; } = "modbus-rtu";
 
     /// <summary>从站/单元标识，默认 1。Host Link 使用 0-31 单元号；MEWTOCOL 使用 1-99 站号。</summary>

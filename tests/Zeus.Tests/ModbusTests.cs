@@ -1,9 +1,10 @@
+using System.Text;
 using Zeus;
 
 namespace Zeus.Tests;
 
 /// <summary>
-/// 通过内存从站验证 Modbus RTU/TCP 读写与异常码。
+/// 通过内存从站验证 Modbus RTU/TCP/ASCII 读写与异常码。
 /// </summary>
 public sealed class ModbusTests
 {
@@ -51,6 +52,73 @@ public sealed class ModbusTests
         var coils = await io.ReadCoilsAsync(0, 8);
         Assert.True(coils[3]);
         Assert.False(coils[0]);
+    }
+
+    /// <summary>
+    /// ASCII 封装应能通过冒号/LRC/CRLF 帧读写保持寄存器。
+    /// </summary>
+    [Fact]
+    public async Task AsciiDevice_WritesAndReadsHoldingRegisters()
+    {
+        var memory = new ModbusSlaveMemory();
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddVirtualChannel("ascii", new ModbusSlaveResponder(1, ModbusTransport.Ascii, memory));
+            builder.AddModbusAscii("meter", "ascii", unitId: 1);
+        });
+
+        await host.StartAsync();
+        var meter = host.Devices.Get<ModbusDevice>("meter");
+        var sentFrames = new List<string>();
+        host.Channels.Get("ascii").PacketTraced += (_, e) =>
+        {
+            if (e.Direction == ChannelTraceDirection.Sent)
+            {
+                sentFrames.Add(Encoding.ASCII.GetString(e.Data.Span));
+            }
+        };
+
+        await meter.WriteMultipleRegistersAsync(5, [100, 200]);
+        var values = await meter.ReadHoldingRegistersAsync(5, 2);
+
+        Assert.Equal(":01100005000204006400C8B8\r\n", sentFrames[0]);
+        Assert.Equal(ModbusTransport.Ascii, meter.Transport);
+        Assert.Equal(new ushort[] { 100, 200 }, values);
+        Assert.Equal((ushort)100, memory.HoldingRegisters[5]);
+        Assert.Equal((ushort)200, memory.HoldingRegisters[6]);
+    }
+
+    /// <summary>
+    /// JSON 配置应能声明 Modbus ASCII 设备和 ASCII 虚拟从站。
+    /// </summary>
+    [Fact]
+    public async Task AddJson_CreatesModbusAsciiDevice()
+    {
+        const string json = """
+            {
+              "channels": [
+                { "name": "ascii", "type": "virtual", "responder": "modbus", "unitId": 1, "transport": "ascii" }
+              ],
+              "devices": [
+                {
+                  "name": "meter",
+                  "channel": "ascii",
+                  "type": "modbus-ascii",
+                  "unitId": 1
+                }
+              ]
+            }
+            """;
+
+        await using var host = ZeusHost.Create(builder => builder.AddJson(json, "Modbus ASCII 配置"));
+        await host.StartAsync();
+
+        var meter = host.Devices.Get<ModbusDevice>("meter");
+        await meter.WriteSingleRegisterAsync(10, 1234);
+        var values = await meter.ReadHoldingRegistersAsync(10, 1);
+
+        Assert.Equal(ModbusTransport.Ascii, meter.Transport);
+        Assert.Equal((ushort)1234, values[0]);
     }
 
     /// <summary>

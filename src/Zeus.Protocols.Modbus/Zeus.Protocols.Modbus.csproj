@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Modbus RTU/TCP 客户端与内存从站。协议只依赖通道抽象，传输由 Communications 提供。 -->
+  <!-- Modbus RTU/TCP/ASCII 客户端与内存从站。协议只依赖通道抽象，传输由 Communications 提供。 -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Zeus</RootNamespace>
     <AssemblyName>Zeus.Protocols.Modbus</AssemblyName>
-    <Description>Zeus Modbus RTU/TCP 客户端、内存从站与声明式点表采集。</Description>
-    <PackageDescription>Zeus Modbus RTU/TCP 客户端、内存从站与声明式点表采集。</PackageDescription>
+    <Description>Zeus Modbus RTU/TCP/ASCII 客户端、内存从站与声明式点表采集。</Description>
+    <PackageDescription>Zeus Modbus RTU/TCP/ASCII 客户端、内存从站与声明式点表采集。</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

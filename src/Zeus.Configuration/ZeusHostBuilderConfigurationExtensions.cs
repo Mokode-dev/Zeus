@@ -281,15 +281,19 @@ public static class ZeusHostBuilderConfigurationExtensions
             return;
         }
 
-        var isTcp = ZeusConfigurationLoader.IsModbusTcpDeviceType(type);
         Action<ModbusPointMap>? points = device.Points.Count == 0 ? null : map => ApplyPoints(map, device.Points);
-        if (isTcp)
+
+        switch (CreateModbusTransport(type))
         {
-            host.AddModbusTcp(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
-        }
-        else
-        {
-            host.AddModbusRtu(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
+            case ModbusTransport.Tcp:
+                host.AddModbusTcp(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
+                break;
+            case ModbusTransport.Ascii:
+                host.AddModbusAscii(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
+                break;
+            default:
+                host.AddModbusRtu(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
+                break;
         }
     }
 
@@ -518,9 +522,7 @@ public static class ZeusHostBuilderConfigurationExtensions
             return new EtherNetIpSlaveResponder();
         }
 
-        var transport = ZeusConfigurationLoader.Normalize(channel.Transport) == "tcp"
-            ? ModbusTransport.Tcp
-            : ModbusTransport.Rtu;
+        var transport = CreateModbusTransport(ZeusConfigurationLoader.Normalize(channel.Transport));
         return new ModbusSlaveResponder(channel.UnitId, transport);
     }
 
@@ -573,17 +575,32 @@ public static class ZeusHostBuilderConfigurationExtensions
             return;
         }
 
-        var isTcp = ZeusConfigurationLoader.IsModbusTcpDeviceType(type);
         Action<ModbusPointMap>? points = device.Points.Count == 0 ? null : map => ApplyPoints(map, device.Points);
 
-        if (isTcp)
+        switch (CreateModbusTransport(type))
         {
-            builder.AddModbusTcp(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
+            case ModbusTransport.Tcp:
+                builder.AddModbusTcp(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
+                break;
+            case ModbusTransport.Ascii:
+                builder.AddModbusAscii(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
+                break;
+            default:
+                builder.AddModbusRtu(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
+                break;
         }
-        else
+    }
+
+    private static ModbusTransport CreateModbusTransport(string normalizedTypeOrTransport)
+    {
+        if (ZeusConfigurationLoader.IsModbusTcpDeviceType(normalizedTypeOrTransport) || normalizedTypeOrTransport == "tcp")
         {
-            builder.AddModbusRtu(device.Name.Trim(), device.Channel.Trim(), device.UnitId, timeout, points);
+            return ModbusTransport.Tcp;
         }
+
+        return ZeusConfigurationLoader.IsModbusAsciiDeviceType(normalizedTypeOrTransport) || normalizedTypeOrTransport == "ascii"
+            ? ModbusTransport.Ascii
+            : ModbusTransport.Rtu;
     }
 
     private static void ApplyPoints(ModbusPointMap map, List<PointConfiguration> points)

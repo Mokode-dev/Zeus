@@ -32,7 +32,7 @@
 ## ✨ 特性
 
 - 🔌 **通道** — 串口、TCP、UDP 客户端 / 服务端、虚拟通道，同一套 API
-- 📡 **协议** — 自定义帧、Modbus RTU / TCP、Mitsubishi MC 1E/3E/4E Binary/ASCII、Siemens S7 TCP、Omron FINS UDP/TCP、Omron Host Link ASCII、Panasonic MEWTOCOL-COM、Allen-Bradley EtherNet/IP CIP，可挂虚拟从站/PLC
+- 📡 **协议** — 自定义帧、Modbus RTU / TCP / ASCII、Mitsubishi MC 1E/3E/4E Binary/ASCII、Siemens S7 TCP、Omron FINS UDP/TCP、Omron Host Link ASCII、Panasonic MEWTOCOL-COM、Allen-Bradley EtherNet/IP CIP，可挂虚拟从站/PLC
 - 📊 **采集** — 声明点表后按间隔自动轮询，保留最近成功采样，计算报警限；可写点按名称写回
 - 🧭 **追踪** — 通道级 TX/RX 报文事件、滚动内存记录器、文件日志器与 `ILogger` 结构化日志
 - 🖥️ **界面无关** — 业务代码不绑死 WinForms 或 WPF；点表可直接绑定文本、历史趋势、报警色、启用状态和写回按钮
@@ -71,7 +71,7 @@ app.Points.BindTo("temperature", temperatureLabel);
 | `Zeus.Hosting` | [![nuget](https://img.shields.io/nuget/v/Zeus.Hosting.svg)](https://www.nuget.org/packages/Zeus.Hosting) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Hosting.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Hosting) | 宿主与采集循环 |
 | `Zeus.Communications` | [![nuget](https://img.shields.io/nuget/v/Zeus.Communications.svg)](https://www.nuget.org/packages/Zeus.Communications) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Communications.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Communications) | 串口 / TCP / UDP 客户端与服务端 / 虚拟通道 |
 | `Zeus.Protocols.Framing` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Framing.svg)](https://www.nuget.org/packages/Zeus.Protocols.Framing) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Framing.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Framing) | 自定义帧 |
-| `Zeus.Protocols.Modbus` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg)](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Modbus.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | Modbus RTU / TCP |
+| `Zeus.Protocols.Modbus` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg)](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Modbus.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | Modbus RTU / TCP / ASCII |
 | `Zeus.Protocols.Mc` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Mc.svg)](https://www.nuget.org/packages/Zeus.Protocols.Mc) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Mc.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Mc) | Mitsubishi MC 1E/3E/4E Binary/ASCII，3E/4E 随机读写 |
 | `Zeus.Protocols.S7` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.S7.svg)](https://www.nuget.org/packages/Zeus.Protocols.S7) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.S7.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.S7) | Siemens S7 TCP，读写 DB/I/Q/M 区常用类型 |
 | `Zeus.Protocols.Fins` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Fins.svg)](https://www.nuget.org/packages/Zeus.Protocols.Fins) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Fins.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Fins) | Omron FINS UDP/TCP，读写 CIO/WR/HR/AR/DM/EM/TIM-CNT 区 |

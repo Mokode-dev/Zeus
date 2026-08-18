@@ -14,12 +14,12 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IPointWriter,
     private readonly IReadOnlyList<PointDefinition> _points;
 
     /// <summary>
-    /// 创建设备。通常由 <c>AddModbusRtu</c> / <c>AddModbusTcp</c> 构造，而不是业务代码直接 new。
+    /// 创建设备。通常由 <c>AddModbusRtu</c> / <c>AddModbusTcp</c> / <c>AddModbusAscii</c> 构造，而不是业务代码直接 new。
     /// </summary>
     /// <param name="name">设备名。</param>
     /// <param name="channel">传输通道。</param>
     /// <param name="unitId">从站地址。</param>
-    /// <param name="transport">RTU 或 TCP。</param>
+    /// <param name="transport">RTU、TCP 或 ASCII。</param>
     /// <param name="timeout">应答超时。</param>
     /// <param name="pointMap">可选点表。为 <c>null</c> 或不含点时不参与周期采集。</param>
     public ModbusDevice(

@@ -48,6 +48,27 @@ public static class ZeusHostBuilderModbusExtensions
     }
 
     /// <summary>
+    /// 在已有通道上登记一台 Modbus ASCII 设备。
+    /// </summary>
+    /// <param name="builder">宿主构建器。</param>
+    /// <param name="deviceName">设备名。</param>
+    /// <param name="channelName">串口或虚拟通道名。</param>
+    /// <param name="unitId">从站地址，默认 1。</param>
+    /// <param name="timeout">应答超时。</param>
+    /// <param name="points">可选点表。声明后由宿主采集循环自动轮询。</param>
+    public static ZeusHostBuilder AddModbusAscii(
+        this ZeusHostBuilder builder,
+        string deviceName,
+        string channelName,
+        byte unitId = 1,
+        TimeSpan? timeout = null,
+        Action<ModbusPointMap>? points = null)
+    {
+        return builder.AddDevice(deviceName, channelName, (name, channel) =>
+            new ModbusDevice(name, channel, unitId, ModbusTransport.Ascii, timeout, BuildMap(points)));
+    }
+
+    /// <summary>
     /// 在已构建的宿主上登记一台 Modbus RTU 设备。采集循环会在下一轮纳入其点表。
     /// </summary>
     public static ModbusDevice AddModbusRtu(
@@ -72,6 +93,19 @@ public static class ZeusHostBuilderModbusExtensions
         Action<ModbusPointMap>? points = null)
         => host.AddDevice(deviceName, channelName, (name, channel) =>
             new ModbusDevice(name, channel, unitId, ModbusTransport.Tcp, timeout, BuildMap(points)));
+
+    /// <summary>
+    /// 在已构建的宿主上登记一台 Modbus ASCII 设备。
+    /// </summary>
+    public static ModbusDevice AddModbusAscii(
+        this IZeusHost host,
+        string deviceName,
+        string channelName,
+        byte unitId = 1,
+        TimeSpan? timeout = null,
+        Action<ModbusPointMap>? points = null)
+        => host.AddDevice(deviceName, channelName, (name, channel) =>
+            new ModbusDevice(name, channel, unitId, ModbusTransport.Ascii, timeout, BuildMap(points)));
 
     private static ModbusPointMap? BuildMap(Action<ModbusPointMap>? configure)
     {

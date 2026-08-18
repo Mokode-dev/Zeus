@@ -1,8 +1,8 @@
 namespace Zeus;
 
 /// <summary>
-/// Modbus RTU / TCP 的 PDU 封包与拆包。
-/// RTU 响应长度依赖未完成请求；TCP 响应长度由 MBAP 给出。
+/// Modbus RTU / TCP / ASCII 的 PDU 封包与拆包。
+/// RTU 响应长度依赖未完成请求；TCP 响应长度由 MBAP 给出；ASCII 响应由 CRLF 定界。
 /// </summary>
 internal static class ModbusCodec
 {
@@ -18,6 +18,11 @@ internal static class ModbusCodec
         if (transport == ModbusTransport.Tcp)
         {
             return EncodeTcp(unitId, pdu, transactionId);
+        }
+
+        if (transport == ModbusTransport.Ascii)
+        {
+            return EncodeAscii(unitId, pdu);
         }
 
         var adu = new byte[1 + pdu.Length + 2];
@@ -81,6 +86,11 @@ internal static class ModbusCodec
         if (transport == ModbusTransport.Tcp)
         {
             return TryDecodeTcp(buffer, expectedTransactionId, out unitId, out pdu, out consumed);
+        }
+
+        if (transport == ModbusTransport.Ascii)
+        {
+            return TryDecodeAsciiResponse(buffer, out unitId, out pdu, out consumed);
         }
 
         if (buffer.Count < 5)
@@ -157,6 +167,11 @@ internal static class ModbusCodec
             return pdu.Length > 0;
         }
 
+        if (transport == ModbusTransport.Ascii)
+        {
+            return TryDecodeAsciiFrame(adu, out unitId, out pdu);
+        }
+
         if (adu.Length < 4)
         {
             return false;
@@ -205,6 +220,25 @@ internal static class ModbusCodec
         return adu;
     }
 
+    private static byte[] EncodeAscii(byte unitId, ReadOnlySpan<byte> pdu)
+    {
+        var binary = new byte[1 + pdu.Length + 1];
+        binary[0] = unitId;
+        pdu.CopyTo(binary.AsSpan(1));
+        binary[^1] = ComputeLrc(binary.AsSpan(0, binary.Length - 1));
+
+        var frame = new byte[1 + (binary.Length * 2) + 2];
+        frame[0] = (byte)':';
+        for (var i = 0; i < binary.Length; i++)
+        {
+            WriteHexByte(frame.AsSpan(1 + i * 2, 2), binary[i]);
+        }
+
+        frame[^2] = (byte)'\r';
+        frame[^1] = (byte)'\n';
+        return frame;
+    }
+
     private static bool TryDecodeTcp(
         IReadOnlyList<byte> buffer,
         ushort expectedTransactionId,
@@ -244,6 +278,149 @@ internal static class ModbusCodec
         pdu = Copy(buffer, 7, length - 1);
         consumed = total;
         return true;
+    }
+
+    private static bool TryDecodeAsciiResponse(
+        IReadOnlyList<byte> buffer,
+        out byte unitId,
+        out byte[] pdu,
+        out int consumed)
+    {
+        unitId = 0;
+        pdu = [];
+        consumed = 0;
+        if (buffer.Count < 1)
+        {
+            return false;
+        }
+
+        var end = IndexOfLineFeed(buffer);
+        if (end < 0)
+        {
+            return false;
+        }
+
+        consumed = end + 1;
+        var frame = Copy(buffer, 0, consumed);
+        if (!TryDecodeAsciiFrame(frame, out unitId, out pdu))
+        {
+            throw new ZeusProtocolException("Modbus ASCII 响应帧格式或 LRC 校验失败。请确认对端使用冒号起始、CRLF 结束的 Modbus ASCII。");
+        }
+
+        return true;
+    }
+
+    private static bool TryDecodeAsciiFrame(ReadOnlySpan<byte> frame, out byte unitId, out byte[] pdu)
+    {
+        unitId = 0;
+        pdu = [];
+        if (frame.Length < 9 || frame[0] != (byte)':' || frame[^2] != (byte)'\r' || frame[^1] != (byte)'\n')
+        {
+            return false;
+        }
+
+        var hexLength = frame.Length - 3;
+        if (hexLength % 2 != 0)
+        {
+            return false;
+        }
+
+        var byteCount = hexLength / 2;
+        if (byteCount < 3)
+        {
+            return false;
+        }
+
+        var binary = new byte[byteCount];
+        for (var i = 0; i < byteCount; i++)
+        {
+            if (!TryParseHexByte(frame.Slice(1 + i * 2, 2), out binary[i]))
+            {
+                return false;
+            }
+        }
+
+        var expectedLrc = ComputeLrc(binary.AsSpan(0, binary.Length - 1));
+        if (binary[^1] != expectedLrc)
+        {
+            return false;
+        }
+
+        unitId = binary[0];
+        pdu = binary[1..^1];
+        return pdu.Length > 0;
+    }
+
+    private static int IndexOfLineFeed(IReadOnlyList<byte> buffer)
+    {
+        for (var i = 0; i < buffer.Count; i++)
+        {
+            if (buffer[i] == (byte)'\n')
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static byte ComputeLrc(ReadOnlySpan<byte> data)
+    {
+        byte sum = 0;
+        foreach (var value in data)
+        {
+            unchecked
+            {
+                sum += value;
+            }
+        }
+
+        return unchecked((byte)(0 - sum));
+    }
+
+    private static void WriteHexByte(Span<byte> destination, byte value)
+    {
+        destination[0] = ToHexNibble(value >> 4);
+        destination[1] = ToHexNibble(value & 0x0F);
+    }
+
+    private static byte ToHexNibble(int value)
+        => (byte)(value < 10 ? '0' + value : 'A' + value - 10);
+
+    private static bool TryParseHexByte(ReadOnlySpan<byte> source, out byte value)
+    {
+        value = 0;
+        if (!TryParseHexNibble(source[0], out var high) || !TryParseHexNibble(source[1], out var low))
+        {
+            return false;
+        }
+
+        value = (byte)((high << 4) | low);
+        return true;
+    }
+
+    private static bool TryParseHexNibble(byte input, out int value)
+    {
+        if (input is >= (byte)'0' and <= (byte)'9')
+        {
+            value = input - (byte)'0';
+            return true;
+        }
+
+        if (input is >= (byte)'A' and <= (byte)'F')
+        {
+            value = input - (byte)'A' + 10;
+            return true;
+        }
+
+        if (input is >= (byte)'a' and <= (byte)'f')
+        {
+            value = input - (byte)'a' + 10;
+            return true;
+        }
+
+        value = 0;
+        return false;
     }
 
     private static byte[] Copy(IReadOnlyList<byte> buffer, int offset, int count)

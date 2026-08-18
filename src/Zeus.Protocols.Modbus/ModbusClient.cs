@@ -1,7 +1,7 @@
 namespace Zeus;
 
 /// <summary>
-/// 在一条通道上执行 Modbus 请求。同一客户端串行发送，避免 RTU 半双工冲突。
+/// 在一条通道上执行 Modbus 请求。同一客户端串行发送，避免 RTU/ASCII 半双工冲突。
 /// </summary>
 public sealed class ModbusClient : IAsyncDisposable
 {
@@ -18,7 +18,7 @@ public sealed class ModbusClient : IAsyncDisposable
     /// 创建客户端并订阅通道。
     /// </summary>
     /// <param name="channel">传输通道。</param>
-    /// <param name="transport">RTU 或 TCP。</param>
+    /// <param name="transport">RTU、TCP 或 ASCII。</param>
     /// <param name="timeout">应答超时，默认 1 秒。</param>
     public ModbusClient(IChannel channel, ModbusTransport transport, TimeSpan? timeout = null)
     {

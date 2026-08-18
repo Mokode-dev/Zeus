@@ -13,13 +13,13 @@
     <Product>Zeus</Product>
     <Description>面向 .NET 的 UI 无关上位机开发框架。把复杂留给 Zeus，把简单留给用户。</Description>
     <Copyright>Copyright © Zeus</Copyright>
-    <Version>0.10.0</Version>
+    <Version>0.11.0</Version>
     <NeutralLanguage>zh-Hans</NeutralLanguage>
     <IsPackable>false</IsPackable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageTags>zeus;host;modbus;mitsubishi;mc;siemens;s7;omron;fins;host-link;panasonic;mewtocol;ethernet-ip;cip;allen-bradley;serial;tcp;udp;winforms;wpf;industrial;scada</PackageTags>
-    <PackageReleaseNotes>0.10.0：新增 Panasonic MEWTOCOL-COM ASCII 协议栈、DT/LD/FL 数据寄存器和 X/Y/R/L 接点字读写、点表写回、虚拟 PLC、JSON 配置接入、控制台示例与文档。</PackageReleaseNotes>
+    <PackageReleaseNotes>0.11.0：新增 Modbus ASCII 封装，支持冒号起始、十六进制文本、LRC 校验和 CRLF 定界，并接入虚拟从站、点表采集、JSON 配置与文档。</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Mokode-dev/Zeus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Mokode-dev/Zeus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

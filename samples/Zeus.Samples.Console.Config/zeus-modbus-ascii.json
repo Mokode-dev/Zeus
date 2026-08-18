@@ -1,0 +1,28 @@
+{
+  "acquisition": {
+    "intervalMilliseconds": 200,
+    "pollImmediately": true
+  },
+  "channels": [
+    {
+      "name": "ascii-bus",
+      "type": "virtual",
+      "responder": "modbus",
+      "unitId": 1,
+      "transport": "ascii"
+    }
+  ],
+  "devices": [
+    {
+      "name": "meter",
+      "channel": "ascii-bus",
+      "type": "modbus-ascii",
+      "unitId": 1,
+      "points": [
+        { "name": "temperature", "table": "holding", "address": 0, "scale": 0.1 },
+        { "name": "setpoint", "table": "holding", "address": 1, "scale": 0.1, "writable": true },
+        { "name": "running", "table": "coil", "address": 2, "writable": true }
+      ]
+    }
+  ]
+}

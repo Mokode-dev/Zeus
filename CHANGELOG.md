@@ -4,6 +4,23 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Zeus.Communications.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Communications) ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Mokode-dev/Zeus/blob/main/code/LICENSE)
 
 
+## 0.11.0
+
+新增 Modbus ASCII 封装，覆盖冒号起始帧、十六进制文本编码、LRC 校验、CRLF 定界、虚拟从站、点表采集和 JSON 配置。
+
+### 包含
+
+- Modbus ASCII：新增 `ModbusTransport.Ascii` 与 `AddModbusAscii`，保留现有 Modbus PDU 和读写 API
+- 帧处理：支持 `:...LRC\r\n` 请求/响应封装，接收侧按 CRLF 拆帧并校验 LRC
+- 虚拟从站：`ModbusSlaveResponder` 支持 ASCII 封装，可无硬件验证主站逻辑
+- 配置：JSON 支持声明 `modbus-ascii` 设备和 `transport: "ascii"` 虚拟 Modbus 从站
+- 文档：更新 Modbus 指南、NuGet 包说明和故障排查中的 RTU/TCP/ASCII 选项
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.10 已发布的类型、成员和扩展方法签名
+- `0.11.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.10.0
 
 新增 Panasonic MEWTOCOL-COM ASCII 协议栈，覆盖 BCC 校验、DT/LD/FL 数据寄存器、X/Y/R/L 接点字读写、点表采集、点名写回、虚拟 PLC、JSON 配置与控制台示例。
