@@ -47,6 +47,10 @@ public sealed class PublicApiBaselineTests
     [Fact]
     public void HostLink_matches_baseline() => AssertMatchesBaseline(typeof(HostLinkDevice).Assembly);
 
+    /// <summary>Panasonic MEWTOCOL-COM 公开表面。</summary>
+    [Fact]
+    public void Mewtocol_matches_baseline() => AssertMatchesBaseline(typeof(MewtocolDevice).Assembly);
+
     /// <summary>Allen-Bradley EtherNet/IP 公开表面。</summary>
     [Fact]
     public void EtherNetIp_matches_baseline() => AssertMatchesBaseline(typeof(EtherNetIpDevice).Assembly);

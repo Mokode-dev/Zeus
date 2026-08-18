@@ -85,7 +85,7 @@ public sealed class ChannelConfiguration
     public int LocalPort { get; set; }
 
     /// <summary>
-    /// 虚拟通道挂接的从站。支持 <c>modbus</c>、<c>mc</c>、<c>s7</c>、<c>fins</c>、<c>host-link</c>。
+    /// 虚拟通道挂接的从站。支持 <c>modbus</c>、<c>mc</c>、<c>s7</c>、<c>fins</c>、<c>host-link</c>、<c>mewtocol</c>。
     /// </summary>
     public string? Responder { get; set; }
 
@@ -107,10 +107,10 @@ public sealed class DeviceConfiguration
     /// <summary>绑定的通道名。</summary>
     public string Channel { get; set; } = string.Empty;
 
-    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c>、<c>omron-host-link</c> 或 <c>ethernet-ip</c>。</summary>
+    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c>、<c>omron-host-link</c>、<c>panasonic-mewtocol</c> 或 <c>ethernet-ip</c>。</summary>
     public string Type { get; set; } = "modbus-rtu";
 
-    /// <summary>从站/单元标识，默认 1。Host Link 使用 0–31 单元号。</summary>
+    /// <summary>从站/单元标识，默认 1。Host Link 使用 0-31 单元号；MEWTOCOL 使用 1-99 站号。</summary>
     public byte UnitId { get; set; } = 1;
 
     /// <summary>应答超时（毫秒）。省略则使用协议默认 1000。</summary>
@@ -185,7 +185,7 @@ public sealed class DeviceConfiguration
     /// <summary>FINS/TCP 是否使用节点地址握手，默认 true。</summary>
     public bool UseTcpNodeAddressHandshake { get; set; } = true;
 
-    /// <summary>FINS / Host Link 32 位值字序：<c>high-word-first</c> 或 <c>low-word-first</c>。</summary>
+    /// <summary>FINS / Host Link / MEWTOCOL 32 位值字序：<c>high-word-first</c> 或 <c>low-word-first</c>。</summary>
     public string WordOrder { get; set; } = "high-word-first";
 
     /// <summary>周期采集点。</summary>
@@ -226,6 +226,7 @@ public sealed class PointConfiguration
     /// <summary>
     /// Siemens S7 存储区：<c>db</c>、<c>m</c>、<c>i</c>、<c>q</c>。
     /// Omron FINS 存储区：<c>cio</c>、<c>wr</c>、<c>hr</c>、<c>ar</c>、<c>dm</c>、<c>tc</c>、<c>em</c>、<c>em0</c> 等。
+    /// MEWTOCOL 存储区：<c>dt</c>、<c>ld</c>、<c>fl</c>、<c>x</c>、<c>y</c>、<c>r</c>、<c>l</c>。
     /// Modbus 与 Mitsubishi MC 点忽略该字段。
     /// </summary>
     public string? Area { get; set; }
@@ -238,7 +239,7 @@ public sealed class PointConfiguration
     [JsonPropertyName("bit")]
     public int BitOffset { get; set; }
 
-    /// <summary>Siemens S7 / Omron FINS / Host Link / EtherNet/IP 数据类型。EtherNet/IP 支持 <c>bool</c>、<c>sint</c>、<c>int</c>、<c>dint</c>、<c>lint</c>、<c>usint</c>、<c>uint</c>、<c>udint</c>、<c>ulint</c>、<c>real</c>、<c>lreal</c>。</summary>
+    /// <summary>Siemens S7 / Omron FINS / Host Link / MEWTOCOL / EtherNet/IP 数据类型。EtherNet/IP 支持 <c>bool</c>、<c>sint</c>、<c>int</c>、<c>dint</c>、<c>lint</c>、<c>usint</c>、<c>uint</c>、<c>udint</c>、<c>ulint</c>、<c>real</c>、<c>lreal</c>。</summary>
     public string DataType { get; set; } = "word";
 
     /// <summary>

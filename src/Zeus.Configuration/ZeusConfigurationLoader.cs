@@ -190,6 +190,10 @@ public static class ZeusConfigurationLoader
             {
                 ValidateHostLinkDevice(device, path);
             }
+            else if (IsMewtocolDeviceType(type))
+            {
+                ValidateMewtocolDevice(device, path);
+            }
             else if (IsS7DeviceType(type))
             {
                 ValidateS7Device(device, path);
@@ -204,7 +208,7 @@ public static class ZeusConfigurationLoader
             }
             else
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、ethernet-ip。");
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip。");
             }
         }
     }
@@ -217,9 +221,9 @@ public static class ZeusConfigurationLoader
         }
 
         var responder = Normalize(channel.Responder);
-        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley"))
+        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley"))
         {
-            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、ethernet-ip，或省略以回显写入。");
+            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、mewtocol、ethernet-ip，或省略以回显写入。");
         }
 
         if (responder is "host-link" or "hostlink" or "omron-host-link" or "omronhostlink")
@@ -227,6 +231,16 @@ public static class ZeusConfigurationLoader
             if (channel.UnitId > 31)
             {
                 throw new ZeusException($"{path}.unitId 必须介于 0 与 31 之间。Host Link 虚拟 PLC 使用两位十进制单元号。");
+            }
+
+            return;
+        }
+
+        if (responder is "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol")
+        {
+            if (channel.UnitId is < 1 or > 99)
+            {
+                throw new ZeusException($"{path}.unitId 必须介于 1 与 99 之间。MEWTOCOL 虚拟 PLC 使用两位十进制站号。");
             }
 
             return;
@@ -436,6 +450,23 @@ public static class ZeusConfigurationLoader
         }
 
         ValidateHostLinkPoints(device.Points, path);
+    }
+
+    private static void ValidateMewtocolDevice(DeviceConfiguration device, string path)
+    {
+        if (device.UnitId is < 1 or > 99)
+        {
+            throw new ZeusException($"{path}.unitId 必须介于 1 与 99 之间。MEWTOCOL 站号使用两位十进制站号。");
+        }
+
+        ParseMewtocolWordOrder(device.WordOrder, $"{path}.wordOrder");
+
+        if (device.TimeoutMilliseconds is <= 0)
+        {
+            throw new ZeusException($"{path}.timeoutMilliseconds 必须大于 0。");
+        }
+
+        ValidateMewtocolPoints(device.Points, path);
     }
 
     private static void ValidateEtherNetIpDevice(DeviceConfiguration device, string path)
@@ -714,6 +745,78 @@ public static class ZeusConfigurationLoader
         }
     }
 
+    private static void ValidateMewtocolPoints(List<PointConfiguration> points, string devicePath)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var path = $"{devicePath}.points[{i}]";
+            EnsureName(point.Name, path);
+            if (!names.Add(point.Name.Trim()))
+            {
+                throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
+            }
+
+            var dataType = ParseMewtocolDataType(point.DataType, $"{path}.dataType");
+            var areaText = point.Area ?? point.Table;
+            var isContact = TryParseMewtocolContactArea(areaText, out var contactArea);
+            if (!isContact)
+            {
+                ParseMewtocolDataArea(areaText, $"{path}.area");
+            }
+
+            if (point.Address < 0 || point.Address > (isContact ? 9999 : 99999))
+            {
+                throw new ZeusException(isContact
+                    ? $"{path}.address 必须介于 0 与 9999 之间。MEWTOCOL 接点区按 4 位字地址访问。"
+                    : $"{path}.address 必须介于 0 与 99999 之间。MEWTOCOL 数据寄存器按 5 位字地址访问。");
+            }
+
+            if (dataType == MewtocolDataType.Bit)
+            {
+                if (point.BitOffset is < 0 or > 15)
+                {
+                    throw new ZeusException($"{path}.bit 必须介于 0 与 15 之间。");
+                }
+            }
+            else if (point.BitOffset != 0)
+            {
+                throw new ZeusException($"{path}.bit 只能用于 MEWTOCOL bit 点。");
+            }
+
+            if (point.Scale is <= 0)
+            {
+                throw new ZeusException($"{path}.scale 必须大于 0。");
+            }
+
+            ValidateAlarmLimit(point.LowAlarmLimit, $"{path}.lowAlarmLimit");
+            ValidateAlarmLimit(point.HighAlarmLimit, $"{path}.highAlarmLimit");
+            if (point.LowAlarmLimit > point.HighAlarmLimit)
+            {
+                throw new ZeusException($"{path}.lowAlarmLimit 不能高于 highAlarmLimit。");
+            }
+
+            if (dataType == MewtocolDataType.Bit)
+            {
+                if (point.Scale is not null)
+                {
+                    throw new ZeusException($"{path} 是 MEWTOCOL bit 点，不能配置 scale。");
+                }
+
+                if (point.LowAlarmLimit is not null || point.HighAlarmLimit is not null)
+                {
+                    throw new ZeusException($"{path} 是 MEWTOCOL bit 点，不能配置 lowAlarmLimit 或 highAlarmLimit。");
+                }
+            }
+
+            if (point.Writable && isContact && contactArea == MewtocolContactArea.ExternalInput)
+            {
+                throw new ZeusException($"{path}.area 为 X 输入区，该区域只读，不能设置 writable: true。");
+            }
+        }
+    }
+
     private static void ValidateEtherNetIpPoints(List<PointConfiguration> points, string devicePath)
     {
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -804,6 +907,9 @@ public static class ZeusConfigurationLoader
 
     internal static bool IsHostLinkDeviceType(string type)
         => type is "omron-host-link" or "omronhostlink" or "host-link" or "hostlink" or "omron-hostlink";
+
+    internal static bool IsMewtocolDeviceType(string type)
+        => type is "panasonic-mewtocol" or "panasonicmewtocol" or "mewtocol" or "mewtocol-com" or "mewtocolcom" or "panasonic";
 
     internal static bool IsEtherNetIpDeviceType(string type)
         => type is "ethernet-ip" or "ethernetip" or "ether-net-ip" or "cip" or "ab-cip" or "abcip" or "allen-bradley" or "allenbradley" or "ab-ethernet-ip" or "abethernetip";
@@ -915,6 +1021,21 @@ public static class ZeusConfigurationLoader
         };
     }
 
+    internal static MewtocolDataType ParseMewtocolDataType(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "word" or "w" or "uint16" or "ushort" => MewtocolDataType.Word,
+            "bit" or "bool" or "boolean" => MewtocolDataType.Bit,
+            "int" or "int16" or "short" => MewtocolDataType.Int16,
+            "uint32" or "udint" or "dword" or "dw" => MewtocolDataType.UInt32,
+            "int32" or "dint" => MewtocolDataType.Int32,
+            "real" or "float" or "single" => MewtocolDataType.Real,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。MEWTOCOL 可选 bit、word、int16、uint32、int32、real。")
+        };
+    }
+
     internal static HostLinkArea ParseHostLinkArea(string? value, string path)
     {
         var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
@@ -927,6 +1048,69 @@ public static class ZeusConfigurationLoader
             "dm" or "data" or "datamemory" => HostLinkArea.DataMemory,
             _ => throw new ZeusException($"{path}「{value}」不受支持。Host Link 可选 cio、lr、hr、ar、dm。")
         };
+    }
+
+    internal static MewtocolDataArea ParseMewtocolDataArea(string? value, string path)
+    {
+        if (TryParseMewtocolDataArea(value, out var area))
+        {
+            return area;
+        }
+
+        throw new ZeusException($"{path}「{value}」不受支持。MEWTOCOL 数据区可选 dt、ld、fl；接点区可选 x、y、r、l。");
+    }
+
+    internal static bool TryParseMewtocolDataArea(string? value, out MewtocolDataArea area)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        switch (token)
+        {
+            case "" or "dt" or "d" or "data" or "dataregister":
+                area = MewtocolDataArea.DataRegister;
+                return true;
+            case "ld" or "linkdata" or "linkdataregister":
+                area = MewtocolDataArea.LinkDataRegister;
+                return true;
+            case "fl" or "f" or "file" or "fileregister":
+                area = MewtocolDataArea.FileRegister;
+                return true;
+            default:
+                area = default;
+                return false;
+        }
+    }
+
+    internal static MewtocolContactArea ParseMewtocolContactArea(string? value, string path)
+    {
+        if (TryParseMewtocolContactArea(value, out var area))
+        {
+            return area;
+        }
+
+        throw new ZeusException($"{path}「{value}」不受支持。MEWTOCOL 接点区可选 x、y、r、l。");
+    }
+
+    internal static bool TryParseMewtocolContactArea(string? value, out MewtocolContactArea area)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        switch (token)
+        {
+            case "x" or "input" or "externalinput":
+                area = MewtocolContactArea.ExternalInput;
+                return true;
+            case "y" or "output" or "externaloutput":
+                area = MewtocolContactArea.ExternalOutput;
+                return true;
+            case "r" or "relay" or "internal" or "internalrelay":
+                area = MewtocolContactArea.InternalRelay;
+                return true;
+            case "l" or "lr" or "link" or "linkrelay":
+                area = MewtocolContactArea.LinkRelay;
+                return true;
+            default:
+                area = default;
+                return false;
+        }
     }
 
     internal static FinsWordOrder ParseFinsWordOrder(string? value, string path)
@@ -947,6 +1131,17 @@ public static class ZeusConfigurationLoader
         {
             "" or "highwordfirst" or "highfirst" or "big" or "bigendian" => HostLinkWordOrder.HighWordFirst,
             "lowwordfirst" or "lowfirst" or "little" or "littleendian" => HostLinkWordOrder.LowWordFirst,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。可选 high-word-first、low-word-first。")
+        };
+    }
+
+    internal static MewtocolWordOrder ParseMewtocolWordOrder(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "highwordfirst" or "highfirst" or "big" or "bigendian" => MewtocolWordOrder.HighWordFirst,
+            "lowwordfirst" or "lowfirst" or "little" or "littleendian" => MewtocolWordOrder.LowWordFirst,
             _ => throw new ZeusException($"{path}「{value}」不受支持。可选 high-word-first、low-word-first。")
         };
     }

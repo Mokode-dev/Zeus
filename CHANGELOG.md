@@ -4,6 +4,24 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Zeus.Communications.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Communications) ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Mokode-dev/Zeus/blob/main/code/LICENSE)
 
 
+## 0.10.0
+
+新增 Panasonic MEWTOCOL-COM ASCII 协议栈，覆盖 BCC 校验、DT/LD/FL 数据寄存器、X/Y/R/L 接点字读写、点表采集、点名写回、虚拟 PLC、JSON 配置与控制台示例。
+
+### 包含
+
+- MEWTOCOL：新增 `Zeus.Protocols.Mewtocol`，支持 `%NN#` 请求帧、`$` 正常响应、`!` 错误响应和两位 BCC 校验
+- 内存区：支持 DT、LD、FL 数据寄存器和 X、Y、R、L 接点字读写；位点通过读改写所在字实现
+- 点表与写回：支持 `Bit`、`Word`、`Int16`、`UInt32`、`Int32`、`Real`，并支持 32 位值字序配置、工程值缩放、报警限与按点名写回
+- 虚拟 PLC：新增 `MewtocolSlaveResponder` 与 `MewtocolSlaveMemory`，无硬件即可验证 MEWTOCOL 帧、点表采集和写回链路
+- 配置：JSON 支持声明 `panasonic-mewtocol` 设备、`responder: "mewtocol"` 虚拟 PLC 和 MEWTOCOL 点表
+- 示例与文档：新增 MEWTOCOL 控制台示例、真实串口配置样例、Panasonic MEWTOCOL 指南和 NuGet 安装说明
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.9 已发布的类型、成员和扩展方法签名
+- `0.10.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.9.0
 
 新增 Omron Host Link ASCII 协议栈，覆盖 ASCII 帧 FCS 校验、CIO/LR/HR/AR/DM 常用字区读写、点表采集、点名写回、虚拟 PLC、JSON 配置与控制台示例。

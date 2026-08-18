@@ -253,6 +253,13 @@ public static class ZeusHostBuilderConfigurationExtensions
             return;
         }
 
+        if (ZeusConfigurationLoader.IsMewtocolDeviceType(type))
+        {
+            Action<MewtocolPointMap>? mewtocolPoints = device.Points.Count == 0 ? null : map => ApplyMewtocolPoints(map, device.Points);
+            host.AddPanasonicMewtocol(device.Name.Trim(), device.Channel.Trim(), CreateMewtocolOptions(device), timeout, mewtocolPoints);
+            return;
+        }
+
         if (ZeusConfigurationLoader.IsEtherNetIpDeviceType(type))
         {
             Action<EtherNetIpPointMap>? etherNetIpPoints = device.Points.Count == 0 ? null : map => ApplyEtherNetIpPoints(map, device.Points);
@@ -341,6 +348,17 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
 
         if (ZeusConfigurationLoader.IsHostLinkDeviceType(type))
+        {
+            return string.Join('|',
+                device.Channel.Trim(),
+                type,
+                device.UnitId,
+                device.TimeoutMilliseconds,
+                ZeusConfigurationLoader.Normalize(device.WordOrder),
+                points);
+        }
+
+        if (ZeusConfigurationLoader.IsMewtocolDeviceType(type))
         {
             return string.Join('|',
                 device.Channel.Trim(),
@@ -490,6 +508,11 @@ public static class ZeusHostBuilderConfigurationExtensions
             return new HostLinkSlaveResponder(channel.UnitId);
         }
 
+        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol")
+        {
+            return new MewtocolSlaveResponder(channel.UnitId);
+        }
+
         if (ZeusConfigurationLoader.Normalize(channel.Responder) is "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley")
         {
             return new EtherNetIpSlaveResponder();
@@ -519,6 +542,13 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             Action<HostLinkPointMap>? hostLinkPoints = device.Points.Count == 0 ? null : map => ApplyHostLinkPoints(map, device.Points);
             builder.AddOmronHostLink(device.Name.Trim(), device.Channel.Trim(), CreateHostLinkOptions(device), timeout, hostLinkPoints);
+            return;
+        }
+
+        if (ZeusConfigurationLoader.IsMewtocolDeviceType(type))
+        {
+            Action<MewtocolPointMap>? mewtocolPoints = device.Points.Count == 0 ? null : map => ApplyMewtocolPoints(map, device.Points);
+            builder.AddPanasonicMewtocol(device.Name.Trim(), device.Channel.Trim(), CreateMewtocolOptions(device), timeout, mewtocolPoints);
             return;
         }
 
@@ -739,6 +769,114 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyMewtocolPoints(MewtocolPointMap map, List<PointConfiguration> points)
+    {
+        foreach (var point in points)
+        {
+            var dataType = ZeusConfigurationLoader.ParseMewtocolDataType(point.DataType, $"point {point.Name}.dataType");
+            var areaText = point.Area ?? point.Table;
+            var alarmLimits = CreateAlarmLimits(point);
+            if (ZeusConfigurationLoader.TryParseMewtocolContactArea(areaText, out var contactArea))
+            {
+                ApplyMewtocolContactPoint(map, point, dataType, contactArea, alarmLimits);
+                continue;
+            }
+
+            var dataArea = ZeusConfigurationLoader.ParseMewtocolDataArea(areaText, $"point {point.Name}.area");
+            ApplyMewtocolDataPoint(map, point, dataType, dataArea, alarmLimits);
+        }
+    }
+
+    private static void ApplyMewtocolDataPoint(
+        MewtocolPointMap map,
+        PointConfiguration point,
+        MewtocolDataType dataType,
+        MewtocolDataArea area,
+        PointAlarmLimits? alarmLimits)
+    {
+        if (dataType == MewtocolDataType.Bit)
+        {
+            map.Bit(point.Name, area, point.Address, (byte)point.BitOffset);
+            ApplyMewtocolWritable(map, point);
+            return;
+        }
+
+        switch (dataType)
+        {
+            case MewtocolDataType.Word:
+                if (point.Scale is { } wordScale)
+                {
+                    map.Word(point.Name, area, point.Address, wordScale);
+                }
+                else
+                {
+                    map.Word(point.Name, area, point.Address);
+                }
+
+                break;
+            case MewtocolDataType.Int16:
+                map.Int16(point.Name, area, point.Address, point.Scale, alarmLimits);
+                break;
+            case MewtocolDataType.UInt32:
+                map.UInt32(point.Name, area, point.Address, point.Scale, alarmLimits);
+                break;
+            case MewtocolDataType.Int32:
+                map.Int32(point.Name, area, point.Address, point.Scale, alarmLimits);
+                break;
+            case MewtocolDataType.Real:
+                map.Real(point.Name, area, point.Address, point.Scale, alarmLimits);
+                break;
+        }
+
+        ApplyMewtocolAlarmLimits(map, point, alarmLimits);
+        ApplyMewtocolWritable(map, point);
+    }
+
+    private static void ApplyMewtocolContactPoint(
+        MewtocolPointMap map,
+        PointConfiguration point,
+        MewtocolDataType dataType,
+        MewtocolContactArea area,
+        PointAlarmLimits? alarmLimits)
+    {
+        if (dataType == MewtocolDataType.Bit)
+        {
+            map.Bit(point.Name, area, point.Address, (byte)point.BitOffset);
+            ApplyMewtocolWritable(map, point);
+            return;
+        }
+
+        switch (dataType)
+        {
+            case MewtocolDataType.Word:
+                if (point.Scale is { } wordScale)
+                {
+                    map.Word(point.Name, area, point.Address, wordScale);
+                }
+                else
+                {
+                    map.Word(point.Name, area, point.Address);
+                }
+
+                break;
+            case MewtocolDataType.Int16:
+                map.Int16(point.Name, area, point.Address, point.Scale, alarmLimits);
+                break;
+            case MewtocolDataType.UInt32:
+                map.UInt32(point.Name, area, point.Address, point.Scale, alarmLimits);
+                break;
+            case MewtocolDataType.Int32:
+                map.Int32(point.Name, area, point.Address, point.Scale, alarmLimits);
+                break;
+            case MewtocolDataType.Real:
+                map.Real(point.Name, area, point.Address, point.Scale, alarmLimits);
+                break;
+        }
+
+        ApplyMewtocolAlarmLimits(map, point, alarmLimits);
+        ApplyMewtocolWritable(map, point);
+    }
+
     private static void ApplyEtherNetIpPoints(EtherNetIpPointMap map, List<PointConfiguration> points)
     {
         foreach (var point in points)
@@ -834,6 +972,22 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyMewtocolAlarmLimits(MewtocolPointMap map, PointConfiguration point, PointAlarmLimits? alarmLimits)
+    {
+        if (alarmLimits is not null)
+        {
+            map.WithAlarmLimits(point.Name, alarmLimits.Low, alarmLimits.High);
+        }
+    }
+
+    private static void ApplyMewtocolWritable(MewtocolPointMap map, PointConfiguration point)
+    {
+        if (point.Writable)
+        {
+            map.Writable(point.Name);
+        }
+    }
+
     private static void ApplyEtherNetIpAlarmLimits(EtherNetIpPointMap map, PointConfiguration point, PointAlarmLimits? alarmLimits)
     {
         if (alarmLimits is not null)
@@ -897,6 +1051,13 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             UnitNumber = device.UnitId,
             WordOrder = ZeusConfigurationLoader.ParseHostLinkWordOrder(device.WordOrder, "device.wordOrder")
+        };
+
+    private static MewtocolOptions CreateMewtocolOptions(DeviceConfiguration device)
+        => new()
+        {
+            StationNumber = device.UnitId,
+            WordOrder = ZeusConfigurationLoader.ParseMewtocolWordOrder(device.WordOrder, "device.wordOrder")
         };
 }
 

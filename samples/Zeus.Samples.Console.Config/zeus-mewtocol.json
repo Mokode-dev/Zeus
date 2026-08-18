@@ -1,0 +1,29 @@
+{
+  "acquisition": {
+    "intervalMilliseconds": 200,
+    "pollImmediately": true
+  },
+  "channels": [
+    {
+      "name": "mewtocol",
+      "type": "serial",
+      "portName": "COM3",
+      "baudRate": 9600
+    }
+  ],
+  "devices": [
+    {
+      "name": "plc",
+      "channel": "mewtocol",
+      "type": "panasonic-mewtocol",
+      "unitId": 1,
+      "wordOrder": "high-word-first",
+      "points": [
+        { "name": "temperature", "area": "dt", "address": 100, "dataType": "word", "scale": 0.1, "writable": true, "lowAlarmLimit": 10, "highAlarmLimit": 80 },
+        { "name": "setpoint", "area": "dt", "address": 101, "dataType": "word", "scale": 0.1, "writable": true },
+        { "name": "running", "area": "r", "address": 10, "bit": 0, "dataType": "bit", "writable": true },
+        { "name": "flow", "area": "dt", "address": 120, "dataType": "real" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,146 @@
+namespace Zeus
+{
+    public sealed class MewtocolClient : System.IAsyncDisposable
+    {
+        public MewtocolClient(Zeus.IChannel channel, Zeus.MewtocolOptions? options = null, System.TimeSpan? timeout = default) { }
+        public Zeus.IChannel Channel { get; }
+        public Zeus.MewtocolOptions Options { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<string> ExecuteAsync(string command, string text, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadContactWordsAsync(Zeus.MewtocolContactArea area, int wordAddress, int count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadDataWordsAsync(Zeus.MewtocolDataArea area, int address, int count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteContactWordsAsync(Zeus.MewtocolContactArea area, int wordAddress, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDataWordsAsync(Zeus.MewtocolDataArea area, int address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public enum MewtocolContactArea
+    {
+        ExternalInput = 0,
+        ExternalOutput = 1,
+        InternalRelay = 2,
+        LinkRelay = 3,
+    }
+    public enum MewtocolDataArea
+    {
+        DataRegister = 0,
+        LinkDataRegister = 1,
+        FileRegister = 2,
+    }
+    public enum MewtocolDataType
+    {
+        Bit = 0,
+        Word = 1,
+        Int16 = 2,
+        UInt32 = 3,
+        Int32 = 4,
+        Real = 5,
+    }
+    public sealed class MewtocolDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
+    {
+        public MewtocolDevice(string name, Zeus.IChannel channel, Zeus.MewtocolOptions? options = null, System.TimeSpan? timeout = default, Zeus.MewtocolPointMap? pointMap = null) { }
+        public Zeus.MewtocolClient Client { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<string> ExecuteAsync(string command, string text, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadContactWordsAsync(Zeus.MewtocolContactArea area, int wordAddress, int count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadDataRegistersAsync(int address, int count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadDataWordsAsync(Zeus.MewtocolDataArea area, int address, int count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadInternalRelayWordsAsync(int wordAddress, int count, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteContactWordsAsync(Zeus.MewtocolContactArea area, int wordAddress, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDataRegistersAsync(int address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteDataWordsAsync(Zeus.MewtocolDataArea area, int address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteInternalRelayWordsAsync(int wordAddress, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class MewtocolException : Zeus.ZeusProtocolException
+    {
+        public MewtocolException(string command, byte errorCode) { }
+        public string Command { get; }
+        public byte ErrorCode { get; }
+    }
+    public sealed class MewtocolOptions
+    {
+        public MewtocolOptions() { }
+        public byte StationNumber { get; set; }
+        public Zeus.MewtocolWordOrder WordOrder { get; set; }
+    }
+    public sealed class MewtocolPointMap
+    {
+        public MewtocolPointMap() { }
+        public Zeus.MewtocolPointMap Bit(string name, Zeus.MewtocolContactArea area, int wordAddress, byte bitOffset) { }
+        public Zeus.MewtocolPointMap Bit(string name, Zeus.MewtocolDataArea area, int address, byte bitOffset) { }
+        public Zeus.MewtocolPointMap DtBit(string name, int address, byte bitOffset) { }
+        public Zeus.MewtocolPointMap DtWord(string name, int address) { }
+        public Zeus.MewtocolPointMap DtWord(string name, int address, double scale) { }
+        public Zeus.MewtocolPointMap FlWord(string name, int address) { }
+        public Zeus.MewtocolPointMap Int16(string name, Zeus.MewtocolContactArea area, int wordAddress, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.MewtocolPointMap Int16(string name, Zeus.MewtocolDataArea area, int address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.MewtocolPointMap Int32(string name, Zeus.MewtocolContactArea area, int wordAddress, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.MewtocolPointMap Int32(string name, Zeus.MewtocolDataArea area, int address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.MewtocolPointMap LBit(string name, int wordAddress, byte bitOffset) { }
+        public Zeus.MewtocolPointMap LWord(string name, int wordAddress) { }
+        public Zeus.MewtocolPointMap LdWord(string name, int address) { }
+        public Zeus.MewtocolPointMap RBit(string name, int wordAddress, byte bitOffset) { }
+        public Zeus.MewtocolPointMap RWord(string name, int wordAddress) { }
+        public Zeus.MewtocolPointMap Real(string name, Zeus.MewtocolContactArea area, int wordAddress, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.MewtocolPointMap Real(string name, Zeus.MewtocolDataArea area, int address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.MewtocolPointMap UInt32(string name, Zeus.MewtocolContactArea area, int wordAddress, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.MewtocolPointMap UInt32(string name, Zeus.MewtocolDataArea area, int address, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.MewtocolPointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
+        public Zeus.MewtocolPointMap Word(string name, Zeus.MewtocolContactArea area, int wordAddress) { }
+        public Zeus.MewtocolPointMap Word(string name, Zeus.MewtocolDataArea area, int address) { }
+        public Zeus.MewtocolPointMap Word(string name, Zeus.MewtocolContactArea area, int wordAddress, double scale) { }
+        public Zeus.MewtocolPointMap Word(string name, Zeus.MewtocolContactArea area, int wordAddress, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.MewtocolPointMap Word(string name, Zeus.MewtocolDataArea area, int address, double scale) { }
+        public Zeus.MewtocolPointMap Word(string name, Zeus.MewtocolDataArea area, int address, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.MewtocolPointMap Word(string name, Zeus.MewtocolDataArea area, int address, double scale, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.MewtocolPointMap Writable(string name) { }
+        public Zeus.MewtocolPointMap XBit(string name, int wordAddress, byte bitOffset) { }
+        public Zeus.MewtocolPointMap XWord(string name, int wordAddress) { }
+        public Zeus.MewtocolPointMap YBit(string name, int wordAddress, byte bitOffset) { }
+        public Zeus.MewtocolPointMap YWord(string name, int wordAddress) { }
+    }
+    public sealed class MewtocolPointSpec
+    {
+        public int Address { get; }
+        public Zeus.PointAlarmLimits? AlarmLimits { get; }
+        public byte BitOffset { get; }
+        public Zeus.MewtocolContactArea? ContactArea { get; }
+        public Zeus.MewtocolDataArea? DataArea { get; }
+        public Zeus.MewtocolDataType DataType { get; }
+        public bool IsBit { get; }
+        public bool IsContact { get; }
+        public Zeus.PointValueKind Kind { get; }
+        public string Name { get; }
+        public double? Scale { get; }
+        public int WordCount { get; }
+        public bool Writable { get; }
+    }
+    public sealed class MewtocolSlaveMemory
+    {
+        public MewtocolSlaveMemory(int externalInputWords = 10000, int externalOutputWords = 10000, int internalRelayWords = 10000, int linkRelayWords = 10000, int dataRegisterWords = 100000, int linkDataRegisterWords = 100000, int fileRegisterWords = 100000) { }
+        public ushort[] DataRegisterWords { get; }
+        public ushort[] ExternalInputWords { get; }
+        public ushort[] ExternalOutputWords { get; }
+        public ushort[] FileRegisterWords { get; }
+        public ushort[] InternalRelayWords { get; }
+        public ushort[] LinkDataRegisterWords { get; }
+        public ushort[] LinkRelayWords { get; }
+    }
+    public sealed class MewtocolSlaveResponder : Zeus.IVirtualResponder
+    {
+        public MewtocolSlaveResponder(byte stationNumber = 1, Zeus.MewtocolSlaveMemory? memory = null) { }
+        public Zeus.MewtocolSlaveMemory Memory { get; }
+        public System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request) { }
+    }
+    public enum MewtocolWordOrder
+    {
+        HighWordFirst = 0,
+        LowWordFirst = 1,
+    }
+    public static class ZeusHostBuilderMewtocolExtensions
+    {
+        public static Zeus.MewtocolDevice AddPanasonicMewtocol(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.MewtocolOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.MewtocolPointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddPanasonicMewtocol(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.MewtocolOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.MewtocolPointMap>? points = null) { }
+    }
+}

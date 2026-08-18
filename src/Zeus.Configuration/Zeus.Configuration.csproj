@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Zeus.Protocols.Modbus\Zeus.Protocols.Modbus.csproj" />
     <ProjectReference Include="..\Zeus.Protocols.S7\Zeus.Protocols.S7.csproj" />
     <ProjectReference Include="..\Zeus.Protocols.EtherNetIp\Zeus.Protocols.EtherNetIp.csproj" />
+    <ProjectReference Include="..\Zeus.Protocols.Mewtocol\Zeus.Protocols.Mewtocol.csproj" />
   </ItemGroup>
 
 </Project>

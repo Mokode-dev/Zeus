@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Panasonic MEWTOCOL-COM ASCII 客户端、设备封装与内存虚拟 PLC。协议只依赖通道抽象，串口或 TCP 透传由 Communications 提供。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Zeus</RootNamespace>
+    <AssemblyName>Zeus.Protocols.Mewtocol</AssemblyName>
+    <Description>Zeus Panasonic MEWTOCOL-COM ASCII 客户端、设备封装与内存虚拟 PLC。</Description>
+    <PackageDescription>Zeus Panasonic MEWTOCOL-COM ASCII 客户端、设备封装与内存虚拟 PLC。</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Zeus.Abstractions\Zeus.Abstractions.csproj" />
+    <ProjectReference Include="..\Zeus.Core\Zeus.Core.csproj" />
+    <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
+  </ItemGroup>
+
+</Project>
