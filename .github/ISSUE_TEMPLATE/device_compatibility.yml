@@ -1,0 +1,84 @@
+name: 🏭 Device Compatibility / 设备兼容性
+description: Report compatibility results or problems for a PLC, instrument, or field device. / 反馈 PLC、仪表或现场设备兼容性结果或问题。
+title: "[Device]: "
+labels: [enhancement]
+body:
+  - type: input
+    id: vendor_model
+    attributes:
+      label: 🏭 Vendor and model / 厂商与型号
+      placeholder: "Panasonic FP-XH C30T / Omron CP1H / Siemens S7-1200"
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: 🔢 Firmware or hardware revision / 固件或硬件版本
+      placeholder: "Firmware 1.20 / CPU Rev. A"
+  - type: dropdown
+    id: protocol
+    attributes:
+      label: 📡 Protocol / 协议
+      options:
+        - Modbus RTU / TCP
+        - Mitsubishi MC
+        - Siemens S7
+        - Omron FINS
+        - Omron Host Link
+        - Panasonic MEWTOCOL
+        - EtherNet/IP CIP
+        - Custom framing / 自定义帧
+        - Other / 其它
+    validations:
+      required: true
+  - type: dropdown
+    id: transport
+    attributes:
+      label: 🔌 Transport / 通信方式
+      options:
+        - Serial / 串口
+        - TCP / TCP
+        - UDP / UDP
+        - Virtual / 虚拟通道
+        - Other / 其它
+    validations:
+      required: true
+  - type: input
+    id: zeus_version
+    attributes:
+      label: 📦 Zeus version / Zeus 版本
+      placeholder: "0.10.0"
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: 🧪 Compatibility result / 兼容性结果
+      description: What works, what fails, and which operations were tested? / 哪些可用、哪些失败、测试了哪些操作？
+      placeholder: |
+        Works:
+        - Read DT100 word
+        - Write R10 bit
+
+        Fails:
+        - Read real at DT120 times out
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: 🧾 Configuration and frames / 配置与报文
+      description: Paste sanitized JSON config, connection settings, and TX/RX frames if available. / 如有，请粘贴脱敏后的 JSON 配置、连接参数和 TX/RX 报文。
+      render: text
+  - type: textarea
+    id: notes
+    attributes:
+      label: 📝 Additional notes / 补充说明
+      description: Include wiring, adapter, gateway, or PLC setting details if relevant. / 如相关，请补充接线、转换器、网关或 PLC 参数。
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 🔎 Pre-submit checks / 提交前检查
+      options:
+        - label: I removed customer data, passwords, IPs, and private device identifiers where needed. / 我已按需移除客户数据、密码、IP 和私有设备标识。
+          required: true

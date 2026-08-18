@@ -1,0 +1,75 @@
+name: 🔁 Regression / 回归问题
+description: Report behavior that worked in an earlier Zeus version but is broken now. / 反馈旧版本可用但新版本失效的问题。
+title: "[Regression]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please provide both the last known working version and the first broken version when possible.
+
+        请尽量提供最后一个可用版本和第一个失效版本。
+  - type: input
+    id: last_working
+    attributes:
+      label: ✅ Last working version / 最后可用版本
+      placeholder: "0.9.0 / main@abc123"
+    validations:
+      required: true
+  - type: input
+    id: first_broken
+    attributes:
+      label: ❌ First broken version / 首个失效版本
+      placeholder: "0.10.0 / main@def456"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 📍 Area / 影响范围
+      options:
+        - Communications / 通信通道
+        - Protocols / 协议
+        - Acquisition / 采集
+        - Configuration / JSON 配置
+        - Hosting / 宿主与生命周期
+        - Presentation / WinForms 或 WPF 绑定
+        - Samples / 示例项目
+        - Packaging / NuGet 包
+        - Other / 其它
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 🧩 What regressed? / 回归表现
+      description: Describe what used to work and what happens now. / 描述过去可用的行为，以及现在的表现。
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 🔁 Reproduction steps / 复现步骤
+      description: Provide the smallest reproduction, project snippet, or config file. / 提供最小复现、项目片段或配置文件。
+      placeholder: |
+        1. Install...
+        2. Configure...
+        3. Run...
+        4. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📎 Logs, frames, or stack traces / 日志、报文或堆栈
+      description: Include relevant diagnostics and remove sensitive data. / 提供相关诊断信息，并移除敏感数据。
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 🔎 Pre-submit checks / 提交前检查
+      options:
+        - label: I verified the behavior works in the older version listed above. / 我已确认该行为在上方旧版本中可用。
+          required: true
+        - label: I searched existing issues and did not find a duplicate. / 我已搜索现有 Issue，未发现重复问题。
+          required: true

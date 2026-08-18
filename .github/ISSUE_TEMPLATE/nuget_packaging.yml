@@ -1,0 +1,86 @@
+name: 📦 NuGet or Packaging / NuGet 或打包问题
+description: Report package installation, dependency, versioning, or runtime assembly issues. / 反馈包安装、依赖、版本或运行时程序集问题。
+title: "[Package]: "
+labels: [bug]
+body:
+  - type: dropdown
+    id: package
+    attributes:
+      label: 📦 Package / 包
+      options:
+        - Zeus.Abstractions
+        - Zeus.Runtime
+        - Zeus.Hosting
+        - Zeus.Communications
+        - Zeus.Protocols.Framing
+        - Zeus.Protocols.Modbus
+        - Zeus.Protocols.Mc
+        - Zeus.Protocols.S7
+        - Zeus.Protocols.Fins
+        - Zeus.Protocols.HostLink
+        - Zeus.Protocols.Mewtocol
+        - Zeus.Protocols.EtherNetIp
+        - Zeus.Configuration
+        - Zeus.Presentation.Abstractions
+        - Zeus.Presentation.WinForms
+        - Zeus.Presentation.Wpf
+        - Multiple packages / 多个包
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 🔢 Package version / 包版本
+      placeholder: "0.10.0"
+    validations:
+      required: true
+  - type: input
+    id: project
+    attributes:
+      label: 🖥️ Project environment / 项目环境
+      description: Target framework, SDK version, OS, and project type. / 目标框架、SDK 版本、操作系统和项目类型。
+      placeholder: "net8.0, .NET SDK 8.0.x, Windows 11, WinForms"
+    validations:
+      required: true
+  - type: dropdown
+    id: problem_type
+    attributes:
+      label: 📍 Problem type / 问题类型
+      options:
+        - Install or restore failure / 安装或还原失败
+        - Missing dependency / 缺少依赖
+        - Wrong package metadata / 包元数据错误
+        - Runtime assembly load failure / 运行时程序集加载失败
+        - Version conflict / 版本冲突
+        - SourceLink or symbols / SourceLink 或符号包
+        - Other / 其它
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: 🧩 Details / 详情
+      description: Describe the package problem and expected result. / 描述打包问题和期望结果。
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📎 Restore/build/runtime output / 还原、构建或运行输出
+      description: Paste relevant output from NuGet restore, build, or runtime exception. / 粘贴 NuGet 还原、构建或运行异常的相关输出。
+      render: text
+  - type: textarea
+    id: csproj
+    attributes:
+      label: 🧾 Relevant project file snippet / 相关项目文件片段
+      description: Paste relevant PackageReference or project settings if helpful. / 如有帮助，请粘贴相关 PackageReference 或项目设置。
+      render: xml
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 🔎 Pre-submit checks / 提交前检查
+      options:
+        - label: I confirmed the package name and version are correct. / 我已确认包名和版本正确。
+          required: true
+        - label: I searched existing issues and did not find a duplicate. / 我已搜索现有 Issue，未发现重复问题。
+          required: true
