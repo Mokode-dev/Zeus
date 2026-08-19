@@ -40,6 +40,18 @@ namespace Zeus
         public int LocalTsap { get; set; }
         public string MeterAddress { get; set; }
         public int MonitoringTimer { get; set; }
+        public bool MqttAutomaticKeepAlive { get; set; }
+        public bool MqttAutomaticReconnect { get; set; }
+        public bool MqttCleanSession { get; set; }
+        public string? MqttClientId { get; set; }
+        public int MqttKeepAliveSeconds { get; set; }
+        public int MqttMaximumPacketSize { get; set; }
+        public string? MqttPassword { get; set; }
+        public string? MqttUsername { get; set; }
+        public string? MqttWillPayload { get; set; }
+        public string MqttWillQos { get; set; }
+        public bool MqttWillRetain { get; set; }
+        public string? MqttWillTopic { get; set; }
         public string Name { get; set; }
         public int NetworkNumber { get; set; }
         public string OperatorCode { get; set; }
@@ -79,6 +91,8 @@ namespace Zeus
         public string? DeviceCode { get; set; }
         public double? HighAlarmLimit { get; set; }
         public double? LowAlarmLimit { get; set; }
+        public string MqttQos { get; set; }
+        public bool MqttRetain { get; set; }
         public string Name { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("scale")]
         public double? Scale { get; set; }
@@ -86,6 +100,7 @@ namespace Zeus
         [System.Text.Json.Serialization.JsonPropertyName("tag")]
         public string? Tag { get; set; }
         public string? TagName { get; set; }
+        public string? Topic { get; set; }
         public bool Writable { get; set; }
     }
     public sealed class ReconnectConfiguration

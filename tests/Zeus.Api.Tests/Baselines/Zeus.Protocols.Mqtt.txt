@@ -1,0 +1,133 @@
+namespace Zeus
+{
+    public sealed class MqttBrokerMemory
+    {
+        public MqttBrokerMemory() { }
+        public System.Collections.Generic.IReadOnlyDictionary<string, byte[]> Snapshot { get; }
+        public bool Remove(string topic) { }
+        public void Set(string topic, System.ReadOnlySpan<byte> payload, Zeus.MqttQualityOfService qualityOfService = 0) { }
+        public void SetText(string topic, string payload, Zeus.MqttQualityOfService qualityOfService = 0) { }
+        public bool TryGet(string topic, out byte[] payload) { }
+    }
+    public sealed class MqttBrokerResponder : Zeus.IVirtualResponder
+    {
+        public MqttBrokerResponder(Zeus.MqttBrokerMemory? memory = null) { }
+        public string? ClientId { get; }
+        public int ConnectCount { get; }
+        public Zeus.MqttBrokerMemory Memory { get; }
+        public int PingRequestCount { get; }
+        public Zeus.MqttMessage? WillMessage { get; }
+        public System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request) { }
+    }
+    public sealed class MqttClient : System.IAsyncDisposable
+    {
+        public MqttClient(Zeus.IChannel channel, Zeus.MqttOptions? options = null, System.TimeSpan? timeout = default, string? fallbackClientId = null) { }
+        public Zeus.IChannel Channel { get; }
+        public string FallbackClientId { get; }
+        public bool IsConnected { get; }
+        public Zeus.MqttOptions Options { get; }
+        public event System.EventHandler<Zeus.MqttMessage>? MessageReceived;
+        public System.Threading.Tasks.Task ConnectAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task DisconnectAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Collections.Generic.IReadOnlyList<Zeus.MqttMessage> DrainMessages() { }
+        public System.Threading.Tasks.Task PingAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PublishAsync(string topic, System.ReadOnlyMemory<byte> payload, bool retain = false, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PublishAsync(string topic, System.ReadOnlyMemory<byte> payload, Zeus.MqttQualityOfService qualityOfService, bool retain = false, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SubscribeAsync(string topicFilter, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SubscribeAsync(string topicFilter, Zeus.MqttQualityOfService qualityOfService, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task UnsubscribeAsync(string topicFilter, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<Zeus.MqttMessage> WaitForMessageAsync(string? topicFilter = null, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public enum MqttDataType
+    {
+        Text = 1,
+        Boolean = 2,
+        Int32 = 3,
+        Int64 = 4,
+        Double = 5,
+        Bytes = 6,
+    }
+    public sealed class MqttDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
+    {
+        public MqttDevice(string name, Zeus.IChannel channel, Zeus.MqttOptions? options = null, System.TimeSpan? timeout = default, Zeus.MqttPointMap? pointMap = null) { }
+        public Zeus.MqttClient Client { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
+        public System.Threading.Tasks.Task ConnectAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PublishTextAsync(string topic, string payload, bool retain = false, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PublishTextAsync(string topic, string payload, Zeus.MqttQualityOfService qualityOfService, bool retain = false, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class MqttException : Zeus.ZeusProtocolException
+    {
+        public MqttException(string message) { }
+    }
+    public sealed class MqttMessage : System.EventArgs
+    {
+        public MqttMessage(string topic, byte[] payload, bool retain = false, Zeus.MqttQualityOfService qualityOfService = 0, bool duplicate = false, ushort? packetIdentifier = default) { }
+        public bool Duplicate { get; }
+        public ushort? PacketIdentifier { get; }
+        public byte[] Payload { get; }
+        public Zeus.MqttQualityOfService QualityOfService { get; }
+        public bool Retain { get; }
+        public string Topic { get; }
+    }
+    public sealed class MqttOptions
+    {
+        public MqttOptions() { }
+        public bool AutomaticKeepAlive { get; set; }
+        public bool AutomaticReconnect { get; set; }
+        public bool CleanSession { get; set; }
+        public string? ClientId { get; set; }
+        public ushort KeepAliveSeconds { get; set; }
+        public int MaximumPacketSize { get; set; }
+        public string? Password { get; set; }
+        public double ReconnectBackoffMultiplier { get; set; }
+        public System.TimeSpan ReconnectInitialDelay { get; set; }
+        public System.TimeSpan ReconnectMaxDelay { get; set; }
+        public string? Username { get; set; }
+        public byte[]? WillPayload { get; set; }
+        public Zeus.MqttQualityOfService WillQualityOfService { get; set; }
+        public bool WillRetain { get; set; }
+        public string? WillTopic { get; set; }
+    }
+    public sealed class MqttPointMap
+    {
+        public MqttPointMap() { }
+        public Zeus.MqttPointMap Boolean(string name, string topic) { }
+        public Zeus.MqttPointMap Bytes(string name, string topic) { }
+        public Zeus.MqttPointMap Double(string name, string topic, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.MqttPointMap Int32(string name, string topic, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.MqttPointMap Int64(string name, string topic, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.MqttPointMap Retained(string name, bool retained = true) { }
+        public Zeus.MqttPointMap Text(string name, string topic) { }
+        public Zeus.MqttPointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
+        public Zeus.MqttPointMap WithQualityOfService(string name, Zeus.MqttQualityOfService qualityOfService) { }
+        public Zeus.MqttPointMap Writable(string name) { }
+    }
+    public sealed class MqttPointSpec : System.IEquatable<Zeus.MqttPointSpec>
+    {
+        public MqttPointSpec(string Name, string Topic, Zeus.MqttDataType DataType, Zeus.PointValueKind Kind, Zeus.PointAlarmLimits? AlarmLimits, bool Writable, Zeus.MqttQualityOfService QualityOfService = 0, bool Retain = true) { }
+        public Zeus.PointAlarmLimits? AlarmLimits { get; init; }
+        public Zeus.MqttDataType DataType { get; init; }
+        public Zeus.PointValueKind Kind { get; init; }
+        public string Name { get; init; }
+        public Zeus.MqttQualityOfService QualityOfService { get; init; }
+        public bool Retain { get; init; }
+        public string Topic { get; init; }
+        public bool Writable { get; init; }
+    }
+    public enum MqttQualityOfService
+    {
+        AtMostOnce = 0,
+        AtLeastOnce = 1,
+        ExactlyOnce = 2,
+    }
+    public static class ZeusHostBuilderMqttExtensions
+    {
+        public static Zeus.MqttDevice AddMqtt(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.MqttOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.MqttPointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddMqtt(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.MqttOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.MqttPointMap>? points = null) { }
+    }
+}

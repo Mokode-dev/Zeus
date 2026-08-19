@@ -210,13 +210,17 @@ public static class ZeusConfigurationLoader
             {
                 ValidateIec104Device(device, path);
             }
+            else if (IsMqttDeviceType(type))
+            {
+                ValidateMqttDevice(device, path);
+            }
             else if (IsMcDeviceType(type))
             {
                 ValidateMcDevice(device, path);
             }
             else
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、modbus-ascii、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip、dlt645、iec104。");
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、modbus-ascii、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip、dlt645、iec104、mqtt。");
             }
         }
     }
@@ -229,9 +233,14 @@ public static class ZeusConfigurationLoader
         }
 
         var responder = Normalize(channel.Responder);
-        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley" or "dlt645" or "dlt-645" or "dlt645-2007" or "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104"))
+        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley" or "dlt645" or "dlt-645" or "dlt645-2007" or "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104" or "mqtt"))
         {
-            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、mewtocol、ethernet-ip、dlt645、iec104，或省略以回显写入。");
+            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、mewtocol、ethernet-ip、dlt645、iec104、mqtt，或省略以回显写入。");
+        }
+
+        if (responder == "mqtt")
+        {
+            return;
         }
 
         if (responder is "dlt645" or "dlt-645" or "dlt645-2007")
@@ -530,6 +539,56 @@ public static class ZeusConfigurationLoader
         }
 
         ValidateIec104Points(device.Points, path);
+    }
+
+    private static void ValidateMqttDevice(DeviceConfiguration device, string path)
+    {
+        if (device.TimeoutMilliseconds is <= 0)
+        {
+            throw new ZeusException($"{path}.timeoutMilliseconds 必须大于 0。");
+        }
+
+        if (device.MqttKeepAliveSeconds is < 0 or > ushort.MaxValue)
+        {
+            throw new ZeusException($"{path}.mqttKeepAliveSeconds 必须介于 0 与 65535 之间。");
+        }
+
+        if (device.MqttClientId is not null && string.IsNullOrWhiteSpace(device.MqttClientId))
+        {
+            throw new ZeusException($"{path}.mqttClientId 不能为空字符串。");
+        }
+
+        if (device.MqttUsername is null && device.MqttPassword is not null)
+        {
+            throw new ZeusException($"{path}.mqttPassword 不能在未设置 mqttUsername 时单独使用。");
+        }
+
+        if ((device.MqttWillTopic is null) != (device.MqttWillPayload is null))
+        {
+            throw new ZeusException($"{path}.mqttWillTopic 与 mqttWillPayload 必须同时设置或同时省略。");
+        }
+
+        var willQos = ParseMqttQualityOfService(device.MqttWillQos, $"{path}.mqttWillQos");
+        if (device.MqttWillTopic is not null)
+        {
+            if (string.IsNullOrWhiteSpace(device.MqttWillTopic)
+                || device.MqttWillTopic.Contains('+')
+                || device.MqttWillTopic.Contains('#'))
+            {
+                throw new ZeusException($"{path}.mqttWillTopic 不能为空或包含 MQTT 通配符。");
+            }
+        }
+        else if (device.MqttWillRetain || willQos != MqttQualityOfService.AtMostOnce)
+        {
+            throw new ZeusException($"{path} 未设置 MQTT 遗嘱时不能设置 mqttWillRetain 或非零 mqttWillQos。");
+        }
+
+        if (device.MqttMaximumPacketSize is < 2 or > 268_435_455)
+        {
+            throw new ZeusException($"{path}.mqttMaximumPacketSize 必须介于 2 与 268435455 之间。");
+        }
+
+        ValidateMqttPoints(device.Points, path);
     }
 
     private static void ValidateMcPoints(List<PointConfiguration> points, string devicePath, McFrameType frameType)
@@ -1018,6 +1077,59 @@ public static class ZeusConfigurationLoader
         }
     }
 
+    private static void ValidateMqttPoints(List<PointConfiguration> points, string devicePath)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var topics = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var path = $"{devicePath}.points[{i}]";
+            EnsureName(point.Name, path);
+            if (!names.Add(point.Name.Trim()))
+            {
+                throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
+            }
+
+            var topic = string.IsNullOrWhiteSpace(point.Topic) ? point.Name : point.Topic;
+            if (string.IsNullOrWhiteSpace(topic) || topic.Contains('\0'))
+            {
+                throw new ZeusException($"{path}.topic 不能为空或包含空字符。");
+            }
+
+            topic = topic.Trim();
+            if (topic.Contains('+') || topic.Contains('#'))
+            {
+                throw new ZeusException($"{path}.topic 不能包含 MQTT 通配符 + 或 #。");
+            }
+
+            if (!topics.Add(topic))
+            {
+                throw new ZeusException($"{path}.topic「{topic}」在同一设备内重复。");
+            }
+
+            var dataType = ParseMqttDataType(point.DataType, $"{path}.dataType");
+            ParseMqttQualityOfService(point.MqttQos, $"{path}.mqttQos");
+            if (point.Scale is not null)
+            {
+                throw new ZeusException($"{path}.scale 不是 MQTT 主题点的有效字段，请在上游发布工程值。");
+            }
+
+            ValidateAlarmLimit(point.LowAlarmLimit, $"{path}.lowAlarmLimit");
+            ValidateAlarmLimit(point.HighAlarmLimit, $"{path}.highAlarmLimit");
+            if (point.LowAlarmLimit > point.HighAlarmLimit)
+            {
+                throw new ZeusException($"{path}.lowAlarmLimit 不能高于 highAlarmLimit。");
+            }
+
+            if (dataType is MqttDataType.Text or MqttDataType.Boolean or MqttDataType.Bytes
+                && (point.LowAlarmLimit is not null || point.HighAlarmLimit is not null))
+            {
+                throw new ZeusException($"{path} 的 {dataType} 点不能配置 lowAlarmLimit 或 highAlarmLimit。");
+            }
+        }
+    }
+
     private static void ValidateAlarmLimit(double? value, string path)
     {
         if (value is { } number && !double.IsFinite(number))
@@ -1072,6 +1184,9 @@ public static class ZeusConfigurationLoader
 
     internal static bool IsIec104DeviceType(string type)
         => type is "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104" or "iec-60870-104" or "iec60870-104";
+
+    internal static bool IsMqttDeviceType(string type)
+        => type is "mqtt" or "mqtt311" or "mqtt-3-1-1" or "mqtt3" or "mqtt-v3";
 
     internal static McFrameType ParseMcFrameType(string? value, string path)
     {
@@ -1370,6 +1485,33 @@ public static class ZeusConfigurationLoader
             "scaled" or "scale" or "sva" or "int16" or "short" => Iec104DataType.Scaled,
             "shortfloat" or "float" or "real" or "singleprecision" => Iec104DataType.ShortFloat,
             _ => throw new ZeusException($"{path}「{value}」不受支持。IEC104 可选 single-point、normalized、scaled、short-float。")
+        };
+    }
+
+    internal static MqttDataType ParseMqttDataType(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "text" or "string" or "utf8" => MqttDataType.Text,
+            "bool" or "boolean" or "bit" => MqttDataType.Boolean,
+            "int" or "int32" or "integer" => MqttDataType.Int32,
+            "long" or "int64" => MqttDataType.Int64,
+            "double" or "float" or "real" or "number" => MqttDataType.Double,
+            "bytes" or "bytearray" or "raw" or "binary" => MqttDataType.Bytes,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。MQTT 可选 text、boolean、int32、int64、double、bytes。")
+        };
+    }
+
+    internal static MqttQualityOfService ParseMqttQualityOfService(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal).Replace("_", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "0" or "qos0" or "atmostonce" => MqttQualityOfService.AtMostOnce,
+            "1" or "qos1" or "atleastonce" => MqttQualityOfService.AtLeastOnce,
+            "2" or "qos2" or "exactlyonce" => MqttQualityOfService.ExactlyOnce,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。MQTT QoS 可选 0、1、2。")
         };
     }
 

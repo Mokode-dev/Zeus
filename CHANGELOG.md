@@ -4,6 +4,24 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Zeus.Communications.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Communications) ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Mokode-dev/Zeus/blob/main/code/LICENSE)
 
 
+## 0.14.0
+
+新增 MQTT 3.1.1 协议栈，覆盖常用客户端会话能力、QoS 握手、保留消息、遗嘱、保活、重连、点表采集与 JSON 配置。
+
+### 包含
+
+- MQTT 客户端：支持 CONNECT、DISCONNECT、PINGREQ/PINGRESP、SUBSCRIBE/UNSUBSCRIBE 和 QoS 0/1/2 发布确认
+- 会话能力：支持保留消息、空载荷删除保留消息、遗嘱消息、最大报文长度、UTF-8 与主题通配符校验
+- 可靠性：支持自动保活、通道恢复后的自动重连与订阅恢复
+- 点表：支持文本、布尔、32/64 位整数、双精度和字节载荷，支持 QoS、retain、报警限与可写点
+- 虚拟 Broker：新增 `MqttBrokerResponder` 与 `MqttBrokerMemory`，无需硬件即可验证 MQTT 会话和点表链路
+- 配置与示例：JSON 支持声明 `mqtt` 设备、`responder: "mqtt"` 虚拟 Broker；新增 MQTT 控制台示例与协议测试
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.13 已发布的类型、成员和扩展方法签名
+- `0.14.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.13.0
 
 新增 IEC 60870-5-104 协议栈，覆盖 STARTDT 启动、总召唤、单点命令、归一化/标度化/短浮点设点、点表采集、点名写回、虚拟站、JSON 配置与控制台示例。

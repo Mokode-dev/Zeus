@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Zeus.Samples.Console.Mqtt</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Zeus.Communications\Zeus.Communications.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Hosting\Zeus.Hosting.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Protocols.Mqtt\Zeus.Protocols.Mqtt.csproj" />
+  </ItemGroup>
+
+</Project>

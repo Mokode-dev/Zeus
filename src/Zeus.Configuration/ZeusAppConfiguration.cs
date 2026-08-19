@@ -113,7 +113,7 @@ public sealed class DeviceConfiguration
     /// <summary>绑定的通道名。</summary>
     public string Channel { get; set; } = string.Empty;
 
-    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>modbus-ascii</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c>、<c>omron-host-link</c>、<c>panasonic-mewtocol</c>、<c>ethernet-ip</c>、<c>dlt645</c> 或 <c>iec104</c>。</summary>
+    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>modbus-ascii</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c>、<c>omron-host-link</c>、<c>panasonic-mewtocol</c>、<c>ethernet-ip</c>、<c>dlt645</c>、<c>iec104</c> 或 <c>mqtt</c>。</summary>
     public string Type { get; set; } = "modbus-rtu";
 
     /// <summary>从站/单元标识，默认 1。Host Link 使用 0-31 单元号；MEWTOCOL 使用 1-99 站号。</summary>
@@ -215,6 +215,42 @@ public sealed class DeviceConfiguration
     /// <summary>IEC104 总召唤限定词 QOI，默认 20。仅 IEC104。</summary>
     public int InterrogationQualifier { get; set; } = 20;
 
+    /// <summary>MQTT 客户端标识。省略时由设备名生成。仅 MQTT。</summary>
+    public string? MqttClientId { get; set; }
+
+    /// <summary>MQTT 可选用户名。仅 MQTT。</summary>
+    public string? MqttUsername { get; set; }
+
+    /// <summary>MQTT 可选密码。仅 MQTT。</summary>
+    public string? MqttPassword { get; set; }
+
+    /// <summary>MQTT 保活秒数，默认 60。仅 MQTT。</summary>
+    public int MqttKeepAliveSeconds { get; set; } = 60;
+
+    /// <summary>MQTT 是否清理会话，默认 true。仅 MQTT。</summary>
+    public bool MqttCleanSession { get; set; } = true;
+
+    /// <summary>MQTT 遗嘱主题。仅 MQTT。</summary>
+    public string? MqttWillTopic { get; set; }
+
+    /// <summary>MQTT UTF-8 遗嘱载荷。仅 MQTT。</summary>
+    public string? MqttWillPayload { get; set; }
+
+    /// <summary>MQTT 遗嘱 QoS：0、1、2。仅 MQTT。</summary>
+    public string MqttWillQos { get; set; } = "0";
+
+    /// <summary>MQTT 是否保留遗嘱。仅 MQTT。</summary>
+    public bool MqttWillRetain { get; set; }
+
+    /// <summary>MQTT 最大接收报文大小，默认 1 MiB。仅 MQTT。</summary>
+    public int MqttMaximumPacketSize { get; set; } = 1024 * 1024;
+
+    /// <summary>MQTT 是否自动保活，默认 true。仅 MQTT。</summary>
+    public bool MqttAutomaticKeepAlive { get; set; } = true;
+
+    /// <summary>MQTT 是否在通道恢复后自动重连并恢复订阅，默认 true。仅 MQTT。</summary>
+    public bool MqttAutomaticReconnect { get; set; } = true;
+
     /// <summary>周期采集点。</summary>
     public List<PointConfiguration> Points { get; set; } = [];
 }
@@ -226,6 +262,15 @@ public sealed class PointConfiguration
 {
     /// <summary>点名。</summary>
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>MQTT 主题。省略时使用点名。仅 MQTT。</summary>
+    public string? Topic { get; set; }
+
+    /// <summary>MQTT 订阅与写回 QoS：0、1、2。仅 MQTT。</summary>
+    public string MqttQos { get; set; } = "0";
+
+    /// <summary>MQTT 点写回时是否设置 retain，默认 true。仅 MQTT。</summary>
+    public bool MqttRetain { get; set; } = true;
 
     /// <summary>EtherNet/IP 标签名。省略时使用 <see cref="Name"/>。</summary>
     public string? TagName { get; set; }

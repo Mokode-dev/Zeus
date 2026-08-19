@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- MQTT 3.1.1 客户端、主题点表与虚拟 Broker。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Zeus</RootNamespace>
+    <AssemblyName>Zeus.Protocols.Mqtt</AssemblyName>
+    <Description>Zeus MQTT 3.1.1 客户端、主题点表与虚拟 Broker。</Description>
+    <PackageDescription>Zeus MQTT 3.1.1 客户端、主题点表与虚拟 Broker。</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Zeus.Abstractions\Zeus.Abstractions.csproj" />
+    <ProjectReference Include="..\Zeus.Core\Zeus.Core.csproj" />
+    <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
+  </ItemGroup>
+
+</Project>

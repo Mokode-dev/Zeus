@@ -63,6 +63,10 @@ public sealed class PublicApiBaselineTests
     [Fact]
     public void Iec104_matches_baseline() => AssertMatchesBaseline(typeof(Iec104Device).Assembly);
 
+    /// <summary>MQTT 3.1.1 公开表面。</summary>
+    [Fact]
+    public void Mqtt_matches_baseline() => AssertMatchesBaseline(typeof(MqttDevice).Assembly);
+
     /// <summary>Mitsubishi MC 公开表面。</summary>
     [Fact]
     public void Mc_matches_baseline() => AssertMatchesBaseline(typeof(McDevice).Assembly);

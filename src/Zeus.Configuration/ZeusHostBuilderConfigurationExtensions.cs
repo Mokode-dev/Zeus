@@ -281,6 +281,13 @@ public static class ZeusHostBuilderConfigurationExtensions
             return;
         }
 
+        if (ZeusConfigurationLoader.IsMqttDeviceType(type))
+        {
+            Action<MqttPointMap>? mqttPoints = device.Points.Count == 0 ? null : map => ApplyMqttPoints(map, device.Points);
+            host.AddMqtt(device.Name.Trim(), device.Channel.Trim(), CreateMqttOptions(device), timeout, mqttPoints);
+            return;
+        }
+
         if (ZeusConfigurationLoader.IsMcDeviceType(type))
         {
             Action<McPointMap>? mcPoints = device.Points.Count == 0 ? null : map => ApplyMcPoints(map, device.Points);
@@ -336,6 +343,9 @@ public static class ZeusHostBuilderConfigurationExtensions
                 ZeusConfigurationLoader.Normalize(point.Area),
                 ZeusConfigurationLoader.Normalize(point.TagName),
                 ZeusConfigurationLoader.Normalize(point.Tag),
+                point.Topic,
+                ZeusConfigurationLoader.Normalize(point.MqttQos),
+                point.MqttRetain,
                 ZeusConfigurationLoader.Normalize(point.DataType),
                 point.DataLength,
                 point.DbNumber,
@@ -419,6 +429,27 @@ public static class ZeusHostBuilderConfigurationExtensions
                 device.CommonAddress,
                 device.OriginatorAddress,
                 device.InterrogationQualifier,
+                points);
+        }
+
+        if (ZeusConfigurationLoader.IsMqttDeviceType(type))
+        {
+            return string.Join('|',
+                device.Channel.Trim(),
+                type,
+                device.TimeoutMilliseconds,
+                device.MqttClientId,
+                device.MqttUsername,
+                device.MqttPassword,
+                device.MqttKeepAliveSeconds,
+                device.MqttCleanSession,
+                device.MqttWillTopic,
+                device.MqttWillPayload,
+                ZeusConfigurationLoader.Normalize(device.MqttWillQos),
+                device.MqttWillRetain,
+                device.MqttMaximumPacketSize,
+                device.MqttAutomaticKeepAlive,
+                device.MqttAutomaticReconnect,
                 points);
         }
 
@@ -572,6 +603,11 @@ public static class ZeusHostBuilderConfigurationExtensions
             return new Iec104SlaveResponder(new Iec104Options { CommonAddress = channel.CommonAddress });
         }
 
+        if (ZeusConfigurationLoader.Normalize(channel.Responder) == "mqtt")
+        {
+            return new MqttBrokerResponder();
+        }
+
         var transport = CreateModbusTransport(ZeusConfigurationLoader.Normalize(channel.Transport));
         return new ModbusSlaveResponder(channel.UnitId, transport);
     }
@@ -622,6 +658,13 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             Action<Iec104PointMap>? iec104Points = device.Points.Count == 0 ? null : map => ApplyIec104Points(map, device.Points);
             builder.AddIec104(device.Name.Trim(), device.Channel.Trim(), CreateIec104Options(device), timeout, iec104Points);
+            return;
+        }
+
+        if (ZeusConfigurationLoader.IsMqttDeviceType(type))
+        {
+            Action<MqttPointMap>? mqttPoints = device.Points.Count == 0 ? null : map => ApplyMqttPoints(map, device.Points);
+            builder.AddMqtt(device.Name.Trim(), device.Channel.Trim(), CreateMqttOptions(device), timeout, mqttPoints);
             return;
         }
 
@@ -1022,6 +1065,47 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplyMqttPoints(MqttPointMap map, List<PointConfiguration> points)
+    {
+        foreach (var point in points)
+        {
+            var dataType = ZeusConfigurationLoader.ParseMqttDataType(point.DataType, $"point {point.Name}.dataType");
+            var topic = string.IsNullOrWhiteSpace(point.Topic) ? point.Name : point.Topic.Trim();
+            var alarmLimits = CreateAlarmLimits(point);
+            switch (dataType)
+            {
+                case MqttDataType.Text:
+                    map.Text(point.Name, topic);
+                    break;
+                case MqttDataType.Boolean:
+                    map.Boolean(point.Name, topic);
+                    break;
+                case MqttDataType.Int32:
+                    map.Int32(point.Name, topic, alarmLimits);
+                    break;
+                case MqttDataType.Int64:
+                    map.Int64(point.Name, topic, alarmLimits);
+                    break;
+                case MqttDataType.Double:
+                    map.Double(point.Name, topic, alarmLimits);
+                    break;
+                case MqttDataType.Bytes:
+                    map.Bytes(point.Name, topic);
+                    break;
+            }
+
+            if (point.Writable)
+            {
+                map.Writable(point.Name);
+            }
+
+            map.WithQualityOfService(
+                point.Name,
+                ZeusConfigurationLoader.ParseMqttQualityOfService(point.MqttQos, $"point {point.Name}.mqttQos"));
+            map.Retained(point.Name, point.MqttRetain);
+        }
+    }
+
     private static PointAlarmLimits? CreateAlarmLimits(PointConfiguration point)
         => point.LowAlarmLimit is not null || point.HighAlarmLimit is not null
             ? new PointAlarmLimits(point.LowAlarmLimit, point.HighAlarmLimit)
@@ -1237,6 +1321,23 @@ public static class ZeusHostBuilderConfigurationExtensions
             CommonAddress = device.CommonAddress,
             OriginatorAddress = device.OriginatorAddress,
             InterrogationQualifier = device.InterrogationQualifier
+        };
+
+    private static MqttOptions CreateMqttOptions(DeviceConfiguration device)
+        => new()
+        {
+            ClientId = device.MqttClientId,
+            Username = device.MqttUsername,
+            Password = device.MqttPassword,
+            KeepAliveSeconds = checked((ushort)device.MqttKeepAliveSeconds),
+            CleanSession = device.MqttCleanSession,
+            WillTopic = device.MqttWillTopic,
+            WillPayload = device.MqttWillPayload is null ? null : System.Text.Encoding.UTF8.GetBytes(device.MqttWillPayload),
+            WillQualityOfService = ZeusConfigurationLoader.ParseMqttQualityOfService(device.MqttWillQos, "device.mqttWillQos"),
+            WillRetain = device.MqttWillRetain,
+            MaximumPacketSize = device.MqttMaximumPacketSize,
+            AutomaticKeepAlive = device.MqttAutomaticKeepAlive,
+            AutomaticReconnect = device.MqttAutomaticReconnect
         };
 }
 
