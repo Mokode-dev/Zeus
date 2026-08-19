@@ -1,9 +1,5 @@
 # 更新记录
 
-<!-- Zeus badges -->
-[![NuGet Downloads](https://img.shields.io/nuget/dt/Zeus.Communications.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Communications) ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Mokode-dev/Zeus/blob/main/code/LICENSE)
-
-
 ## 0.14.0
 
 新增 MQTT 3.1.1 协议栈，覆盖常用客户端会话能力、QoS 握手、保留消息、遗嘱、保活、重连、点表采集与 JSON 配置。

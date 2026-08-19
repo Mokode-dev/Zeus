@@ -64,27 +64,27 @@ app.Points.BindTo("temperature", temperatureLabel);
 
 ## 📦 程序集
 
-| 包 | 版本 | 下载量 | 用途 |
-| --- | --- | --- | --- |
-| `Zeus.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Abstractions) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Abstractions.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Abstractions) | 通道、设备、点表与宿主契约 |
-| `Zeus.Runtime` | [![nuget](https://img.shields.io/nuget/v/Zeus.Runtime.svg)](https://www.nuget.org/packages/Zeus.Runtime) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Runtime.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Runtime) | 运行时内核：通道状态机、设备基类与点表 |
-| `Zeus.Hosting` | [![nuget](https://img.shields.io/nuget/v/Zeus.Hosting.svg)](https://www.nuget.org/packages/Zeus.Hosting) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Hosting.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Hosting) | 宿主与采集循环 |
-| `Zeus.Communications` | [![nuget](https://img.shields.io/nuget/v/Zeus.Communications.svg)](https://www.nuget.org/packages/Zeus.Communications) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Communications.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Communications) | 串口 / TCP / UDP 客户端与服务端 / 虚拟通道 |
-| `Zeus.Protocols.Framing` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Framing.svg)](https://www.nuget.org/packages/Zeus.Protocols.Framing) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Framing.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Framing) | 自定义帧 |
-| `Zeus.Protocols.Modbus` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Modbus.svg)](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Modbus.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | Modbus RTU / TCP / ASCII |
-| `Zeus.Protocols.Mc` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Mc.svg)](https://www.nuget.org/packages/Zeus.Protocols.Mc) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Mc.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Mc) | Mitsubishi MC 1E/3E/4E Binary/ASCII，3E/4E 随机读写 |
-| `Zeus.Protocols.S7` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.S7.svg)](https://www.nuget.org/packages/Zeus.Protocols.S7) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.S7.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.S7) | Siemens S7 TCP，读写 DB/I/Q/M 区常用类型 |
-| `Zeus.Protocols.Fins` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Fins.svg)](https://www.nuget.org/packages/Zeus.Protocols.Fins) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Fins.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Fins) | Omron FINS UDP/TCP，读写 CIO/WR/HR/AR/DM/EM/TIM-CNT 区 |
-| `Zeus.Protocols.HostLink` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.HostLink.svg)](https://www.nuget.org/packages/Zeus.Protocols.HostLink) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.HostLink.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.HostLink) | Omron Host Link ASCII，读写 CIO/LR/HR/AR/DM 区 |
-| `Zeus.Protocols.Mewtocol` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Mewtocol.svg)](https://www.nuget.org/packages/Zeus.Protocols.Mewtocol) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Mewtocol.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Mewtocol) | Panasonic MEWTOCOL-COM，读写 DT/LD/FL 数据寄存器和 X/Y/R/L 接点字 |
-| `Zeus.Protocols.EtherNetIp` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.EtherNetIp.svg)](https://www.nuget.org/packages/Zeus.Protocols.EtherNetIp) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.EtherNetIp.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.EtherNetIp) | Allen-Bradley EtherNet/IP CIP，读写标量标签与 CIP 属性 |
-| `Zeus.Protocols.Dlt645` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Dlt645.svg)](https://www.nuget.org/packages/Zeus.Protocols.Dlt645) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Dlt645.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Dlt645) | DL/T 645-2007 电能表，读写 BCD 数据项与原始数据项 |
-| `Zeus.Protocols.Iec104` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Iec104.svg)](https://www.nuget.org/packages/Zeus.Protocols.Iec104) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Iec104.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Iec104) | IEC 60870-5-104，支持总召唤、单点命令与常用测量/设点类型 |
-| `Zeus.Protocols.Mqtt` | [![nuget](https://img.shields.io/nuget/v/Zeus.Protocols.Mqtt.svg)](https://www.nuget.org/packages/Zeus.Protocols.Mqtt) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Protocols.Mqtt.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Protocols.Mqtt) | MQTT 3.1.1 客户端，支持 QoS 0/1/2、保留消息、遗嘱、保活、重连和虚拟 Broker |
-| `Zeus.Configuration` | [![nuget](https://img.shields.io/nuget/v/Zeus.Configuration.svg)](https://www.nuget.org/packages/Zeus.Configuration) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Configuration.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Configuration) | JSON 工程配置 |
-| `Zeus.Presentation.Abstractions` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Abstractions.svg)](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Presentation.Abstractions.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | UI 无关绑定抽象、`PointBindingSource` 与点表快照绑定 |
-| `Zeus.Presentation.WinForms` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.WinForms.svg)](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Presentation.WinForms.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | WinForms 绑定、点表报警色与写回按钮绑定 |
-| `Zeus.Presentation.Wpf` | [![nuget](https://img.shields.io/nuget/v/Zeus.Presentation.Wpf.svg)](https://www.nuget.org/packages/Zeus.Presentation.Wpf) | [![downloads](https://img.shields.io/nuget/dt/Zeus.Presentation.Wpf.svg?label=downloads)](https://www.nuget.org/packages/Zeus.Presentation.Wpf) | WPF 绑定、点表报警色与写回按钮绑定 |
+| 包 | 用途 |
+| --- | --- |
+| [Zeus.Abstractions](https://www.nuget.org/packages/Zeus.Abstractions) | 通道、设备、点表与宿主契约 |
+| [Zeus.Runtime](https://www.nuget.org/packages/Zeus.Runtime) | 运行时内核 |
+| [Zeus.Hosting](https://www.nuget.org/packages/Zeus.Hosting) | 宿主与采集循环 |
+| [Zeus.Communications](https://www.nuget.org/packages/Zeus.Communications) | 串口 / TCP / UDP / 虚拟通道 |
+| [Zeus.Protocols.Framing](https://www.nuget.org/packages/Zeus.Protocols.Framing) | 自定义帧 |
+| [Zeus.Protocols.Modbus](https://www.nuget.org/packages/Zeus.Protocols.Modbus) | Modbus RTU / TCP / ASCII |
+| [Zeus.Protocols.Mc](https://www.nuget.org/packages/Zeus.Protocols.Mc) | Mitsubishi MC |
+| [Zeus.Protocols.S7](https://www.nuget.org/packages/Zeus.Protocols.S7) | Siemens S7 |
+| [Zeus.Protocols.Fins](https://www.nuget.org/packages/Zeus.Protocols.Fins) | Omron FINS |
+| [Zeus.Protocols.HostLink](https://www.nuget.org/packages/Zeus.Protocols.HostLink) | Omron Host Link |
+| [Zeus.Protocols.Mewtocol](https://www.nuget.org/packages/Zeus.Protocols.Mewtocol) | Panasonic MEWTOCOL |
+| [Zeus.Protocols.EtherNetIp](https://www.nuget.org/packages/Zeus.Protocols.EtherNetIp) | Allen-Bradley EtherNet/IP |
+| [Zeus.Protocols.Dlt645](https://www.nuget.org/packages/Zeus.Protocols.Dlt645) | DL/T 645-2007 |
+| [Zeus.Protocols.Iec104](https://www.nuget.org/packages/Zeus.Protocols.Iec104) | IEC 60870-5-104 |
+| [Zeus.Protocols.Mqtt](https://www.nuget.org/packages/Zeus.Protocols.Mqtt) | MQTT 3.1.1 |
+| [Zeus.Configuration](https://www.nuget.org/packages/Zeus.Configuration) | JSON 工程配置 |
+| [Zeus.Presentation.Abstractions](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | UI 无关绑定 |
+| [Zeus.Presentation.WinForms](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | WinForms 绑定 |
+| [Zeus.Presentation.Wpf](https://www.nuget.org/packages/Zeus.Presentation.Wpf) | WPF 绑定 |
 
 加入 QQ 群 `771421105` 可与其它使用者交流，二维码见手册 [社区](https://docs.greekmythology.cn/docs/community)。
 
