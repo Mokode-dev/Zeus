@@ -1,5 +1,21 @@
 # 更新记录
 
+## 0.15.0
+
+新增 SNMP v2c 协议栈，覆盖 OID GET/SET、community 访问控制、点表采集、点名写回、JSON 配置与虚拟 Agent 联调。
+
+### 包含
+
+- SNMP：新增 `Zeus.Protocols.Snmp`，支持 community、request-id、单 OID GET/SET 与 Integer、Gauge32、Counter32、TimeTicks、OCTET STRING、OID、IPv4
+- 点表与写回：支持 OID 点表、工程值缩放、报警限与按点名写回
+- 虚拟 Agent：新增 `SnmpAgentResponder` 与 `SnmpAgentMemory`，无需硬件即可验证 SNMP 会话和点表链路
+- 配置与示例：JSON 支持声明 `snmp` 设备、`responder: "snmp"` 虚拟 Agent；新增 SNMP 控制台示例、协议测试和文档指南
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.14 已发布的类型、成员和扩展方法签名
+- `0.15.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.14.0
 
 新增 MQTT 3.1.1 协议栈，覆盖常用客户端会话能力、QoS 握手、保留消息、遗嘱、保活、重连、点表采集与 JSON 配置。

@@ -13,13 +13,13 @@
     <Product>Zeus</Product>
     <Description>面向 .NET 的 UI 无关上位机开发框架。把复杂留给 Zeus，把简单留给用户。</Description>
     <Copyright>Copyright © Zeus</Copyright>
-    <Version>0.14.0</Version>
+    <Version>0.15.0</Version>
     <NeutralLanguage>zh-Hans</NeutralLanguage>
     <IsPackable>false</IsPackable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageTags>zeus;host;modbus;mitsubishi;mc;siemens;s7;omron;fins;host-link;panasonic;mewtocol;ethernet-ip;cip;allen-bradley;dlt645;iec104;iec-60870-5-104;mqtt;mqtt311;message-queue;electric-meter;serial;tcp;udp;winforms;wpf;industrial;scada</PackageTags>
-    <PackageReleaseNotes>0.14.0：新增 MQTT 3.1.1 协议栈，支持 QoS 0/1/2、订阅、保留消息、遗嘱、自动保活、断线重连、点表采集、JSON 配置、虚拟 Broker 与控制台示例。</PackageReleaseNotes>
+    <PackageTags>zeus;host;modbus;mitsubishi;mc;siemens;s7;omron;fins;host-link;panasonic;mewtocol;ethernet-ip;cip;allen-bradley;dlt645;iec104;iec-60870-5-104;mqtt;mqtt311;snmp;snmpv2c;message-queue;electric-meter;serial;tcp;udp;winforms;wpf;industrial;scada</PackageTags>
+    <PackageReleaseNotes>0.15.0：新增 SNMP v2c 协议栈，支持 GET/SET、Integer/Gauge32/Counter32/TimeTicks/OCTET STRING/OID/IP、OID 点表、JSON 配置、虚拟 Agent 与控制台示例。</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Mokode-dev/Zeus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Mokode-dev/Zeus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

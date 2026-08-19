@@ -32,7 +32,7 @@
 ## ✨ Features
 
 - 🔌 **Channels** — Serial, TCP, UDP client/server, and virtual channels through one consistent API
-- 📡 **Protocols** — Custom frames, Modbus RTU/TCP/ASCII, Mitsubishi MC 1E/3E/4E Binary/ASCII, Siemens S7 TCP, Omron FINS UDP/TCP, Omron Host Link ASCII, Panasonic MEWTOCOL-COM, Allen-Bradley EtherNet/IP CIP, DL/T 645-2007, IEC 60870-5-104, and MQTT 3.1.1, with virtual slave/PLC/meter/Broker support
+- 📡 **Protocols** — Custom frames, Modbus RTU/TCP/ASCII, Mitsubishi MC 1E/3E/4E Binary/ASCII, Siemens S7 TCP, Omron FINS UDP/TCP, Omron Host Link ASCII, Panasonic MEWTOCOL-COM, Allen-Bradley EtherNet/IP CIP, DL/T 645-2007, IEC 60870-5-104, MQTT 3.1.1, and SNMP v2c, with virtual slave/PLC/meter/Broker/Agent support
 - 📊 **Acquisition** — Define a point table once, poll on intervals, keep the latest successful sample, calculate alarm limits, and write writable points back by name
 - 🧭 **Tracing** — Channel-level TX/RX packet events, rolling in-memory records, file logging, and structured `ILogger` logs
 - 🖥️ **UI agnostic** — Business code is not tied to WinForms or WPF; point tables can bind directly to text, historical trends, alarm colors, enabled states, and write buttons
@@ -81,6 +81,7 @@ app.Points.BindTo("temperature", temperatureLabel);
 | [Zeus.Protocols.Dlt645](https://www.nuget.org/packages/Zeus.Protocols.Dlt645) | DL/T 645-2007 |
 | [Zeus.Protocols.Iec104](https://www.nuget.org/packages/Zeus.Protocols.Iec104) | IEC 60870-5-104 |
 | [Zeus.Protocols.Mqtt](https://www.nuget.org/packages/Zeus.Protocols.Mqtt) | MQTT 3.1.1 |
+| [Zeus.Protocols.Snmp](https://www.nuget.org/packages/Zeus.Protocols.Snmp) | SNMP v2c |
 | [Zeus.Configuration](https://www.nuget.org/packages/Zeus.Configuration) | JSON project configuration |
 | [Zeus.Presentation.Abstractions](https://www.nuget.org/packages/Zeus.Presentation.Abstractions) | UI-independent binding |
 | [Zeus.Presentation.WinForms](https://www.nuget.org/packages/Zeus.Presentation.WinForms) | WinForms binding |
