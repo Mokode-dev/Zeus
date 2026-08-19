@@ -1,0 +1,28 @@
+{
+  "acquisition": { "intervalMilliseconds": 500, "pollImmediately": true },
+  "channels": [
+    { "name": "snmp-link", "type": "virtual", "responder": "snmp" }
+  ],
+  "devices": [
+    {
+      "name": "agent",
+      "channel": "snmp-link",
+      "type": "snmp",
+      "snmpCommunity": "public",
+      "points": [
+        {
+          "name": "sysName",
+          "oid": "1.3.6.1.2.1.1.5.0",
+          "dataType": "text",
+          "writable": true
+        },
+        {
+          "name": "sysUpTime",
+          "oid": "1.3.6.1.2.1.1.3.0",
+          "dataType": "timeticks",
+          "scale": 0.01
+        }
+      ]
+    }
+  ]
+}

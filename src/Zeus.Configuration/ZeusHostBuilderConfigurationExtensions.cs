@@ -288,6 +288,13 @@ public static class ZeusHostBuilderConfigurationExtensions
             return;
         }
 
+        if (ZeusConfigurationLoader.IsSnmpDeviceType(type))
+        {
+            Action<SnmpPointMap>? snmpPoints = device.Points.Count == 0 ? null : map => ApplySnmpPoints(map, device.Points);
+            host.AddSnmp(device.Name.Trim(), device.Channel.Trim(), CreateSnmpOptions(device), timeout, snmpPoints);
+            return;
+        }
+
         if (ZeusConfigurationLoader.IsMcDeviceType(type))
         {
             Action<McPointMap>? mcPoints = device.Points.Count == 0 ? null : map => ApplyMcPoints(map, device.Points);
@@ -323,7 +330,7 @@ public static class ZeusHostBuilderConfigurationExtensions
         var type = ZeusConfigurationLoader.Normalize(channel.Type);
         return type switch
         {
-            "virtual" => string.Join('|', type, ZeusConfigurationLoader.Normalize(channel.Responder), channel.UnitId, ZeusConfigurationLoader.Normalize(channel.Transport), channel.MeterAddress?.Trim(), channel.CommonAddress),
+            "virtual" => string.Join('|', type, ZeusConfigurationLoader.Normalize(channel.Responder), channel.UnitId, ZeusConfigurationLoader.Normalize(channel.Transport), channel.MeterAddress?.Trim(), channel.CommonAddress, channel.SnmpCommunity, channel.SnmpWriteCommunity),
             "serial" => string.Join('|', type, channel.PortName?.Trim(), channel.BaudRate),
             "tcp" => string.Join('|', type, channel.Host?.Trim(), channel.Port),
             "tcp-server" or "tcpserver" => string.Join('|', "tcp-server", channel.LocalAddress?.Trim(), EffectiveTcpServerPort(channel)),
@@ -344,6 +351,7 @@ public static class ZeusHostBuilderConfigurationExtensions
                 ZeusConfigurationLoader.Normalize(point.TagName),
                 ZeusConfigurationLoader.Normalize(point.Tag),
                 point.Topic,
+                point.Oid,
                 ZeusConfigurationLoader.Normalize(point.MqttQos),
                 point.MqttRetain,
                 ZeusConfigurationLoader.Normalize(point.DataType),
@@ -450,6 +458,18 @@ public static class ZeusHostBuilderConfigurationExtensions
                 device.MqttMaximumPacketSize,
                 device.MqttAutomaticKeepAlive,
                 device.MqttAutomaticReconnect,
+                points);
+        }
+
+        if (ZeusConfigurationLoader.IsSnmpDeviceType(type))
+        {
+            return string.Join('|',
+                device.Channel.Trim(),
+                type,
+                device.TimeoutMilliseconds,
+                device.SnmpCommunity,
+                device.SnmpWriteCommunity,
+                device.SnmpInitialRequestId,
                 points);
         }
 
@@ -608,6 +628,11 @@ public static class ZeusHostBuilderConfigurationExtensions
             return new MqttBrokerResponder();
         }
 
+        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "snmp" or "snmp-v2c" or "snmpv2c")
+        {
+            return new SnmpAgentResponder(community: channel.SnmpCommunity, writeCommunity: channel.SnmpWriteCommunity);
+        }
+
         var transport = CreateModbusTransport(ZeusConfigurationLoader.Normalize(channel.Transport));
         return new ModbusSlaveResponder(channel.UnitId, transport);
     }
@@ -665,6 +690,13 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             Action<MqttPointMap>? mqttPoints = device.Points.Count == 0 ? null : map => ApplyMqttPoints(map, device.Points);
             builder.AddMqtt(device.Name.Trim(), device.Channel.Trim(), CreateMqttOptions(device), timeout, mqttPoints);
+            return;
+        }
+
+        if (ZeusConfigurationLoader.IsSnmpDeviceType(type))
+        {
+            Action<SnmpPointMap>? snmpPoints = device.Points.Count == 0 ? null : map => ApplySnmpPoints(map, device.Points);
+            builder.AddSnmp(device.Name.Trim(), device.Channel.Trim(), CreateSnmpOptions(device), timeout, snmpPoints);
             return;
         }
 
@@ -1106,6 +1138,48 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    private static void ApplySnmpPoints(SnmpPointMap map, List<PointConfiguration> points)
+    {
+        foreach (var point in points)
+        {
+            var dataType = ZeusConfigurationLoader.ParseSnmpDataType(point.DataType, $"point {point.Name}.dataType");
+            var oid = point.Oid ?? throw new ZeusException($"point {point.Name}.oid 不能为空。");
+            var alarmLimits = CreateAlarmLimits(point);
+            switch (dataType)
+            {
+                case SnmpDataType.Integer:
+                    map.Integer(point.Name, oid, point.Scale, alarmLimits);
+                    break;
+                case SnmpDataType.Gauge32:
+                    map.Gauge32(point.Name, oid, point.Scale, alarmLimits);
+                    break;
+                case SnmpDataType.Counter32:
+                    map.Counter32(point.Name, oid, point.Scale, alarmLimits);
+                    break;
+                case SnmpDataType.TimeTicks:
+                    map.TimeTicks(point.Name, oid, point.Scale, alarmLimits);
+                    break;
+                case SnmpDataType.Text:
+                    map.Text(point.Name, oid);
+                    break;
+                case SnmpDataType.OctetString:
+                    map.OctetString(point.Name, oid);
+                    break;
+                case SnmpDataType.ObjectIdentifier:
+                    map.ObjectIdentifier(point.Name, oid);
+                    break;
+                case SnmpDataType.IpAddress:
+                    map.IpAddress(point.Name, oid);
+                    break;
+            }
+
+            if (point.Writable)
+            {
+                map.Writable(point.Name);
+            }
+        }
+    }
+
     private static PointAlarmLimits? CreateAlarmLimits(PointConfiguration point)
         => point.LowAlarmLimit is not null || point.HighAlarmLimit is not null
             ? new PointAlarmLimits(point.LowAlarmLimit, point.HighAlarmLimit)
@@ -1338,6 +1412,14 @@ public static class ZeusHostBuilderConfigurationExtensions
             MaximumPacketSize = device.MqttMaximumPacketSize,
             AutomaticKeepAlive = device.MqttAutomaticKeepAlive,
             AutomaticReconnect = device.MqttAutomaticReconnect
+        };
+
+    private static SnmpOptions CreateSnmpOptions(DeviceConfiguration device)
+        => new()
+        {
+            Community = device.SnmpCommunity.Trim(),
+            WriteCommunity = string.IsNullOrWhiteSpace(device.SnmpWriteCommunity) ? null : device.SnmpWriteCommunity.Trim(),
+            InitialRequestId = device.SnmpInitialRequestId
         };
 }
 

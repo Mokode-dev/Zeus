@@ -1,0 +1,139 @@
+namespace Zeus
+{
+    public sealed class SnmpAgentMemory
+    {
+        public SnmpAgentMemory() { }
+        public void Set(string oid, Zeus.SnmpValue value, bool writable = true) { }
+        public void SetCounter32(string oid, uint value, bool writable = false) { }
+        public void SetGauge32(string oid, uint value, bool writable = true) { }
+        public void SetInteger(string oid, long value, bool writable = true) { }
+        public void SetText(string oid, string value, bool writable = true) { }
+        public bool TryGet(string oid, out Zeus.SnmpValue? value) { }
+        public Zeus.SnmpErrorStatus TrySet(string oid, Zeus.SnmpValue value) { }
+    }
+    public sealed class SnmpAgentResponder : Zeus.IVirtualResponder
+    {
+        public SnmpAgentResponder(Zeus.SnmpAgentMemory? memory = null, string community = "public", string? writeCommunity = null) { }
+        public Zeus.SnmpAgentMemory Memory { get; }
+        public System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request) { }
+    }
+    public sealed class SnmpClient : System.IAsyncDisposable
+    {
+        public SnmpClient(Zeus.IChannel channel, Zeus.SnmpOptions? options = null, System.TimeSpan? timeout = default) { }
+        public Zeus.IChannel Channel { get; }
+        public Zeus.SnmpOptions Options { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<Zeus.SnmpValue> GetAsync(string oid, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<long> GetIntegerAsync(string oid, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<string> GetTextAsync(string oid, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SetAsync(string oid, Zeus.SnmpValue value, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public enum SnmpDataType
+    {
+        Integer = 0,
+        OctetString = 1,
+        Text = 2,
+        ObjectIdentifier = 3,
+        IpAddress = 4,
+        Counter32 = 5,
+        Gauge32 = 6,
+        TimeTicks = 7,
+    }
+    public sealed class SnmpDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
+    {
+        public SnmpDevice(string name, Zeus.IChannel channel, Zeus.SnmpOptions? options = null, System.TimeSpan? timeout = default, Zeus.SnmpPointMap? pointMap = null) { }
+        public Zeus.SnmpClient Client { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<Zeus.SnmpValue> GetAsync(string oid, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SetAsync(string oid, Zeus.SnmpValue value, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public enum SnmpErrorStatus
+    {
+        NoError = 0,
+        TooBig = 1,
+        NoSuchName = 2,
+        BadValue = 3,
+        ReadOnly = 4,
+        GenErr = 5,
+        NoAccess = 6,
+        WrongType = 7,
+        WrongLength = 8,
+        WrongEncoding = 9,
+        WrongValue = 10,
+        NoCreation = 11,
+        InconsistentValue = 12,
+        ResourceUnavailable = 13,
+        CommitFailed = 14,
+        UndoFailed = 15,
+        AuthorizationError = 16,
+        NotWritable = 17,
+        InconsistentName = 18,
+    }
+    public sealed class SnmpException : Zeus.ZeusProtocolException
+    {
+        public SnmpException(Zeus.SnmpErrorStatus status, int errorIndex) { }
+        public int ErrorIndex { get; }
+        public Zeus.SnmpErrorStatus Status { get; }
+    }
+    public sealed class SnmpOptions
+    {
+        public SnmpOptions() { }
+        public string Community { get; set; }
+        public int InitialRequestId { get; set; }
+        public string? WriteCommunity { get; set; }
+    }
+    public sealed class SnmpPointMap
+    {
+        public SnmpPointMap() { }
+        public Zeus.SnmpPointMap Counter32(string name, string oid, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.SnmpPointMap Gauge32(string name, string oid, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.SnmpPointMap Integer(string name, string oid, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.SnmpPointMap IpAddress(string name, string oid) { }
+        public Zeus.SnmpPointMap ObjectIdentifier(string name, string oid) { }
+        public Zeus.SnmpPointMap OctetString(string name, string oid) { }
+        public Zeus.SnmpPointMap Text(string name, string oid) { }
+        public Zeus.SnmpPointMap TimeTicks(string name, string oid, double? scale = default, Zeus.PointAlarmLimits? alarmLimits = null) { }
+        public Zeus.SnmpPointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
+        public Zeus.SnmpPointMap Writable(string name) { }
+    }
+    public sealed class SnmpPointSpec : System.IEquatable<Zeus.SnmpPointSpec>
+    {
+        public SnmpPointSpec(string Name, string Oid, Zeus.SnmpDataType DataType, Zeus.PointValueKind Kind, double? Scale, Zeus.PointAlarmLimits? AlarmLimits, bool Writable) { }
+        public Zeus.PointAlarmLimits? AlarmLimits { get; init; }
+        public Zeus.SnmpDataType DataType { get; init; }
+        public Zeus.PointValueKind Kind { get; init; }
+        public string Name { get; init; }
+        public string Oid { get; init; }
+        public double? Scale { get; init; }
+        public bool Writable { get; init; }
+    }
+    public sealed class SnmpValue : System.IEquatable<Zeus.SnmpValue>
+    {
+        public SnmpValue(Zeus.SnmpDataType DataType, object? Value) { }
+        public Zeus.SnmpDataType DataType { get; init; }
+        public object? Value { get; init; }
+        public static Zeus.SnmpValue Counter32(uint value) { }
+        public static Zeus.SnmpValue FromObject(Zeus.SnmpDataType dataType, object value) { }
+        public static Zeus.SnmpValue Gauge32(uint value) { }
+        public static Zeus.SnmpValue Integer(long value) { }
+        public static Zeus.SnmpValue IpAddress(string value) { }
+        public static Zeus.SnmpValue ObjectIdentifier(string value) { }
+        public static Zeus.SnmpValue OctetString(byte[] value) { }
+        public static Zeus.SnmpValue Text(string value) { }
+        public static Zeus.SnmpValue TimeTicks(uint value) { }
+    }
+    public sealed class SnmpVariable : System.IEquatable<Zeus.SnmpVariable>
+    {
+        public SnmpVariable(string Oid, Zeus.SnmpValue Value) { }
+        public string Oid { get; init; }
+        public Zeus.SnmpValue Value { get; init; }
+    }
+    public static class ZeusHostBuilderSnmpExtensions
+    {
+        public static Zeus.SnmpDevice AddSnmp(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.SnmpOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.SnmpPointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddSnmp(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.SnmpOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.SnmpPointMap>? points = null) { }
+    }
+}

@@ -34,6 +34,7 @@
     <ProjectReference Include="..\..\src\Zeus.Protocols.Dlt645\Zeus.Protocols.Dlt645.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.Iec104\Zeus.Protocols.Iec104.csproj" />
     <ProjectReference Include="..\..\src\Zeus.Protocols.Mqtt\Zeus.Protocols.Mqtt.csproj" />
+    <ProjectReference Include="..\..\src\Zeus.Protocols.Snmp\Zeus.Protocols.Snmp.csproj" />
   </ItemGroup>
 
   <ItemGroup>

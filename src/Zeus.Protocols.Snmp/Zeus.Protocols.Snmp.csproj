@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- SNMP v2c 客户端、OID 点表与内存虚拟 Agent。协议只依赖通道抽象，UDP/TCP/虚拟通道由 Communications 提供。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Zeus</RootNamespace>
+    <AssemblyName>Zeus.Protocols.Snmp</AssemblyName>
+    <Description>Zeus SNMP v2c 客户端、OID 点表与内存虚拟 Agent。</Description>
+    <PackageDescription>Zeus SNMP v2c 客户端、OID 点表与内存虚拟 Agent。</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Zeus.Abstractions\Zeus.Abstractions.csproj" />
+    <ProjectReference Include="..\Zeus.Core\Zeus.Core.csproj" />
+    <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
+  </ItemGroup>
+
+</Project>

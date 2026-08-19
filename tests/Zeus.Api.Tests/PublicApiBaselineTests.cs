@@ -67,6 +67,10 @@ public sealed class PublicApiBaselineTests
     [Fact]
     public void Mqtt_matches_baseline() => AssertMatchesBaseline(typeof(MqttDevice).Assembly);
 
+    /// <summary>SNMP v2c 公开表面。</summary>
+    [Fact]
+    public void Snmp_matches_baseline() => AssertMatchesBaseline(typeof(SnmpDevice).Assembly);
+
     /// <summary>Mitsubishi MC 公开表面。</summary>
     [Fact]
     public void Mc_matches_baseline() => AssertMatchesBaseline(typeof(McDevice).Assembly);

@@ -214,13 +214,17 @@ public static class ZeusConfigurationLoader
             {
                 ValidateMqttDevice(device, path);
             }
+            else if (IsSnmpDeviceType(type))
+            {
+                ValidateSnmpDevice(device, path);
+            }
             else if (IsMcDeviceType(type))
             {
                 ValidateMcDevice(device, path);
             }
             else
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、modbus-ascii、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip、dlt645、iec104、mqtt。");
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、modbus-ascii、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip、dlt645、iec104、mqtt、snmp。");
             }
         }
     }
@@ -233,13 +237,24 @@ public static class ZeusConfigurationLoader
         }
 
         var responder = Normalize(channel.Responder);
-        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley" or "dlt645" or "dlt-645" or "dlt645-2007" or "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104" or "mqtt"))
+        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley" or "dlt645" or "dlt-645" or "dlt645-2007" or "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104" or "mqtt" or "snmp" or "snmp-v2c" or "snmpv2c"))
         {
-            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、mewtocol、ethernet-ip、dlt645、iec104、mqtt，或省略以回显写入。");
+            throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、mewtocol、ethernet-ip、dlt645、iec104、mqtt、snmp，或省略以回显写入。");
         }
 
         if (responder == "mqtt")
         {
+            return;
+        }
+
+        if (responder is "snmp" or "snmp-v2c" or "snmpv2c")
+        {
+            ValidateCommunity(channel.SnmpCommunity, $"{path}.snmpCommunity");
+            if (channel.SnmpWriteCommunity is not null)
+            {
+                ValidateCommunity(channel.SnmpWriteCommunity, $"{path}.snmpWriteCommunity");
+            }
+
             return;
         }
 
@@ -589,6 +604,27 @@ public static class ZeusConfigurationLoader
         }
 
         ValidateMqttPoints(device.Points, path);
+    }
+
+    private static void ValidateSnmpDevice(DeviceConfiguration device, string path)
+    {
+        if (device.TimeoutMilliseconds is <= 0)
+        {
+            throw new ZeusException($"{path}.timeoutMilliseconds 必须大于 0。");
+        }
+
+        ValidateCommunity(device.SnmpCommunity, $"{path}.snmpCommunity");
+        if (device.SnmpWriteCommunity is not null)
+        {
+            ValidateCommunity(device.SnmpWriteCommunity, $"{path}.snmpWriteCommunity");
+        }
+
+        if (device.SnmpInitialRequestId <= 0)
+        {
+            throw new ZeusException($"{path}.snmpInitialRequestId 必须大于 0。");
+        }
+
+        ValidateSnmpPoints(device.Points, path);
     }
 
     private static void ValidateMcPoints(List<PointConfiguration> points, string devicePath, McFrameType frameType)
@@ -1130,6 +1166,59 @@ public static class ZeusConfigurationLoader
         }
     }
 
+    private static void ValidateSnmpPoints(List<PointConfiguration> points, string devicePath)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var oids = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var path = $"{devicePath}.points[{i}]";
+            EnsureName(point.Name, path);
+            if (!names.Add(point.Name.Trim()))
+            {
+                throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
+            }
+
+            if (string.IsNullOrWhiteSpace(point.Oid))
+            {
+                throw new ZeusException($"{path}.oid 不能为空，例如 1.3.6.1.2.1.1.5.0。");
+            }
+
+            var oid = SnmpValue.ObjectIdentifier(point.Oid).Value?.ToString() ?? string.Empty;
+            if (!oids.Add(oid))
+            {
+                throw new ZeusException($"{path}.oid「{oid}」在同一设备内重复。");
+            }
+
+            var dataType = ParseSnmpDataType(point.DataType, $"{path}.dataType");
+            if (point.Scale is <= 0)
+            {
+                throw new ZeusException($"{path}.scale 必须大于 0。");
+            }
+
+            ValidateAlarmLimit(point.LowAlarmLimit, $"{path}.lowAlarmLimit");
+            ValidateAlarmLimit(point.HighAlarmLimit, $"{path}.highAlarmLimit");
+            if (point.LowAlarmLimit > point.HighAlarmLimit)
+            {
+                throw new ZeusException($"{path}.lowAlarmLimit 不能高于 highAlarmLimit。");
+            }
+
+            if (!IsSnmpNumeric(dataType))
+            {
+                if (point.Scale is not null)
+                {
+                    throw new ZeusException($"{path} 的 {dataType} 点不能配置 scale。");
+                }
+
+                if (point.LowAlarmLimit is not null || point.HighAlarmLimit is not null)
+                {
+                    throw new ZeusException($"{path} 的 {dataType} 点不能配置 lowAlarmLimit 或 highAlarmLimit。");
+                }
+            }
+        }
+    }
+
     private static void ValidateAlarmLimit(double? value, string path)
     {
         if (value is { } number && !double.IsFinite(number))
@@ -1187,6 +1276,9 @@ public static class ZeusConfigurationLoader
 
     internal static bool IsMqttDeviceType(string type)
         => type is "mqtt" or "mqtt311" or "mqtt-3-1-1" or "mqtt3" or "mqtt-v3";
+
+    internal static bool IsSnmpDeviceType(string type)
+        => type is "snmp" or "snmp-v2c" or "snmpv2c" or "snmp2c";
 
     internal static McFrameType ParseMcFrameType(string? value, string path)
     {
@@ -1503,6 +1595,26 @@ public static class ZeusConfigurationLoader
         };
     }
 
+    internal static SnmpDataType ParseSnmpDataType(string? value, string path)
+    {
+        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        return token switch
+        {
+            "" or "integer" or "int" or "int32" or "int64" => SnmpDataType.Integer,
+            "gauge" or "gauge32" or "uint" or "uint32" => SnmpDataType.Gauge32,
+            "counter" or "counter32" => SnmpDataType.Counter32,
+            "timeticks" or "ticks" or "time" => SnmpDataType.TimeTicks,
+            "text" or "string" or "utf8" => SnmpDataType.Text,
+            "octetstring" or "bytes" or "raw" or "binary" => SnmpDataType.OctetString,
+            "oid" or "objectidentifier" => SnmpDataType.ObjectIdentifier,
+            "ip" or "ipaddress" or "ipv4" => SnmpDataType.IpAddress,
+            _ => throw new ZeusException($"{path}「{value}」不受支持。SNMP 可选 integer、gauge32、counter32、timeticks、text、octet-string、oid、ip-address。")
+        };
+    }
+
+    internal static bool IsSnmpNumeric(SnmpDataType dataType)
+        => dataType is SnmpDataType.Integer or SnmpDataType.Counter32 or SnmpDataType.Gauge32 or SnmpDataType.TimeTicks;
+
     internal static MqttQualityOfService ParseMqttQualityOfService(string? value, string path)
     {
         var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal).Replace("_", string.Empty, StringComparison.Ordinal);
@@ -1534,6 +1646,14 @@ public static class ZeusConfigurationLoader
         if (string.IsNullOrWhiteSpace(value) || value.Trim().Length != length || value.Trim().Any(ch => ch is < '0' or > '9'))
         {
             throw new ZeusException($"{path} 必须是 {length} 位十进制字符串。");
+        }
+    }
+
+    private static void ValidateCommunity(string? value, string path)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ZeusException($"{path} 不能为空。");
         }
     }
 

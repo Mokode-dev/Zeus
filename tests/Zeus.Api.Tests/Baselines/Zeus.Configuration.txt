@@ -19,6 +19,8 @@ namespace Zeus
         public int Port { get; set; }
         public string? PortName { get; set; }
         public string? Responder { get; set; }
+        public string SnmpCommunity { get; set; }
+        public string? SnmpWriteCommunity { get; set; }
         public string Transport { get; set; }
         public string Type { get; set; }
         public byte UnitId { get; set; }
@@ -64,6 +66,9 @@ namespace Zeus
         public int RequestedPduLength { get; set; }
         public int SerialNumber { get; set; }
         public int Slot { get; set; }
+        public string SnmpCommunity { get; set; }
+        public int SnmpInitialRequestId { get; set; }
+        public string? SnmpWriteCommunity { get; set; }
         public int SourceNetwork { get; set; }
         public int SourceNode { get; set; }
         public int SourceUnit { get; set; }
@@ -94,6 +99,7 @@ namespace Zeus
         public string MqttQos { get; set; }
         public bool MqttRetain { get; set; }
         public string Name { get; set; }
+        public string? Oid { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("scale")]
         public double? Scale { get; set; }
         public string Table { get; set; }

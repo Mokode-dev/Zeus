@@ -85,7 +85,7 @@ public sealed class ChannelConfiguration
     public int LocalPort { get; set; }
 
     /// <summary>
-    /// 虚拟通道挂接的从站。支持 <c>modbus</c>、<c>mc</c>、<c>s7</c>、<c>fins</c>、<c>host-link</c>、<c>mewtocol</c>、<c>dlt645</c>、<c>iec104</c>。
+    /// 虚拟通道挂接的从站。支持 <c>modbus</c>、<c>mc</c>、<c>s7</c>、<c>fins</c>、<c>host-link</c>、<c>mewtocol</c>、<c>dlt645</c>、<c>iec104</c>、<c>mqtt</c>、<c>snmp</c>。
     /// </summary>
     public string? Responder { get; set; }
 
@@ -100,6 +100,12 @@ public sealed class ChannelConfiguration
 
     /// <summary>IEC104 虚拟站公共地址，默认 1。</summary>
     public int CommonAddress { get; set; } = 1;
+
+    /// <summary>SNMP 虚拟 Agent 读 community，默认 public。</summary>
+    public string SnmpCommunity { get; set; } = "public";
+
+    /// <summary>SNMP 虚拟 Agent 写 community。省略时沿用 <see cref="SnmpCommunity"/>。</summary>
+    public string? SnmpWriteCommunity { get; set; }
 }
 
 /// <summary>
@@ -113,7 +119,7 @@ public sealed class DeviceConfiguration
     /// <summary>绑定的通道名。</summary>
     public string Channel { get; set; } = string.Empty;
 
-    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>modbus-ascii</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c>、<c>omron-host-link</c>、<c>panasonic-mewtocol</c>、<c>ethernet-ip</c>、<c>dlt645</c>、<c>iec104</c> 或 <c>mqtt</c>。</summary>
+    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>modbus-ascii</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c>、<c>omron-host-link</c>、<c>panasonic-mewtocol</c>、<c>ethernet-ip</c>、<c>dlt645</c>、<c>iec104</c>、<c>mqtt</c> 或 <c>snmp</c>。</summary>
     public string Type { get; set; } = "modbus-rtu";
 
     /// <summary>从站/单元标识，默认 1。Host Link 使用 0-31 单元号；MEWTOCOL 使用 1-99 站号。</summary>
@@ -251,6 +257,15 @@ public sealed class DeviceConfiguration
     /// <summary>MQTT 是否在通道恢复后自动重连并恢复订阅，默认 true。仅 MQTT。</summary>
     public bool MqttAutomaticReconnect { get; set; } = true;
 
+    /// <summary>SNMP 读 community，默认 public。仅 SNMP。</summary>
+    public string SnmpCommunity { get; set; } = "public";
+
+    /// <summary>SNMP 写 community。省略时沿用 <see cref="SnmpCommunity"/>。仅 SNMP。</summary>
+    public string? SnmpWriteCommunity { get; set; }
+
+    /// <summary>SNMP 初始 request-id，默认 1。仅 SNMP。</summary>
+    public int SnmpInitialRequestId { get; set; } = 1;
+
     /// <summary>周期采集点。</summary>
     public List<PointConfiguration> Points { get; set; } = [];
 }
@@ -265,6 +280,9 @@ public sealed class PointConfiguration
 
     /// <summary>MQTT 主题。省略时使用点名。仅 MQTT。</summary>
     public string? Topic { get; set; }
+
+    /// <summary>SNMP OID，例如 1.3.6.1.2.1.1.5.0。仅 SNMP。</summary>
+    public string? Oid { get; set; }
 
     /// <summary>MQTT 订阅与写回 QoS：0、1、2。仅 MQTT。</summary>
     public string MqttQos { get; set; } = "0";
