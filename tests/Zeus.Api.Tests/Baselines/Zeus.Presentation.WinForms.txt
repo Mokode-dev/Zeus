@@ -2,13 +2,18 @@ namespace Zeus
 {
     public static class WinFormsChannelExtensions
     {
+        public static Zeus.PointAlarmBindingSource AsAlarmBindingSource(this Zeus.IPointAlarmTable alarms, System.Windows.Forms.Control control) { }
         public static Zeus.ChannelBindingSource AsBindingSource(this Zeus.IChannel channel, System.Windows.Forms.Control control) { }
         public static Zeus.PointBindingSource AsBindingSource(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Func<object?, string>? formatter = null) { }
         public static Zeus.PointHistoryBindingSource AsHistoryBindingSource(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control) { }
         public static Zeus.IUiBinding BindAlarmBackColor(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Drawing.Color? normalColor = default, System.Drawing.Color? lowColor = default, System.Drawing.Color? highColor = default, System.Drawing.Color? errorColor = default, System.Drawing.Color? unknownColor = default) { }
         public static Zeus.IUiBinding BindAlarmForeColor(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Drawing.Color? normalColor = default, System.Drawing.Color? lowColor = default, System.Drawing.Color? highColor = default, System.Drawing.Color? errorColor = default, System.Drawing.Color? unknownColor = default) { }
+        public static Zeus.IUiBinding BindAlarms(this Zeus.IPointAlarmTable alarms, System.Windows.Forms.Control control, System.Action<System.Collections.Generic.IReadOnlyList<Zeus.PointAlarmRecord>> setActive) { }
+        public static Zeus.IUiBinding BindChart(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Action<System.Collections.Generic.IReadOnlyList<Zeus.PointChartSample>> setSamples) { }
+        public static Zeus.IUiBinding BindDashboard(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Action<Zeus.PointDashboardSnapshot> setDashboard) { }
         public static Zeus.IUiBinding BindEnabled(this Zeus.IChannel channel, System.Windows.Forms.Control control, System.Func<Zeus.ChannelState, bool>? isEnabled = null) { }
         public static Zeus.IUiBinding BindEnabled(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Func<Zeus.PointSnapshot, bool>? isEnabled = null) { }
+        public static Zeus.IUiBinding BindGauge(this Zeus.IPointTable table, string pointName, System.Windows.Forms.ProgressBar progressBar, double? minimum = default, double? maximum = default) { }
         public static Zeus.IUiBinding BindHistory(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Action<System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot>> setHistory) { }
         public static Zeus.IUiBinding BindSnapshot(this Zeus.IPointTable table, string pointName, System.Windows.Forms.Control control, System.Action<Zeus.PointSnapshot> setSnapshot) { }
         public static Zeus.IUiBinding BindState(this Zeus.IChannel channel, System.Windows.Forms.Control control) { }

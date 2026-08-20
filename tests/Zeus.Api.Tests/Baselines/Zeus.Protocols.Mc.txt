@@ -26,9 +26,16 @@ namespace Zeus
         public Zeus.Mc3EOptions Options { get; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { }
         public System.Threading.Tasks.Task<byte[]> ExecuteAsync(ushort command, ushort subcommand, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task ExecuteRemoteControlAsync(Zeus.McRemoteControlMode mode, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<bool[]> ReadBitsAsync(Zeus.McDeviceCode deviceCode, int address, ushort points, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<Zeus.McMultipleBlockReadResult> ReadMultipleBlocksAsync(System.Collections.Generic.IReadOnlyList<Zeus.McDeviceRange> wordBlocks, System.Collections.Generic.IReadOnlyList<Zeus.McDeviceRange>? bitBlocks = null, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<Zeus.McRandomReadResult> ReadRandomAsync(System.Collections.Generic.IReadOnlyList<Zeus.McDeviceAddress> wordDevices, System.Collections.Generic.IReadOnlyList<Zeus.McDeviceAddress>? doubleWordDevices = null, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadWordsAsync(Zeus.McDeviceCode deviceCode, int address, ushort points, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoteLatchClearAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemotePauseAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoteResetAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoteRunAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoteStopAsync(System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteBitsAsync(Zeus.McDeviceCode deviceCode, int address, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteRandomBitsAsync(System.Collections.Generic.IReadOnlyList<Zeus.McBitWrite> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteRandomWordsAsync(System.Collections.Generic.IReadOnlyList<Zeus.McWordWrite> wordValues, System.Collections.Generic.IReadOnlyList<Zeus.McDoubleWordWrite>? doubleWordValues = null, System.Threading.CancellationToken cancellationToken = default) { }
@@ -53,9 +60,15 @@ namespace Zeus
         public System.Threading.Tasks.Task<bool[]> ReadInputRelaysAsync(int address, ushort points, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<bool[]> ReadInternalRelaysAsync(int address, ushort points, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadLinkRegistersAsync(int address, ushort points, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<Zeus.McMultipleBlockReadResult> ReadMultipleBlocksAsync(System.Collections.Generic.IReadOnlyList<Zeus.McDeviceRange> wordBlocks, System.Collections.Generic.IReadOnlyList<Zeus.McDeviceRange>? bitBlocks = null, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<bool[]> ReadOutputRelaysAsync(int address, ushort points, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<Zeus.McRandomReadResult> ReadRandomAsync(System.Collections.Generic.IReadOnlyList<Zeus.McDeviceAddress> wordDevices, System.Collections.Generic.IReadOnlyList<Zeus.McDeviceAddress>? doubleWordDevices = null, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadWordsAsync(Zeus.McDeviceCode deviceCode, int address, ushort points, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoteLatchClearAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemotePauseAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoteResetAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoteRunAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoteStopAsync(System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteBitsAsync(Zeus.McDeviceCode deviceCode, int address, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteDataRegistersAsync(int address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
@@ -84,6 +97,13 @@ namespace Zeus
         FileRegister = 175,
         ExtendedFileRegister = 176,
     }
+    public readonly struct McDeviceRange : System.IEquatable<Zeus.McDeviceRange>
+    {
+        public McDeviceRange(Zeus.McDeviceCode DeviceCode, int Address, ushort Points) { }
+        public int Address { get; init; }
+        public Zeus.McDeviceCode DeviceCode { get; init; }
+        public ushort Points { get; init; }
+    }
     public readonly struct McDoubleWordWrite : System.IEquatable<Zeus.McDoubleWordWrite>
     {
         public McDoubleWordWrite(Zeus.McDeviceCode DeviceCode, int Address, uint Value) { }
@@ -101,6 +121,12 @@ namespace Zeus
         Frame1E = 0,
         Frame3E = 1,
         Frame4E = 2,
+    }
+    public sealed class McMultipleBlockReadResult
+    {
+        public McMultipleBlockReadResult(System.Collections.Generic.IReadOnlyList<ushort> wordValues, System.Collections.Generic.IReadOnlyList<bool> bitValues) { }
+        public bool[] BitValues { get; }
+        public ushort[] WordValues { get; }
     }
     public sealed class McPointMap
     {
@@ -153,6 +179,14 @@ namespace Zeus
         public uint[] DoubleWordValues { get; }
         public ushort[] WordValues { get; }
     }
+    public enum McRemoteControlMode
+    {
+        Run = 0,
+        Stop = 1,
+        Pause = 2,
+        LatchClear = 3,
+        Reset = 4,
+    }
     public sealed class McSlaveMemory
     {
         public McSlaveMemory(int dataRegisters = 4096, int internalRelays = 8192) { }
@@ -162,6 +196,8 @@ namespace Zeus
         public ushort[] FileRegisters { get; }
         public bool[] InputRelays { get; }
         public bool[] InternalRelays { get; }
+        public bool IsRunning { get; set; }
+        public Zeus.McRemoteControlMode? LastRemoteControl { get; set; }
         public ushort[] LinkRegisters { get; }
         public bool[] OutputRelays { get; }
     }

@@ -183,6 +183,97 @@ public static class WinFormsChannelExtensions
     }
 
     /// <summary>
+    /// 把指定点的趋势样本推到界面线程，适合接到图表控件。
+    /// </summary>
+    public static IUiBinding BindChart(
+        this IPointTable table,
+        string pointName,
+        Control control,
+        Action<IReadOnlyList<PointChartSample>> setSamples)
+    {
+        ArgumentNullException.ThrowIfNull(control);
+        ArgumentNullException.ThrowIfNull(setSamples);
+        return table.BindChart(pointName, new WinFormsUiDispatcher(control), samples =>
+        {
+            if (!control.IsDisposed)
+            {
+                setSamples(samples);
+            }
+        });
+    }
+
+    /// <summary>
+    /// 把指定点的仪表盘快照推到界面线程。
+    /// </summary>
+    public static IUiBinding BindDashboard(
+        this IPointTable table,
+        string pointName,
+        Control control,
+        Action<PointDashboardSnapshot> setDashboard)
+    {
+        ArgumentNullException.ThrowIfNull(control);
+        ArgumentNullException.ThrowIfNull(setDashboard);
+        return table.BindDashboard(pointName, new WinFormsUiDispatcher(control), snapshot =>
+        {
+            if (!control.IsDisposed)
+            {
+                setDashboard(snapshot);
+            }
+        });
+    }
+
+    /// <summary>
+    /// 把指定点的 0–1 比例写到进度条。
+    /// </summary>
+    public static IUiBinding BindGauge(
+        this IPointTable table,
+        string pointName,
+        ProgressBar progressBar,
+        double? minimum = null,
+        double? maximum = null)
+    {
+        ArgumentNullException.ThrowIfNull(progressBar);
+        return table.BindGauge(pointName, new WinFormsUiDispatcher(progressBar), ratio =>
+        {
+            if (progressBar.IsDisposed)
+            {
+                return;
+            }
+
+            var span = progressBar.Maximum - progressBar.Minimum;
+            progressBar.Value = progressBar.Minimum + (int)Math.Round(ratio * span);
+        }, minimum, maximum);
+    }
+
+    /// <summary>
+    /// 把活动报警列表推到界面线程。
+    /// </summary>
+    public static IUiBinding BindAlarms(
+        this IPointAlarmTable alarms,
+        Control control,
+        Action<IReadOnlyList<PointAlarmRecord>> setActive)
+    {
+        ArgumentNullException.ThrowIfNull(control);
+        ArgumentNullException.ThrowIfNull(setActive);
+        return alarms.BindAlarms(new WinFormsUiDispatcher(control), records =>
+        {
+            if (!control.IsDisposed)
+            {
+                setActive(records);
+            }
+        });
+    }
+
+    /// <summary>
+    /// 创建报警队列投影，属性变更封送到该控件所在的界面线程。
+    /// </summary>
+    public static PointAlarmBindingSource AsAlarmBindingSource(this IPointAlarmTable alarms, Control control)
+    {
+        ArgumentNullException.ThrowIfNull(control);
+        return alarms.AsAlarmBindingSource(new WinFormsUiDispatcher(control));
+    }
+
+    /// <summary>
     /// 创建单个点的历史采样投影，属性变更封送到该控件所在的界面线程。
     /// </summary>
     /// <param name="table">宿主点表。</param>

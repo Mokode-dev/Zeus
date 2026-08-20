@@ -231,6 +231,53 @@ public sealed class ModbusTests
     }
 
     /// <summary>
+    /// 功能码 0x2B/0x0E 应返回虚拟从站的厂商识别对象。
+    /// </summary>
+    [Fact]
+    public async Task RtuDevice_ReadsDeviceIdentification()
+    {
+        var memory = new ModbusSlaveMemory
+        {
+            VendorName = "Acme",
+            ProductCode = "Oven-1",
+            MajorMinorRevision = "1.2"
+        };
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddVirtualChannel("bus", new ModbusSlaveResponder(1, ModbusTransport.Rtu, memory));
+            builder.AddModbusRtu("meter", "bus");
+        });
+
+        await host.StartAsync();
+        var identity = await host.Devices.Get<ModbusDevice>("meter").ReadDeviceIdentificationAsync();
+        Assert.Equal("Acme", identity.VendorName);
+        Assert.Equal("Oven-1", identity.ProductCode);
+        Assert.Equal("1.2", identity.MajorMinorRevision);
+        Assert.False(identity.MoreFollows);
+    }
+
+    /// <summary>
+    /// 功能码 0x14/0x15 应能读写文件记录。
+    /// </summary>
+    [Fact]
+    public async Task RtuDevice_WritesAndReadsFileRecord()
+    {
+        var memory = new ModbusSlaveMemory();
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddVirtualChannel("bus", new ModbusSlaveResponder(1, ModbusTransport.Rtu, memory));
+            builder.AddModbusRtu("meter", "bus");
+        });
+
+        await host.StartAsync();
+        var meter = host.Devices.Get<ModbusDevice>("meter");
+        await meter.WriteFileRecordAsync(4, 1, [11, 22, 33]);
+        var values = await meter.ReadFileRecordAsync(4, 1, 3);
+        Assert.Equal(new ushort[] { 11, 22, 33 }, values);
+        Assert.Equal(new ushort[] { 11, 22, 33 }, memory.FileRecords[(4, 1)]);
+    }
+
+    /// <summary>
     /// 越界地址必须变成可识别的 <see cref="ModbusException"/>。
     /// </summary>
     [Fact]

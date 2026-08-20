@@ -229,6 +229,58 @@ public sealed class PresentationBindingTests
     }
 
     /// <summary>
+    /// BindChart 应把可转成数值的历史变成时间-数值样本。
+    /// </summary>
+    [Fact]
+    public void BindChart_ProjectsNumericSamples()
+    {
+        var table = new PointTable();
+        table.Register(new PointDefinition("temperature", "oven", PointValueKind.Double, new PointAlarmLimits(high: 100)));
+        table.Publish("oven.temperature", 12.5d);
+
+        IReadOnlyList<PointChartSample>? samples = null;
+        using var binding = table.BindChart("temperature", ImmediateUiDispatcher.Instance, value => samples = value);
+
+        Assert.NotNull(samples);
+        Assert.Single(samples!);
+        Assert.Equal(12.5d, samples![0].Value, 3);
+    }
+
+    /// <summary>
+    /// BindGauge 应把当前值按报警限映射到 0–1。
+    /// </summary>
+    [Fact]
+    public void BindGauge_MapsValueToRatio()
+    {
+        var table = new PointTable();
+        table.Register(new PointDefinition("temperature", "oven", PointValueKind.Double, new PointAlarmLimits(low: 0, high: 100)));
+        table.Publish("oven.temperature", 25d);
+
+        var ratios = new List<double>();
+        using var binding = table.BindGauge("temperature", ImmediateUiDispatcher.Instance, ratios.Add);
+        Assert.Equal(0.25d, ratios[^1], 3);
+    }
+
+    /// <summary>
+    /// BindAlarms 应在越限时推送活动报警。
+    /// </summary>
+    [Fact]
+    public void BindAlarms_PushesActiveRecords()
+    {
+        var table = new PointTable();
+        var alarms = new PointAlarmTable(table);
+        table.Register(new PointDefinition("temperature", "oven", PointValueKind.Double, new PointAlarmLimits(high: 10)));
+
+        IReadOnlyList<PointAlarmRecord>? active = null;
+        using var binding = alarms.BindAlarms(ImmediateUiDispatcher.Instance, records => active = records);
+        table.Publish("oven.temperature", 20d);
+
+        Assert.NotNull(active);
+        Assert.Single(active!);
+        Assert.Equal("oven.temperature", active![0].QualifiedName);
+    }
+
+    /// <summary>
     /// PointHistoryBindingSource 应投影历史、最新值和最新报警状态，并跟随点表历史容量裁剪。
     /// </summary>
     [Fact]

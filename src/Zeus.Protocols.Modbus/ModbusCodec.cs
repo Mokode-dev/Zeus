@@ -56,6 +56,8 @@ internal static class ModbusCodec
             ModbusFunction.ReadExceptionStatus => 5,
             ModbusFunction.Diagnostics => requestPdu.Length + 3,
             ModbusFunction.MaskWriteRegister => 10,
+            ModbusFunction.WriteFileRecord => requestPdu.Length + 3,
+            ModbusFunction.ReadFileRecord or ModbusFunction.EncapsulatedInterfaceTransport => 5,
             _ => 8
         };
     }
@@ -100,14 +102,24 @@ internal static class ModbusCodec
 
         var isException = (buffer[1] & 0x80) != 0;
         var needed = isException ? 5 : ExpectedRtuResponseLength(requestPdu);
-        if (!isException && requestPdu.Length > 0 && requestPdu[0] == ModbusFunction.ReportServerId)
+        if (!isException && requestPdu.Length > 0)
         {
-            if (buffer.Count < 3)
+            if (requestPdu[0] is ModbusFunction.ReportServerId or ModbusFunction.ReadFileRecord)
             {
-                return false;
-            }
+                if (buffer.Count < 3)
+                {
+                    return false;
+                }
 
-            needed = 5 + buffer[2];
+                needed = 5 + buffer[2];
+            }
+            else if (requestPdu[0] == ModbusFunction.EncapsulatedInterfaceTransport)
+            {
+                if (!TryGetDeviceIdentificationRtuLength(buffer, out needed))
+                {
+                    return false;
+                }
+            }
         }
 
         if (buffer.Count < needed)
@@ -207,6 +219,34 @@ internal static class ModbusCodec
     /// 线圈数量对应的字节数。
     /// </summary>
     public static int CoilByteCount(int quantity) => (quantity + 7) / 8;
+
+    /// <summary>
+    /// 按对象列表推算读设备识别 RTU 帧长度（含地址与 CRC）。
+    /// </summary>
+    private static bool TryGetDeviceIdentificationRtuLength(IReadOnlyList<byte> buffer, out int needed)
+    {
+        needed = 0;
+        if (buffer.Count < 11)
+        {
+            return false;
+        }
+
+        var objectCount = buffer[8];
+        var offset = 9;
+        for (var i = 0; i < objectCount; i++)
+        {
+            if (buffer.Count < offset + 2)
+            {
+                return false;
+            }
+
+            var length = buffer[offset + 1];
+            offset += 2 + length;
+        }
+
+        needed = offset + 2;
+        return buffer.Count >= needed;
+    }
 
     private static byte[] EncodeTcp(byte unitId, ReadOnlySpan<byte> pdu, ushort transactionId)
     {

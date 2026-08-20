@@ -52,6 +52,12 @@ public sealed class McSlaveResponder : IVirtualResponder
             Mc3ECodec.RandomReadCommand when subcommand == Mc3ECodec.WordSubcommand => RandomRead(data),
             Mc3ECodec.RandomWriteCommand when subcommand == Mc3ECodec.WordSubcommand => RandomWriteWords(data),
             Mc3ECodec.RandomWriteCommand when subcommand == Mc3ECodec.BitSubcommand => RandomWriteBits(data),
+            Mc3ECodec.MultipleBlockReadCommand when subcommand == Mc3ECodec.WordSubcommand => MultipleBlockRead(data),
+            Mc3ECodec.RemoteRunCommand when subcommand == Mc3ECodec.WordSubcommand => RemoteControl(McRemoteControlMode.Run, running: true),
+            Mc3ECodec.RemoteStopCommand when subcommand == Mc3ECodec.WordSubcommand => RemoteControl(McRemoteControlMode.Stop, running: false),
+            Mc3ECodec.RemotePauseCommand when subcommand == Mc3ECodec.WordSubcommand => RemoteControl(McRemoteControlMode.Pause, running: false),
+            Mc3ECodec.RemoteLatchClearCommand when subcommand == Mc3ECodec.WordSubcommand => RemoteControl(McRemoteControlMode.LatchClear, _memory.IsRunning),
+            Mc3ECodec.RemoteResetCommand when subcommand == Mc3ECodec.WordSubcommand => RemoteControl(McRemoteControlMode.Reset, running: true),
             _ => throw new McException(UnsupportedCommand)
         };
     }
@@ -176,6 +182,48 @@ public sealed class McSlaveResponder : IVirtualResponder
             table[item.Address] = item.Value;
         }
 
+        return [];
+    }
+
+    private byte[] MultipleBlockRead(byte[] data)
+    {
+        var (wordBlocks, bitBlocks) = Mc3ECodec.ReadMultipleBlockReadRequest(data);
+        var wordBytes = wordBlocks.Sum(block => block.Points * 2);
+        var bitBytes = bitBlocks.Sum(block => Mc3ECodec.BitByteCount(block.Points));
+        var response = new byte[wordBytes + bitBytes];
+        var offset = 0;
+        foreach (var block in wordBlocks)
+        {
+            var table = GetWordTable(block.DeviceCode);
+            EnsureRange(block.Address, block.Points, table.Length);
+            for (var i = 0; i < block.Points; i++)
+            {
+                Mc3ECodec.WriteUInt16LittleEndian(response.AsSpan(offset, 2), table[block.Address + i]);
+                offset += 2;
+            }
+        }
+
+        foreach (var block in bitBlocks)
+        {
+            var table = GetBitTable(block.DeviceCode);
+            EnsureRange(block.Address, block.Points, table.Length);
+            var packed = response.AsSpan(offset, Mc3ECodec.BitByteCount(block.Points));
+            packed.Clear();
+            for (var i = 0; i < block.Points; i++)
+            {
+                Mc3ECodec.SetPackedBit(packed, i, table[block.Address + i]);
+            }
+
+            offset += packed.Length;
+        }
+
+        return response;
+    }
+
+    private byte[] RemoteControl(McRemoteControlMode mode, bool running)
+    {
+        _memory.LastRemoteControl = mode;
+        _memory.IsRunning = running;
         return [];
     }
 

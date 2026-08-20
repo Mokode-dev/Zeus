@@ -324,6 +324,66 @@ public sealed class McTests
     }
 
     /// <summary>
+    /// 3E/4E 应能一次读取多个不连续字块和位块。
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(RandomFrameVariants))]
+    public async Task McDevice_ReadsMultipleBlocks(McFrameType frameType, McDataEncoding encoding)
+    {
+        var memory = new McSlaveMemory();
+        memory.DataRegisters[10] = 11;
+        memory.DataRegisters[11] = 22;
+        memory.LinkRegisters[5] = 33;
+        memory.InternalRelays[100] = true;
+        memory.InternalRelays[101] = false;
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
+            builder.AddMitsubishiMc3E("plc", "plc-bus", new Mc3EOptions
+            {
+                FrameType = frameType,
+                DataEncoding = encoding
+            });
+        });
+
+        await host.StartAsync();
+        var plc = host.Devices.Get<McDevice>("plc");
+        var result = await plc.ReadMultipleBlocksAsync(
+            [
+                new McDeviceRange(McDeviceCode.DataRegister, 10, 2),
+                new McDeviceRange(McDeviceCode.LinkRegister, 5, 1)
+            ],
+            [new McDeviceRange(McDeviceCode.InternalRelay, 100, 2)]);
+
+        Assert.Equal(new ushort[] { 11, 22, 33 }, result.WordValues);
+        Assert.Equal(new[] { true, false }, result.BitValues);
+    }
+
+    /// <summary>
+    /// 远程 RUN/STOP 应更新虚拟 PLC 运行状态。
+    /// </summary>
+    [Fact]
+    public async Task McDevice_RemoteRunAndStop()
+    {
+        var memory = new McSlaveMemory();
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
+            builder.AddMitsubishiMc3E("plc", "plc-bus");
+        });
+
+        await host.StartAsync();
+        var plc = host.Devices.Get<McDevice>("plc");
+        await plc.RemoteStopAsync();
+        Assert.False(memory.IsRunning);
+        Assert.Equal(McRemoteControlMode.Stop, memory.LastRemoteControl);
+
+        await plc.RemoteRunAsync();
+        Assert.True(memory.IsRunning);
+        Assert.Equal(McRemoteControlMode.Run, memory.LastRemoteControl);
+    }
+
+    /// <summary>
     /// MC 点图应接入宿主采集循环，并支持按点名写回可写软元件。
     /// </summary>
     [Fact]

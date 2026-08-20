@@ -47,4 +47,16 @@ public sealed class ModbusSlaveMemory
 
     /// <summary>功能码 0x11 返回的厂商自定义附加数据。</summary>
     public byte[] ServerIdAdditionalData { get; set; } = [];
+
+    /// <summary>功能码 0x2B/0x0E 对象 0x00：厂商名。</summary>
+    public string VendorName { get; set; } = "Zeus";
+
+    /// <summary>功能码 0x2B/0x0E 对象 0x01：产品代码。</summary>
+    public string ProductCode { get; set; } = "VirtualSlave";
+
+    /// <summary>功能码 0x2B/0x0E 对象 0x02：主次版本。</summary>
+    public string MajorMinorRevision { get; set; } = "0.16.0";
+
+    /// <summary>文件记录映像，键为文件号和记录号。</summary>
+    public Dictionary<(ushort FileNumber, ushort RecordNumber), ushort[]> FileRecords { get; } = [];
 }

@@ -74,6 +74,57 @@ public sealed class TcpServerChannelTests
     }
 
     /// <summary>
+    /// 带远端的 WriteAsync 应只回复指定客户端，而不是最近发送方。
+    /// </summary>
+    [Fact]
+    public async Task TcpServerChannel_WritesToSpecifiedRemote()
+    {
+        await using var host = ZeusHost.Create(builder => builder.AddTcpServer("server", options =>
+        {
+            options.LocalAddress = "127.0.0.1";
+            options.LocalPort = 0;
+        }));
+        var channel = Assert.IsType<TcpServerChannel>(host.Channels.Get("server"));
+        var firstReceived = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondReceived = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+        channel.DataReceived += (_, e) =>
+        {
+            var payload = e.Data.ToArray();
+            if (payload.SequenceEqual("ONE"u8.ToArray()))
+            {
+                firstReceived.TrySetResult(payload);
+            }
+            else if (payload.SequenceEqual("TWO"u8.ToArray()))
+            {
+                secondReceived.TrySetResult(payload);
+            }
+        };
+
+        await host.StartAsync();
+        var port = channel.LocalEndPoint?.Port ?? throw new InvalidOperationException("TCP 服务端未绑定端口。");
+        using var first = new TcpClient();
+        using var second = new TcpClient();
+        await first.ConnectAsync("127.0.0.1", port);
+        await second.ConnectAsync("127.0.0.1", port);
+
+        await first.GetStream().WriteAsync("ONE"u8.ToArray());
+        await firstReceived.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        var firstRemote = channel.LastRemoteEndPoint ?? throw new InvalidOperationException("未记录第一客户端远端。");
+
+        await second.GetStream().WriteAsync("TWO"u8.ToArray());
+        await secondReceived.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        Assert.Equal(2, channel.RemoteEndPoints.Count);
+
+        await channel.WriteAsync(firstRemote, "PONG"u8.ToArray());
+        Assert.Equal("PONG"u8.ToArray(), await ReadExactAsync(first.GetStream(), 4));
+
+        using var idle = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
+        var leftover = new byte[4];
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => second.GetStream().ReadAsync(leftover, idle.Token).AsTask());
+    }
+
+    /// <summary>
     /// 服务端尚不知道最近请求方时，写入必须给出可操作错误。
     /// </summary>
     [Fact]

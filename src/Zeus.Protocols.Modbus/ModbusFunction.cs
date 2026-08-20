@@ -43,4 +43,16 @@ public static class ModbusFunction
 
     /// <summary>读写多个保持寄存器。</summary>
     public const byte ReadWriteMultipleRegisters = 0x17;
+
+    /// <summary>读文件记录。</summary>
+    public const byte ReadFileRecord = 0x14;
+
+    /// <summary>写文件记录。</summary>
+    public const byte WriteFileRecord = 0x15;
+
+    /// <summary>封装接口（MEI），设备识别使用子类型 0x0E。</summary>
+    public const byte EncapsulatedInterfaceTransport = 0x2B;
+
+    /// <summary>读设备识别的 MEI 类型。</summary>
+    public const byte ReadDeviceIdentificationMei = 0x0E;
 }

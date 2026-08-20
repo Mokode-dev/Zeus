@@ -258,6 +258,67 @@ public sealed class McClient : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// 多块批量读取。一次事务读取多个不连续字块和位块，仅 3E/4E 支持。
+    /// </summary>
+    public async Task<McMultipleBlockReadResult> ReadMultipleBlocksAsync(
+        IReadOnlyList<McDeviceRange> wordBlocks,
+        IReadOnlyList<McDeviceRange>? bitBlocks = null,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureNot1E("多块批量读取");
+        var request = Mc3ECodec.BuildMultipleBlockReadRequest(wordBlocks, bitBlocks);
+        var payload = Mc3ECodec.EncodeRawPayload(_options, request);
+        var response = await ExecuteAsync(Mc3ECodec.MultipleBlockReadCommand, Mc3ECodec.WordSubcommand, payload, cancellationToken)
+            .ConfigureAwait(false);
+        var binary = DecodeRawPayload(response);
+        return ParseMultipleBlockRead(wordBlocks, bitBlocks ?? Array.Empty<McDeviceRange>(), binary);
+    }
+
+    /// <summary>远程 RUN。仅 3E/4E 支持。</summary>
+    public Task RemoteRunAsync(CancellationToken cancellationToken = default)
+        => ExecuteRemoteControlAsync(McRemoteControlMode.Run, cancellationToken);
+
+    /// <summary>远程 STOP。仅 3E/4E 支持。</summary>
+    public Task RemoteStopAsync(CancellationToken cancellationToken = default)
+        => ExecuteRemoteControlAsync(McRemoteControlMode.Stop, cancellationToken);
+
+    /// <summary>远程 PAUSE。仅 3E/4E 支持。</summary>
+    public Task RemotePauseAsync(CancellationToken cancellationToken = default)
+        => ExecuteRemoteControlAsync(McRemoteControlMode.Pause, cancellationToken);
+
+    /// <summary>远程锁存清除。仅 3E/4E 支持。</summary>
+    public Task RemoteLatchClearAsync(CancellationToken cancellationToken = default)
+        => ExecuteRemoteControlAsync(McRemoteControlMode.LatchClear, cancellationToken);
+
+    /// <summary>远程复位。仅 3E/4E 支持。</summary>
+    public Task RemoteResetAsync(CancellationToken cancellationToken = default)
+        => ExecuteRemoteControlAsync(McRemoteControlMode.Reset, cancellationToken);
+
+    /// <summary>按模式发送远程控制命令。仅 3E/4E 支持。</summary>
+    public async Task ExecuteRemoteControlAsync(McRemoteControlMode mode, CancellationToken cancellationToken = default)
+    {
+        EnsureNot1E("远程控制");
+        var command = mode switch
+        {
+            McRemoteControlMode.Run => Mc3ECodec.RemoteRunCommand,
+            McRemoteControlMode.Stop => Mc3ECodec.RemoteStopCommand,
+            McRemoteControlMode.Pause => Mc3ECodec.RemotePauseCommand,
+            McRemoteControlMode.LatchClear => Mc3ECodec.RemoteLatchClearCommand,
+            McRemoteControlMode.Reset => Mc3ECodec.RemoteResetCommand,
+            _ => throw new ZeusProtocolException($"不支持的 MC 远程控制模式 {mode}。")
+        };
+
+        var payload = mode == McRemoteControlMode.Run
+            ? Mc3ECodec.EncodeRawPayload(_options, [0x01, 0x00])
+            : ReadOnlyMemory<byte>.Empty;
+        var response = await ExecuteAsync(command, Mc3ECodec.WordSubcommand, payload, cancellationToken).ConfigureAwait(false);
+        if (response.Length != 0)
+        {
+            throw new ZeusProtocolException("MC 远程控制响应数据区应为空。请核对 PLC 返回数据。");
+        }
+    }
+
     /// <inheritdoc />
     public ValueTask DisposeAsync()
     {
@@ -374,6 +435,88 @@ public sealed class McClient : IAsyncDisposable
         => _options.FrameType == McFrameType.Frame1E
             ? 256
             : _options.DataEncoding == McDataEncoding.Ascii ? 3584 : 7168;
+
+    private void EnsureNot1E(string operation)
+    {
+        if (_options.FrameType == McFrameType.Frame1E)
+        {
+            throw new ZeusProtocolException($"MC 1E 帧不支持{operation}，请改用 3E/4E 帧。");
+        }
+    }
+
+    private byte[] DecodeRawPayload(ReadOnlySpan<byte> response)
+    {
+        if (_options.DataEncoding != McDataEncoding.Ascii)
+        {
+            return response.ToArray();
+        }
+
+        if (response.Length % 2 != 0)
+        {
+            throw new ZeusProtocolException("MC ASCII 多块读取响应长度必须为偶数。");
+        }
+
+        var binary = new byte[response.Length / 2];
+        for (var i = 0; i < binary.Length; i++)
+        {
+            binary[i] = (byte)((FromHex(response[i * 2]) << 4) | FromHex(response[(i * 2) + 1]));
+        }
+
+        return binary;
+    }
+
+    private static int FromHex(byte value)
+        => value switch
+        {
+            >= (byte)'0' and <= (byte)'9' => value - '0',
+            >= (byte)'A' and <= (byte)'F' => value - 'A' + 10,
+            >= (byte)'a' and <= (byte)'f' => value - 'a' + 10,
+            _ => throw new ZeusProtocolException("MC ASCII 响应含有非法十六进制字符。")
+        };
+
+    private static McMultipleBlockReadResult ParseMultipleBlockRead(
+        IReadOnlyList<McDeviceRange> wordBlocks,
+        IReadOnlyList<McDeviceRange> bitBlocks,
+        ReadOnlySpan<byte> binary)
+    {
+        var wordValues = new ushort[wordBlocks.Sum(block => block.Points)];
+        var bitValues = new bool[bitBlocks.Sum(block => block.Points)];
+        var offset = 0;
+        var wordIndex = 0;
+        foreach (var block in wordBlocks)
+        {
+            if (offset + (block.Points * 2) > binary.Length)
+            {
+                throw new ZeusProtocolException("MC 多块批量读取响应长度不足。请核对 PLC 返回数据。");
+            }
+
+            for (var i = 0; i < block.Points; i++)
+            {
+                wordValues[wordIndex++] = Mc3ECodec.ReadUInt16LittleEndian(binary.Slice(offset, 2));
+                offset += 2;
+            }
+        }
+
+        var bitIndex = 0;
+        foreach (var block in bitBlocks)
+        {
+            var packed = Mc3ECodec.BitByteCount(block.Points);
+            if (offset + packed > binary.Length)
+            {
+                throw new ZeusProtocolException("MC 多块批量读取位块响应长度不足。请核对 PLC 返回数据。");
+            }
+
+            var payload = binary.Slice(offset, packed);
+            for (var i = 0; i < block.Points; i++)
+            {
+                bitValues[bitIndex++] = Mc3ECodec.GetPackedBit(payload, i);
+            }
+
+            offset += packed;
+        }
+
+        return new McMultipleBlockReadResult(wordValues, bitValues);
+    }
 
     private void OnDataReceived(object? sender, ChannelDataReceivedEventArgs e)
     {

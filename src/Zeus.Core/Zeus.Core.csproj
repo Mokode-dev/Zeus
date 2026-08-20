@@ -18,4 +18,10 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- 宿主构建时登记订阅迁移器；测试访问内部通道订阅快照。 -->
+    <InternalsVisibleTo Include="Zeus.Hosting" />
+    <InternalsVisibleTo Include="Zeus.Tests" />
+  </ItemGroup>
+
 </Project>

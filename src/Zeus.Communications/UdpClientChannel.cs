@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace Zeus;
 
 /// <summary>
-/// 基于 <see cref="UdpClient"/> 的 UDP 客户端通道。每个 UDP 数据报会作为一次 <see cref="ChannelBase.PublishData"/> 发布。
+/// 基于 <see cref="UdpClient"/> 的 UDP 客户端通道。每个 UDP 数据报会作为一次通道接收事件发布。
 /// </summary>
 public sealed class UdpClientChannel : ChannelBase
 {

@@ -32,7 +32,7 @@ namespace Zeus
         public string Host { get; set; }
         public int Port { get; set; }
     }
-    public sealed class TcpServerChannel : Zeus.ChannelBase
+    public sealed class TcpServerChannel : Zeus.ChannelBase, System.IAsyncDisposable, Zeus.IChannel, Zeus.ISessionChannel
     {
         public TcpServerChannel(string name, Zeus.TcpServerOptions options, Microsoft.Extensions.Logging.ILogger<Zeus.TcpServerChannel>? logger = null) { }
         public int ClientCount { get; }
@@ -42,6 +42,7 @@ namespace Zeus
         public System.Threading.Tasks.Task BroadcastAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) { }
         protected override System.Threading.Tasks.Task CloseCoreAsync(System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task OpenCoreAsync(System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.Task WriteAsync(System.Net.EndPoint remoteEndPoint, System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) { }
         protected override System.Threading.Tasks.Task WriteCoreAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { }
     }
     public sealed class TcpServerOptions
@@ -50,6 +51,7 @@ namespace Zeus
         public int Backlog { get; set; }
         public string LocalAddress { get; set; }
         public int LocalPort { get; set; }
+        public int MaxClients { get; set; }
         public int ReceiveBufferSize { get; set; }
     }
     public sealed class UdpClientChannel : Zeus.ChannelBase
@@ -67,13 +69,15 @@ namespace Zeus
         public int Port { get; set; }
         public int ReceiveBufferSize { get; set; }
     }
-    public sealed class UdpServerChannel : Zeus.ChannelBase
+    public sealed class UdpServerChannel : Zeus.ChannelBase, System.IAsyncDisposable, Zeus.IChannel, Zeus.ISessionChannel
     {
         public UdpServerChannel(string name, Zeus.UdpServerOptions options, Microsoft.Extensions.Logging.ILogger<Zeus.UdpServerChannel>? logger = null) { }
         public System.Net.IPEndPoint? LastRemoteEndPoint { get; }
         public System.Net.IPEndPoint? LocalEndPoint { get; }
+        public System.Collections.Generic.IReadOnlyList<System.Net.IPEndPoint> RemoteEndPoints { get; }
         protected override System.Threading.Tasks.Task CloseCoreAsync(System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task OpenCoreAsync(System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.Task WriteAsync(System.Net.EndPoint remoteEndPoint, System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) { }
         protected override System.Threading.Tasks.Task WriteCoreAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { }
     }
     public sealed class UdpServerOptions
@@ -87,6 +91,7 @@ namespace Zeus
     {
         public VirtualChannel(string name, Microsoft.Extensions.Logging.ILogger<Zeus.VirtualChannel>? logger = null, Zeus.IVirtualResponder? responder = null) { }
         protected override System.Threading.Tasks.Task CloseCoreAsync(System.Threading.CancellationToken cancellationToken) { }
+        protected override void FlushDeferredReceive() { }
         protected override System.Threading.Tasks.Task OpenCoreAsync(System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task WriteCoreAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { }
     }

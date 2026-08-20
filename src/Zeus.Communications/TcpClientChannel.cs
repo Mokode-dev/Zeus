@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace Zeus;
 
 /// <summary>
-/// 基于 <see cref="TcpClient"/> 的客户端通道。接收循环在后台运行，字节通过 <see cref="ChannelBase.PublishData"/> 发布。
+/// 基于 <see cref="TcpClient"/> 的客户端通道。接收循环在后台运行，字节通过通道接收事件发布。
 /// </summary>
 public sealed class TcpClientChannel : ChannelBase
 {

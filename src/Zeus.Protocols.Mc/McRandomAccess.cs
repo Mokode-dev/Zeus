@@ -32,6 +32,35 @@ public readonly record struct McDoubleWordWrite(McDeviceCode DeviceCode, int Add
 public readonly record struct McBitWrite(McDeviceCode DeviceCode, int Address, bool Value);
 
 /// <summary>
+/// MC 多块批量读取的一个连续区间。
+/// </summary>
+/// <param name="DeviceCode">软元件代码。</param>
+/// <param name="Address">起始地址。</param>
+/// <param name="Points">点数。字块为字数，位块为位数。</param>
+public readonly record struct McDeviceRange(McDeviceCode DeviceCode, int Address, ushort Points);
+
+/// <summary>
+/// MC 远程控制模式。对应 3E/4E 远程 RUN/STOP 等命令。
+/// </summary>
+public enum McRemoteControlMode
+{
+    /// <summary>远程 RUN（0x1001）。</summary>
+    Run = 0,
+
+    /// <summary>远程 STOP（0x1002）。</summary>
+    Stop = 1,
+
+    /// <summary>远程 PAUSE（0x1003）。</summary>
+    Pause = 2,
+
+    /// <summary>远程锁存清除（0x1005）。</summary>
+    LatchClear = 3,
+
+    /// <summary>远程复位（0x1006）。</summary>
+    Reset = 4
+}
+
+/// <summary>
 /// MC 随机读取结果，按请求中的 word 与 double word 顺序分别返回。
 /// </summary>
 public sealed class McRandomReadResult
@@ -54,4 +83,29 @@ public sealed class McRandomReadResult
 
     /// <summary>双字读取结果，顺序与请求的 double word devices 一致。</summary>
     public uint[] DoubleWordValues { get; }
+}
+
+/// <summary>
+/// MC 多块批量读取结果。字值按字块声明顺序拼接，位值按位块声明顺序拼接。
+/// </summary>
+public sealed class McMultipleBlockReadResult
+{
+    /// <summary>
+    /// 创建多块读取结果。
+    /// </summary>
+    /// <param name="wordValues">全部字块拼接后的字值。</param>
+    /// <param name="bitValues">全部位块拼接后的位值。</param>
+    public McMultipleBlockReadResult(IReadOnlyList<ushort> wordValues, IReadOnlyList<bool> bitValues)
+    {
+        ArgumentNullException.ThrowIfNull(wordValues);
+        ArgumentNullException.ThrowIfNull(bitValues);
+        WordValues = wordValues.ToArray();
+        BitValues = bitValues.ToArray();
+    }
+
+    /// <summary>字块结果，顺序与请求的字块一致。</summary>
+    public ushort[] WordValues { get; }
+
+    /// <summary>位块结果，顺序与请求的位块一致。</summary>
+    public bool[] BitValues { get; }
 }

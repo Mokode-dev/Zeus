@@ -15,6 +15,9 @@ public interface IZeusHost : IAsyncDisposable
     /// <summary>周期采集点表。未声明任何点时集合为空。</summary>
     IPointTable Points { get; }
 
+    /// <summary>点报警队列。采集越限时产生记录，可确认、复归。</summary>
+    IPointAlarmTable Alarms { get; }
+
     /// <summary>底层服务提供者，高级场景可由此解析自定义服务。</summary>
     IServiceProvider Services { get; }
 

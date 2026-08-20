@@ -73,6 +73,9 @@ public sealed class ModbusSlaveResponder : IVirtualResponder
             ModbusFunction.ReportServerId => ReportServerId(pdu),
             ModbusFunction.MaskWriteRegister => MaskWriteRegister(pdu),
             ModbusFunction.ReadWriteMultipleRegisters => ReadWriteMultipleRegisters(pdu),
+            ModbusFunction.ReadFileRecord => ReadFileRecord(pdu),
+            ModbusFunction.WriteFileRecord => WriteFileRecord(pdu),
+            ModbusFunction.EncapsulatedInterfaceTransport => ReadDeviceIdentification(pdu),
             _ => throw new ModbusException(_unitId, pdu[0], ModbusExceptionCode.IllegalFunction)
         };
     }
@@ -300,6 +303,115 @@ public sealed class ModbusSlaveResponder : IVirtualResponder
         for (var i = 0; i < readQuantity; i++)
         {
             ModbusCodec.WriteUInt16BigEndian(response.AsSpan(2 + (i * 2), 2), _memory.HoldingRegisters[readAddress + i]);
+        }
+
+        return response;
+    }
+
+    private byte[] ReadFileRecord(byte[] pdu)
+    {
+        if (pdu.Length < 10 || pdu[1] != 7 || pdu[2] != 6)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.ReadFileRecord, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        var fileNumber = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(3, 2));
+        var recordNumber = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(5, 2));
+        var recordLength = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(7, 2));
+        if (recordLength is < 1 or > 120)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.ReadFileRecord, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        if (!_memory.FileRecords.TryGetValue((fileNumber, recordNumber), out var record)
+            || record.Length < recordLength)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.ReadFileRecord, ModbusExceptionCode.IllegalDataAddress);
+        }
+
+        var response = new byte[4 + (recordLength * 2)];
+        response[0] = ModbusFunction.ReadFileRecord;
+        response[1] = (byte)(2 + (recordLength * 2));
+        response[2] = 6;
+        response[3] = (byte)(recordLength * 2);
+        for (var i = 0; i < recordLength; i++)
+        {
+            ModbusCodec.WriteUInt16BigEndian(response.AsSpan(4 + (i * 2), 2), record[i]);
+        }
+
+        return response;
+    }
+
+    private byte[] WriteFileRecord(byte[] pdu)
+    {
+        if (pdu.Length < 10 || pdu[2] != 6)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.WriteFileRecord, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        var fileNumber = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(3, 2));
+        var recordNumber = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(5, 2));
+        var recordLength = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(7, 2));
+        if (recordLength is < 1 or > 120 || pdu.Length < 9 + (recordLength * 2) || pdu[1] != 7 + (recordLength * 2))
+        {
+            throw new ModbusException(_unitId, ModbusFunction.WriteFileRecord, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        var values = new ushort[recordLength];
+        for (var i = 0; i < recordLength; i++)
+        {
+            values[i] = ModbusCodec.ReadUInt16BigEndian(pdu.AsSpan(9 + (i * 2), 2));
+        }
+
+        _memory.FileRecords[(fileNumber, recordNumber)] = values;
+        return pdu.ToArray();
+    }
+
+    private byte[] ReadDeviceIdentification(byte[] pdu)
+    {
+        if (pdu.Length < 4 || pdu[1] != ModbusFunction.ReadDeviceIdentificationMei)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.EncapsulatedInterfaceTransport, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        var deviceIdCode = pdu[2];
+        if (deviceIdCode is < 1 or > 4)
+        {
+            throw new ModbusException(_unitId, ModbusFunction.EncapsulatedInterfaceTransport, ModbusExceptionCode.IllegalDataValue);
+        }
+
+        var objects = new List<(byte Id, byte[] Value)>
+        {
+            (0x00, System.Text.Encoding.ASCII.GetBytes(_memory.VendorName)),
+            (0x01, System.Text.Encoding.ASCII.GetBytes(_memory.ProductCode)),
+            (0x02, System.Text.Encoding.ASCII.GetBytes(_memory.MajorMinorRevision))
+        };
+        if (deviceIdCode == 4)
+        {
+            objects = objects.Where(item => item.Id == pdu[3]).ToList();
+            if (objects.Count == 0)
+            {
+                throw new ModbusException(_unitId, ModbusFunction.EncapsulatedInterfaceTransport, ModbusExceptionCode.IllegalDataAddress);
+            }
+        }
+
+        var payloadLength = objects.Sum(item => 2 + item.Value.Length);
+        var response = new byte[8 + payloadLength];
+        response[0] = ModbusFunction.EncapsulatedInterfaceTransport;
+        response[1] = ModbusFunction.ReadDeviceIdentificationMei;
+        response[2] = deviceIdCode;
+        response[3] = 0x01;
+        response[4] = 0x00;
+        response[5] = 0x00;
+        response[6] = 0x00;
+        response[7] = (byte)objects.Count;
+        var offset = 8;
+        foreach (var item in objects)
+        {
+            response[offset] = item.Id;
+            response[offset + 1] = (byte)item.Value.Length;
+            item.Value.CopyTo(response.AsSpan(offset + 2));
+            offset += 2 + item.Value.Length;
         }
 
         return response;

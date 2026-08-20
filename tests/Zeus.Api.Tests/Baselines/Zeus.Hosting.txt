@@ -15,6 +15,8 @@ namespace Zeus
     {
         public static Zeus.ZeusHostBuilder AddAcquisition(this Zeus.ZeusHostBuilder builder, System.Action<Zeus.AcquisitionOptions> configure) { }
         public static Zeus.ZeusHostBuilder AddAcquisition(this Zeus.ZeusHostBuilder builder, System.TimeSpan interval) { }
+        public static Zeus.ZeusHostBuilder AddPointHistoryFile(this Zeus.ZeusHostBuilder builder, string path = "zeus-point-history.jsonl") { }
+        public static Zeus.ZeusHostBuilder AddPointHistoryStore(this Zeus.ZeusHostBuilder builder, Zeus.IPointHistoryStore store) { }
         public static Zeus.ZeusHostBuilder AddReconnect(this Zeus.ZeusHostBuilder builder, System.Action<Zeus.ChannelReconnectOptions> configure) { }
     }
     public static class ZeusHostBuilderDeviceExtensions

@@ -12,6 +12,7 @@ internal sealed class AcquisitionLoopService : BackgroundService
 {
     private readonly DeviceRegistry _devices;
     private readonly PointTable _table;
+    private readonly PointAlarmTable _alarms;
     private readonly AcquisitionOptions _options;
     private readonly HostRunState _runState;
     private readonly ILogger<AcquisitionLoopService> _logger;
@@ -23,18 +24,21 @@ internal sealed class AcquisitionLoopService : BackgroundService
     /// </summary>
     /// <param name="devices">设备目录。</param>
     /// <param name="table">点表。</param>
+    /// <param name="alarms">报警队列。卸载设备时清掉该设备未复归报警。</param>
     /// <param name="options">间隔与是否立即首轮。热更新会改同一实例，循环每轮读取最新值。</param>
     /// <param name="runState">宿主运行闸门。停止后循环等待，再次启动后继续。</param>
     /// <param name="logger">诊断日志。</param>
     public AcquisitionLoopService(
         DeviceRegistry devices,
         PointTable table,
+        PointAlarmTable alarms,
         AcquisitionOptions options,
         HostRunState runState,
         ILogger<AcquisitionLoopService> logger)
     {
         _devices = devices;
         _table = table;
+        _alarms = alarms;
         _options = options;
         _runState = runState;
         _logger = logger;
@@ -168,6 +172,7 @@ internal sealed class AcquisitionLoopService : BackgroundService
                 }
 
                 _table.UnregisterDevice(name);
+                _alarms.ClearDevice(name);
                 _registeredSources.Remove(name);
             }
 

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Zeus;
 
 /// <summary>
@@ -61,6 +63,38 @@ public static class ZeusHostBuilderAcquisitionExtensions
             throw new ZeusException("自动重连的退避系数必须大于或等于 1。");
         }
 
+        return builder;
+    }
+
+    /// <summary>
+    /// 把成功采样追加到 JSONL 文件。未调用时点表只保留内存环形缓冲。
+    /// </summary>
+    /// <param name="builder">宿主构建器。</param>
+    /// <param name="path">文件路径，默认 <c>zeus-point-history.jsonl</c>。</param>
+    /// <returns>同一构建器。</returns>
+    public static ZeusHostBuilder AddPointHistoryFile(this ZeusHostBuilder builder, string path = "zeus-point-history.jsonl")
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ZeusException("点历史文件路径不能为空。");
+        }
+
+        builder.Services.AddSingleton<IPointHistoryStore>(_ => new FilePointHistoryStore(path));
+        return builder;
+    }
+
+    /// <summary>
+    /// 登记自定义点历史存储。采集成功后由点表调用 <see cref="IPointHistoryStore.AppendAsync"/>。
+    /// </summary>
+    /// <param name="builder">宿主构建器。</param>
+    /// <param name="store">存储实现。</param>
+    /// <returns>同一构建器。</returns>
+    public static ZeusHostBuilder AddPointHistoryStore(this ZeusHostBuilder builder, IPointHistoryStore store)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(store);
+        builder.Services.AddSingleton(store);
         return builder;
     }
 }

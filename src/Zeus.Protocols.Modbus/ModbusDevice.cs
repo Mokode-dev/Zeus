@@ -95,6 +95,29 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IPointWriter,
         CancellationToken cancellationToken = default)
         => _client.ReadWriteMultipleRegistersAsync(UnitId, readAddress, readQuantity, writeAddress, writeValues, cancellationToken);
 
+    /// <summary>读设备识别（功能码 0x2B / MEI 0x0E）。</summary>
+    public Task<ModbusDeviceIdentification> ReadDeviceIdentificationAsync(
+        byte deviceIdCode = 1,
+        byte objectId = 0,
+        CancellationToken cancellationToken = default)
+        => _client.ReadDeviceIdentificationAsync(UnitId, deviceIdCode, objectId, cancellationToken);
+
+    /// <summary>读文件记录（功能码 0x14）。</summary>
+    public Task<ushort[]> ReadFileRecordAsync(
+        ushort fileNumber,
+        ushort recordNumber,
+        ushort recordLength,
+        CancellationToken cancellationToken = default)
+        => _client.ReadFileRecordAsync(UnitId, fileNumber, recordNumber, recordLength, cancellationToken);
+
+    /// <summary>写文件记录（功能码 0x15）。</summary>
+    public Task WriteFileRecordAsync(
+        ushort fileNumber,
+        ushort recordNumber,
+        IReadOnlyList<ushort> values,
+        CancellationToken cancellationToken = default)
+        => _client.WriteFileRecordAsync(UnitId, fileNumber, recordNumber, values, cancellationToken);
+
     /// <summary>写单个线圈。</summary>
     public Task WriteSingleCoilAsync(ushort address, bool value, CancellationToken cancellationToken = default)
         => _client.WriteSingleCoilAsync(UnitId, address, value, cancellationToken);

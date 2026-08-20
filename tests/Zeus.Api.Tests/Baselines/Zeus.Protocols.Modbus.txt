@@ -10,12 +10,15 @@ namespace Zeus
         public System.Threading.Tasks.Task<byte[]> ExecuteAsync(byte unitId, System.ReadOnlyMemory<byte> requestPdu, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task MaskWriteRegisterAsync(byte unitId, ushort address, ushort andMask, ushort orMask, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<bool[]> ReadCoilsAsync(byte unitId, ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<Zeus.ModbusDeviceIdentification> ReadDeviceIdentificationAsync(byte unitId, byte deviceIdCode = 1, byte objectId = 0, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<bool[]> ReadDiscreteInputsAsync(byte unitId, ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<byte> ReadExceptionStatusAsync(byte unitId, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadFileRecordAsync(byte unitId, ushort fileNumber, ushort recordNumber, ushort recordLength, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadWriteMultipleRegistersAsync(byte unitId, ushort readAddress, ushort readQuantity, ushort writeAddress, System.Collections.Generic.IReadOnlyList<ushort> writeValues, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<Zeus.ModbusServerId> ReportServerIdAsync(byte unitId, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteFileRecordAsync(byte unitId, ushort fileNumber, ushort recordNumber, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteMultipleCoilsAsync(byte unitId, ushort address, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteMultipleRegistersAsync(byte unitId, ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteSingleCoilAsync(byte unitId, ushort address, bool value, System.Threading.CancellationToken cancellationToken = default) { }
@@ -32,17 +35,32 @@ namespace Zeus
         public System.Threading.Tasks.Task MaskWriteRegisterAsync(ushort address, ushort andMask, ushort orMask, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task PollAsync(Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<bool[]> ReadCoilsAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<Zeus.ModbusDeviceIdentification> ReadDeviceIdentificationAsync(byte deviceIdCode = 1, byte objectId = 0, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<bool[]> ReadDiscreteInputsAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<byte> ReadExceptionStatusAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<ushort[]> ReadFileRecordAsync(ushort fileNumber, ushort recordNumber, ushort recordLength, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadHoldingRegistersAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadInputRegistersAsync(ushort address, ushort quantity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<ushort[]> ReadWriteMultipleRegistersAsync(ushort readAddress, ushort readQuantity, ushort writeAddress, System.Collections.Generic.IReadOnlyList<ushort> writeValues, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<Zeus.ModbusServerId> ReportServerIdAsync(System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task WriteFileRecordAsync(ushort fileNumber, ushort recordNumber, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteMultipleCoilsAsync(ushort address, System.Collections.Generic.IReadOnlyList<bool> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteMultipleRegistersAsync(ushort address, System.Collections.Generic.IReadOnlyList<ushort> values, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteSingleCoilAsync(ushort address, bool value, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task WriteSingleRegisterAsync(ushort address, ushort value, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class ModbusDeviceIdentification
+    {
+        public ModbusDeviceIdentification(byte deviceIdCode, byte conformityLevel, bool moreFollows, byte nextObjectId, System.Collections.Generic.IReadOnlyDictionary<byte, byte[]> objects) { }
+        public byte ConformityLevel { get; }
+        public byte DeviceIdCode { get; }
+        public string? MajorMinorRevision { get; }
+        public bool MoreFollows { get; }
+        public byte NextObjectId { get; }
+        public System.Collections.Generic.IReadOnlyDictionary<byte, byte[]> Objects { get; }
+        public string? ProductCode { get; }
+        public string? VendorName { get; }
     }
     public sealed class ModbusException : Zeus.ZeusProtocolException
     {
@@ -58,17 +76,28 @@ namespace Zeus
         IllegalDataValue = 3,
         SlaveDeviceFailure = 4,
     }
+    public readonly struct ModbusFileRecord : System.IEquatable<Zeus.ModbusFileRecord>
+    {
+        public ModbusFileRecord(ushort FileNumber, ushort RecordNumber, System.Collections.Generic.IReadOnlyList<ushort> Values) { }
+        public ushort FileNumber { get; init; }
+        public ushort RecordNumber { get; init; }
+        public System.Collections.Generic.IReadOnlyList<ushort> Values { get; init; }
+    }
     public static class ModbusFunction
     {
         public const byte Diagnostics = 8;
+        public const byte EncapsulatedInterfaceTransport = 43;
         public const byte MaskWriteRegister = 22;
         public const byte ReadCoils = 1;
+        public const byte ReadDeviceIdentificationMei = 14;
         public const byte ReadDiscreteInputs = 2;
         public const byte ReadExceptionStatus = 7;
+        public const byte ReadFileRecord = 20;
         public const byte ReadHoldingRegisters = 3;
         public const byte ReadInputRegisters = 4;
         public const byte ReadWriteMultipleRegisters = 23;
         public const byte ReportServerId = 17;
+        public const byte WriteFileRecord = 21;
         public const byte WriteMultipleCoils = 15;
         public const byte WriteMultipleRegisters = 16;
         public const byte WriteSingleCoil = 5;
@@ -118,11 +147,18 @@ namespace Zeus
         public bool[] Coils { get; }
         public bool[] DiscreteInputs { get; }
         public byte ExceptionStatus { get; set; }
+        [System.Runtime.CompilerServices.TupleElementNames(new string[] {
+                "FileNumber",
+                "RecordNumber"})]
+        public System.Collections.Generic.Dictionary<System.ValueTuple<ushort, ushort>, ushort[]> FileRecords { get; }
         public ushort[] HoldingRegisters { get; }
         public ushort[] InputRegisters { get; }
+        public string MajorMinorRevision { get; set; }
+        public string ProductCode { get; set; }
         public byte ServerId { get; set; }
         public byte[] ServerIdAdditionalData { get; set; }
         public bool ServerRunIndicatorStatus { get; set; }
+        public string VendorName { get; set; }
     }
     public sealed class ModbusSlaveResponder : Zeus.IVirtualResponder
     {

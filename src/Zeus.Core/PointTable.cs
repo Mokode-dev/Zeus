@@ -14,6 +14,7 @@ public sealed class PointTable : IPointTable, IPointTableWriter
     private readonly int _historyCapacity;
     private readonly int _maxHistoryPoints;
     private readonly IDeviceRegistry? _devices;
+    private readonly IPointHistoryStore? _store;
     private readonly List<string> _order = [];
     private readonly Dictionary<string, PointSnapshot> _byQualified = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<PointSnapshot>> _history = new(StringComparer.OrdinalIgnoreCase);
@@ -46,6 +47,22 @@ public sealed class PointTable : IPointTable, IPointTableWriter
     /// <param name="historyCapacity">每个点保留的最近成功采样数。设为 0 可关闭历史缓冲。</param>
     /// <param name="maxHistoryPoints">允许保留历史的最大点数；超出后新点不再记历史。</param>
     public PointTable(IDeviceRegistry? devices, int historyCapacity, int maxHistoryPoints)
+        : this(devices, historyCapacity, maxHistoryPoints, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建连接到设备目录的点表，并可把成功采样交给可插拔存储。
+    /// </summary>
+    /// <param name="devices">设备目录。为 <c>null</c> 时禁止写回。</param>
+    /// <param name="historyCapacity">每个点保留的最近成功采样数。设为 0 可关闭历史缓冲。</param>
+    /// <param name="maxHistoryPoints">允许保留历史的最大点数；超出后新点不再记历史。</param>
+    /// <param name="store">可选落盘。为 <c>null</c> 时只保留内存历史。</param>
+    public PointTable(
+        IDeviceRegistry? devices,
+        int historyCapacity,
+        int maxHistoryPoints,
+        IPointHistoryStore? store)
     {
         if (historyCapacity < 0)
         {
@@ -60,6 +77,7 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         _devices = devices;
         _historyCapacity = historyCapacity;
         _maxHistoryPoints = maxHistoryPoints;
+        _store = store;
     }
 
     /// <summary>每个点最多保留的最近成功采样数。</summary>
@@ -194,6 +212,7 @@ public sealed class PointTable : IPointTable, IPointTableWriter
             AddHistory(current);
         }
 
+        PersistHistory(current);
         Changed?.Invoke(this, new PointChangedEventArgs(previous, current));
     }
 
@@ -333,6 +352,31 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         if (items.Count > _historyCapacity)
         {
             items.RemoveRange(0, items.Count - _historyCapacity);
+        }
+    }
+
+    /// <summary>
+    /// 把成功采样交给可插拔存储。失败不得打断采集循环。
+    /// </summary>
+    private void PersistHistory(PointSnapshot snapshot)
+    {
+        if (_store is null)
+        {
+            return;
+        }
+
+        _ = PersistHistoryAsync(snapshot);
+    }
+
+    private async Task PersistHistoryAsync(PointSnapshot snapshot)
+    {
+        try
+        {
+            await _store!.AppendAsync(snapshot).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // 落盘失败只影响持久化，点表现值和内存历史仍可用。
         }
     }
 

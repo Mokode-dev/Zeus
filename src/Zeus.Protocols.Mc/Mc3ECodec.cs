@@ -9,6 +9,12 @@ internal static class Mc3ECodec
     public const ushort BatchWriteCommand = 0x1401;
     public const ushort RandomReadCommand = 0x0403;
     public const ushort RandomWriteCommand = 0x1402;
+    public const ushort MultipleBlockReadCommand = 0x0406;
+    public const ushort RemoteRunCommand = 0x1001;
+    public const ushort RemoteStopCommand = 0x1002;
+    public const ushort RemotePauseCommand = 0x1003;
+    public const ushort RemoteLatchClearCommand = 0x1005;
+    public const ushort RemoteResetCommand = 0x1006;
     public const ushort WordSubcommand = 0x0000;
     public const ushort BitSubcommand = 0x0001;
 
@@ -205,6 +211,99 @@ internal static class Mc3ECodec
         }
 
         return data;
+    }
+
+    /// <summary>
+    /// 构造 3E/4E 多块批量读取请求。字块与位块各自连续，一次事务返回拼接后的数据。
+    /// </summary>
+    public static byte[] BuildMultipleBlockReadRequest(
+        IReadOnlyList<McDeviceRange> wordBlocks,
+        IReadOnlyList<McDeviceRange>? bitBlocks = null)
+    {
+        ArgumentNullException.ThrowIfNull(wordBlocks);
+        bitBlocks ??= Array.Empty<McDeviceRange>();
+        if (wordBlocks.Count == 0 && bitBlocks.Count == 0)
+        {
+            throw new ZeusProtocolException("MC 多块批量读取至少需要 1 个字块或位块。");
+        }
+
+        if (wordBlocks.Count > byte.MaxValue || bitBlocks.Count > byte.MaxValue)
+        {
+            throw new ZeusProtocolException("MC 多块批量读取的字块和位块数量都不能超过 255。");
+        }
+
+        var data = new byte[2 + ((wordBlocks.Count + bitBlocks.Count) * 6)];
+        data[0] = (byte)wordBlocks.Count;
+        data[1] = (byte)bitBlocks.Count;
+        var offset = 2;
+        foreach (var block in wordBlocks.Concat(bitBlocks))
+        {
+            if (block.Points == 0)
+            {
+                throw new ZeusProtocolException("MC 多块批量读取的每个块点数必须大于 0。");
+            }
+
+            WriteDeviceAddress(data.AsSpan(offset, 4), new McDeviceAddress(block.DeviceCode, block.Address));
+            WriteUInt16LittleEndian(data.AsSpan(offset + 4, 2), block.Points);
+            offset += 6;
+        }
+
+        return data;
+    }
+
+    public static (McDeviceRange[] WordBlocks, McDeviceRange[] BitBlocks) ReadMultipleBlockReadRequest(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 2)
+        {
+            throw new ZeusProtocolException("MC 多块批量读取请求长度不足。");
+        }
+
+        var wordCount = data[0];
+        var bitCount = data[1];
+        var needed = 2 + ((wordCount + bitCount) * 6);
+        if (data.Length < needed)
+        {
+            throw new ZeusProtocolException("MC 多块批量读取软元件列表长度不足。");
+        }
+
+        var wordBlocks = new McDeviceRange[wordCount];
+        var bitBlocks = new McDeviceRange[bitCount];
+        var offset = 2;
+        for (var i = 0; i < wordCount; i++)
+        {
+            var (address, deviceCode, points) = ReadDeviceRequest(data.Slice(offset, 6));
+            wordBlocks[i] = new McDeviceRange(deviceCode, address, points);
+            offset += 6;
+        }
+
+        for (var i = 0; i < bitCount; i++)
+        {
+            var (address, deviceCode, points) = ReadDeviceRequest(data.Slice(offset, 6));
+            bitBlocks[i] = new McDeviceRange(deviceCode, address, points);
+            offset += 6;
+        }
+
+        return (wordBlocks, bitBlocks);
+    }
+
+    /// <summary>
+    /// 把二进制载荷编码进 ASCII 帧数据区（每字节两个十六进制字符）。
+    /// </summary>
+    public static byte[] EncodeRawPayload(Mc3EOptions options, ReadOnlySpan<byte> binary)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.DataEncoding != McDataEncoding.Ascii)
+        {
+            return binary.ToArray();
+        }
+
+        var ascii = new byte[binary.Length * 2];
+        for (var i = 0; i < binary.Length; i++)
+        {
+            WriteAsciiHex(ascii, i * 2, binary[i], 2);
+        }
+
+        return ascii;
     }
 
     public static (McDeviceAddress[] WordDevices, McDeviceAddress[] DoubleWordDevices) ReadRandomReadRequest(ReadOnlySpan<byte> data)
@@ -985,6 +1084,11 @@ internal static class Mc3ECodec
 
     private static byte[] Encode3EAsciiDeviceData(McOperation operation, ReadOnlySpan<byte> canonicalData)
     {
+        if (operation == McOperation.Unknown)
+        {
+            return EncodeRawPayload(new Mc3EOptions { DataEncoding = McDataEncoding.Ascii }, canonicalData);
+        }
+
         if (operation == McOperation.RandomRead)
         {
             return Encode3EAsciiRandomReadData(canonicalData);
@@ -1023,7 +1127,18 @@ internal static class Mc3ECodec
     {
         if (operation == McOperation.Unknown)
         {
-            return asciiData.ToArray();
+            if (asciiData.Length % 2 != 0)
+            {
+                throw new ZeusProtocolException("MC ASCII 原始命令数据长度必须为偶数。");
+            }
+
+            var binary = new byte[asciiData.Length / 2];
+            for (var i = 0; i < binary.Length; i++)
+            {
+                binary[i] = (byte)ReadAsciiHex(asciiData, i * 2, 2);
+            }
+
+            return binary;
         }
 
         if (operation == McOperation.RandomRead)
@@ -1331,7 +1446,10 @@ internal static class Mc3ECodec
     {
         if (!IsReadOperation(operation))
         {
-            return [];
+            // 远程控制等无数据命令保持空载荷；多块读取等原始命令把二进制编成 ASCII 十六进制。
+            return operation == McOperation.Unknown && payload.Length > 0
+                ? EncodeRawPayload(new Mc3EOptions { DataEncoding = McDataEncoding.Ascii }, payload)
+                : [];
         }
 
         if (operation == McOperation.RandomRead)

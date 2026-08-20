@@ -63,4 +63,10 @@ public sealed class McSlaveMemory
 
     /// <summary>ZR 扩展文件寄存器。</summary>
     public ushort[] ExtendedFileRegisters { get; }
+
+    /// <summary>虚拟 PLC 是否处于 RUN。远程 STOP 后为 <c>false</c>。</summary>
+    public bool IsRunning { get; set; } = true;
+
+    /// <summary>最近一次远程控制模式。尚未收到远程命令时为 <c>null</c>。</summary>
+    public McRemoteControlMode? LastRemoteControl { get; set; }
 }

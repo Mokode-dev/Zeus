@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
@@ -5,12 +6,13 @@ using Microsoft.Extensions.Logging;
 namespace Zeus;
 
 /// <summary>
-/// 基于 <see cref="UdpClient"/> 的 UDP 服务端通道。收到的每个数据报会作为一次 <see cref="ChannelBase.PublishData"/> 发布。
-/// 写入时会回复最近一个发送方。
+/// 基于 <see cref="UdpClient"/> 的 UDP 服务端通道。收到的每个数据报会作为一次通道接收事件发布。
+/// <see cref="IChannel.WriteAsync"/> 仍回复最近一个发送方；需要指定对端时使用 <see cref="WriteAsync(EndPoint, ReadOnlyMemory{byte}, CancellationToken)"/>。
 /// </summary>
-public sealed class UdpServerChannel : ChannelBase
+public sealed class UdpServerChannel : ChannelBase, ISessionChannel
 {
     private readonly UdpServerOptions _options;
+    private readonly ConcurrentDictionary<string, IPEndPoint> _remotes = new(StringComparer.Ordinal);
     private UdpClient? _client;
     private CancellationTokenSource? _receiveCts;
     private Task? _receiveLoop;
@@ -44,6 +46,12 @@ public sealed class UdpServerChannel : ChannelBase
     /// <summary>最近一次收到数据报的远端端点。尚未收到数据时为 <c>null</c>。</summary>
     public IPEndPoint? LastRemoteEndPoint => _lastRemoteEndPoint;
 
+    /// <summary>本通道见过的远端快照，按最近一次收到数据报登记。</summary>
+    IReadOnlyList<EndPoint> ISessionChannel.RemoteEndPoints => RemoteEndPoints.Cast<EndPoint>().ToArray();
+
+    /// <summary>本通道见过的远端快照，按最近一次收到数据报登记。</summary>
+    public IReadOnlyList<IPEndPoint> RemoteEndPoints => _remotes.Values.ToArray();
+
     /// <inheritdoc />
     protected override Task OpenCoreAsync(CancellationToken cancellationToken)
     {
@@ -69,6 +77,7 @@ public sealed class UdpServerChannel : ChannelBase
 
         _client = client;
         _lastRemoteEndPoint = null;
+        _remotes.Clear();
         _receiveCts = new CancellationTokenSource();
         _receiveLoop = ReceiveLoopAsync(client, _receiveCts.Token);
         return Task.CompletedTask;
@@ -103,6 +112,35 @@ public sealed class UdpServerChannel : ChannelBase
         _receiveLoop = null;
         _receiveCts = null;
         _lastRemoteEndPoint = null;
+        _remotes.Clear();
+    }
+
+    /// <summary>
+    /// 向指定远端写入数据报。对端不必先发过数据，但必须是可路由的 UDP 端点。
+    /// </summary>
+    /// <param name="remoteEndPoint">目标远端。</param>
+    /// <param name="buffer">待发送数据。</param>
+    /// <param name="cancellationToken">取消写入。</param>
+    public async Task WriteAsync(EndPoint remoteEndPoint, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(remoteEndPoint);
+        if (State != ChannelState.Open)
+        {
+            throw new ZeusChannelException(
+                Name,
+                $"通道 {Name} 当前为 {State}，无法写入。请先调用宿主 StartAsync，或检查该通道是否已故障。");
+        }
+
+        var remote = ToIpEndPoint(remoteEndPoint);
+        await WriteExclusiveAsync(
+            async token =>
+            {
+                var client = _client ?? throw new ZeusChannelException(Name, $"通道 {Name} 的 UDP 服务端套接字已丢失，请重新启动宿主。");
+                await client.SendAsync(buffer, remote, token).ConfigureAwait(false);
+                RememberRemote(remote);
+                PublishPacketTrace(ChannelTraceDirection.Sent, buffer.Span);
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -111,7 +149,7 @@ public sealed class UdpServerChannel : ChannelBase
         var client = _client ?? throw new ZeusChannelException(Name, $"通道 {Name} 的 UDP 服务端套接字已丢失，请重新启动宿主。");
         var remote = _lastRemoteEndPoint ?? throw new ZeusChannelException(
             Name,
-            $"通道 {Name} 尚未收到任何 UDP 数据报，无法确定回复目标。请先等待客户端请求，或改用 UDP 客户端通道。");
+            $"通道 {Name} 尚未收到任何 UDP 数据报，无法确定回复目标。请先等待客户端请求，使用带远端的 WriteAsync，或改用 UDP 客户端通道。");
 
         await client.SendAsync(buffer, remote, cancellationToken).ConfigureAwait(false);
         PublishPacketTrace(ChannelTraceDirection.Sent, buffer.Span);
@@ -124,8 +162,8 @@ public sealed class UdpServerChannel : ChannelBase
             while (!cancellationToken.IsCancellationRequested)
             {
                 var result = await client.ReceiveAsync(cancellationToken).ConfigureAwait(false);
-                _lastRemoteEndPoint = result.RemoteEndPoint;
-                PublishData(result.Buffer);
+                RememberRemote(result.RemoteEndPoint);
+                PublishData(result.Buffer, result.RemoteEndPoint);
             }
         }
         catch (OperationCanceledException)
@@ -141,5 +179,23 @@ public sealed class UdpServerChannel : ChannelBase
                 SetState(ChannelState.Faulted, ex);
             }
         }
+    }
+
+    private void RememberRemote(IPEndPoint remote)
+    {
+        _lastRemoteEndPoint = remote;
+        _remotes[remote.ToString()] = remote;
+    }
+
+    private IPEndPoint ToIpEndPoint(EndPoint remoteEndPoint)
+    {
+        if (remoteEndPoint is IPEndPoint ip)
+        {
+            return ip;
+        }
+
+        throw new ZeusChannelException(
+            Name,
+            $"通道 {Name} 的 UDP 服务端只能向 IPEndPoint 写入，当前类型为 {remoteEndPoint.GetType().Name}。");
     }
 }

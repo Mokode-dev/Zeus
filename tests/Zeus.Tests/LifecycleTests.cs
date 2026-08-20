@@ -262,6 +262,51 @@ public sealed class LifecycleTests
         }
     }
 
+    /// <summary>
+    /// 热重载重建通道后，旧实例上的 DataReceived 订阅应迁到同名新通道。
+    /// </summary>
+    [Fact]
+    public async Task ReloadAsync_MigratesChannelSubscriptions()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"zeus-reload-sub-{Guid.NewGuid():N}.json");
+        const string initial = """
+            {
+              "channels": [
+                { "name": "meter", "type": "virtual" }
+              ]
+            }
+            """;
+        await File.WriteAllTextAsync(path, initial);
+        try
+        {
+            await using var host = ZeusHost.Create(builder => builder.AddJsonFile(path, watch: false));
+            var original = host.Channels.Get("meter");
+            var received = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+            original.DataReceived += (_, e) => received.TrySetResult(e.Data.ToArray());
+            await host.StartAsync();
+
+            const string updated = """
+                {
+                  "channels": [
+                    { "name": "meter", "type": "virtual", "unitId": 2 }
+                  ]
+                }
+                """;
+            await File.WriteAllTextAsync(path, updated);
+            await host.ReloadAsync(path);
+
+            var replaced = host.Channels.Get("meter");
+            Assert.False(ReferenceEquals(original, replaced));
+            await replaced.WriteAsync("PING"u8.ToArray());
+            var payload = await received.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            Assert.Equal("PING"u8.ToArray(), payload);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     private static async Task<T> WaitForPointAsync<T>(IZeusHost host, string name)
     {
         if (!host.IsRunning)

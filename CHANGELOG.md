@@ -2,7 +2,7 @@
 
 ## 0.16.0
 
-补齐 IEC 60870-5-104 链路层 t1/t2/t3 与 k/w 窗口，并加固通道并发、协议接收缓冲和 TCP 服务端暴露面。
+补齐 IEC 60870-5-104 链路层 t1/t2/t3 与 k/w 窗口，并加固通道并发、协议接收缓冲和 TCP 服务端暴露面。同时补齐上位机运行时闭环：报警队列、点历史落盘、图表/仪表盘绑定、热重载订阅迁移和 TCP/UDP 会话写入，并加深 Modbus 与 Mitsubishi MC。
 
 ### 包含
 
@@ -12,11 +12,20 @@
 - TCP 服务端：新增 `MaxClients`（默认 32）；默认监听地址改为 `127.0.0.1`，避免未配置时把虚拟从站暴露到全部网卡
 - 运行时：采集循环并行轮询设备；通道打开失败记 Error；热重载中途失败尽量回滚拓扑；桌面关闭改为后台释放宿主
 - 其它上限：S7 虚拟 PLC 限制单个 DB 与块数量；自定义帧收件箱上限；点表历史点数上限；配置指纹不再写入明文密码
+- 报警：`IPointAlarmTable` / `app.Alarms`，越限产生活动记录，支持确认、全部确认和自动复归
+- 历史：可选 `AddPointHistoryFile` 或自定义 `IPointHistoryStore`；JSON 可用 `pointHistoryFile` 声明 JSONL 路径
+- 界面：`BindChart`、`BindDashboard`、`BindGauge`、`BindAlarms` 与报警绑定源，WinForms / WPF 均可接到第三方图表
+- 热重载：通道参数变更重建实例时，把旧实例上的 `DataReceived` / `StateChanged` / `PacketTraced` 迁到同名新通道
+- 会话写入：TCP/UDP 服务端实现 `ISessionChannel`；`DataReceived` 带 `RemoteEndPoint`，可按远端 `WriteAsync`
+- Modbus：功能码 0x2B/0x0E 读设备识别，0x14/0x15 读写文件记录；虚拟从站同步支持
+- MC：3E/4E 多块批量读取（0x0406）与远程 RUN/STOP/PAUSE/锁存清除/复位；虚拟 PLC 同步支持
 
 ### 行为变化
 
 - IEC104 默认 `T3` 为 20 秒，空闲会发送 TESTFR act；联调虚拟站可把 `t3Milliseconds` 设为 0
 - `TcpServerOptions.LocalAddress` 默认从 `0.0.0.0` 改为 `127.0.0.1`；对外监听需显式指定
+- TCP/UDP 服务端无参 `WriteAsync` 仍回复最近对端；多客户端请改用带远端的重载
+- 热重载重建通道后，业务代码持有的旧 `IChannel` 引用不再收数据，应通过 `Channels.Get(name)` 取新实例，或依赖自动迁移的事件订阅
 
 ### 兼容承诺
 

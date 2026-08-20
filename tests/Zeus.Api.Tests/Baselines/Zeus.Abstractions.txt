@@ -3,7 +3,9 @@ namespace Zeus
     public sealed class ChannelDataReceivedEventArgs : System.EventArgs
     {
         public ChannelDataReceivedEventArgs(System.ReadOnlyMemory<byte> data) { }
+        public ChannelDataReceivedEventArgs(System.ReadOnlyMemory<byte> data, System.Net.EndPoint? remoteEndPoint) { }
         public System.ReadOnlyMemory<byte> Data { get; }
+        public System.Net.EndPoint? RemoteEndPoint { get; }
     }
     public sealed class ChannelReconnectOptions
     {
@@ -94,6 +96,11 @@ namespace Zeus
         public Zeus.DeviceRegistryChange Change { get; }
         public Zeus.IDevice Device { get; }
     }
+    public sealed class FilePointHistoryStoreOptions
+    {
+        public FilePointHistoryStoreOptions() { }
+        public string Path { get; set; }
+    }
     public interface IAcquisitionSource
     {
         string Name { get; }
@@ -136,6 +143,19 @@ namespace Zeus
         bool TryGet<TDevice>(string name, out TDevice? device)
             where TDevice :  class, Zeus.IDevice;
     }
+    public interface IPointAlarmTable
+    {
+        System.Collections.Generic.IReadOnlyList<Zeus.PointAlarmRecord> Active { get; }
+        System.Collections.Generic.IReadOnlyList<Zeus.PointAlarmRecord> History { get; }
+        event System.EventHandler<Zeus.PointAlarmChangedEventArgs>? Changed;
+        Zeus.PointAlarmRecord Acknowledge(System.Guid id, string? acknowledgedBy = null);
+        System.Collections.Generic.IReadOnlyList<Zeus.PointAlarmRecord> AcknowledgeAll(string? acknowledgedBy = null);
+        Zeus.PointAlarmRecord? AcknowledgePoint(string pointName, string? acknowledgedBy = null);
+    }
+    public interface IPointHistoryStore
+    {
+        System.Threading.Tasks.ValueTask AppendAsync(Zeus.PointSnapshot snapshot, System.Threading.CancellationToken cancellationToken = default);
+    }
     public interface IPointTable
     {
         System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> All { get; }
@@ -159,12 +179,18 @@ namespace Zeus
         string Name { get; }
         System.Threading.Tasks.Task WriteAsync(string pointName, object value, Zeus.IPointTableWriter table, System.Threading.CancellationToken cancellationToken = default);
     }
+    public interface ISessionChannel : System.IAsyncDisposable, Zeus.IChannel
+    {
+        System.Collections.Generic.IReadOnlyList<System.Net.EndPoint> RemoteEndPoints { get; }
+        System.Threading.Tasks.Task WriteAsync(System.Net.EndPoint remoteEndPoint, System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default);
+    }
     public interface IVirtualResponder
     {
         System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request);
     }
     public interface IZeusHost : System.IAsyncDisposable
     {
+        Zeus.IPointAlarmTable Alarms { get; }
         Zeus.IChannelRegistry Channels { get; }
         Zeus.IDeviceRegistry Devices { get; }
         bool IsRunning { get; }
@@ -173,12 +199,34 @@ namespace Zeus
         System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = default);
     }
+    public sealed class PointAlarmChangedEventArgs : System.EventArgs
+    {
+        public PointAlarmChangedEventArgs(Zeus.PointAlarmRecord? previous, Zeus.PointAlarmRecord current) { }
+        public Zeus.PointAlarmRecord Current { get; }
+        public Zeus.PointAlarmRecord? Previous { get; }
+    }
     public sealed class PointAlarmLimits
     {
         public PointAlarmLimits(double? low = default, double? high = default) { }
         public double? High { get; }
         public double? Low { get; }
         public Zeus.PointAlarmState Evaluate(object? value) { }
+    }
+    public sealed class PointAlarmRecord
+    {
+        public PointAlarmRecord(System.Guid id, string qualifiedName, string pointName, string deviceName, Zeus.PointAlarmState alarmState, Zeus.PointAlarmStatus status, object? value, System.DateTimeOffset raisedAt, System.DateTimeOffset? acknowledgedAt, System.DateTimeOffset? clearedAt, string? acknowledgedBy) { }
+        public System.DateTimeOffset? AcknowledgedAt { get; }
+        public string? AcknowledgedBy { get; }
+        public Zeus.PointAlarmState AlarmState { get; }
+        public System.DateTimeOffset? ClearedAt { get; }
+        public string DeviceName { get; }
+        public System.Guid Id { get; }
+        public bool IsOpen { get; }
+        public string PointName { get; }
+        public string QualifiedName { get; }
+        public System.DateTimeOffset RaisedAt { get; }
+        public Zeus.PointAlarmStatus Status { get; }
+        public object? Value { get; }
     }
     public enum PointAlarmState
     {
@@ -187,6 +235,12 @@ namespace Zeus
         Low = 2,
         High = 3,
         Unknown = 4,
+    }
+    public enum PointAlarmStatus
+    {
+        Active = 0,
+        Acknowledged = 1,
+        Cleared = 2,
     }
     public sealed class PointChangedEventArgs : System.EventArgs
     {

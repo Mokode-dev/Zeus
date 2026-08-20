@@ -269,6 +269,134 @@ public sealed class ModbusClient : IAsyncDisposable
         return values;
     }
 
+    /// <summary>读设备识别（功能码 0x2B，MEI 0x0E）。</summary>
+    /// <param name="unitId">从站地址。</param>
+    /// <param name="deviceIdCode">识别类别：1 基本、2 常规、3 扩展、4 单个对象。</param>
+    /// <param name="objectId">起始或单个对象 ID，基本识别通常为 0。</param>
+    /// <param name="cancellationToken">取消等待。</param>
+    public async Task<ModbusDeviceIdentification> ReadDeviceIdentificationAsync(
+        byte unitId,
+        byte deviceIdCode = 1,
+        byte objectId = 0,
+        CancellationToken cancellationToken = default)
+    {
+        if (deviceIdCode is < 1 or > 4)
+        {
+            throw new ZeusProtocolException("读设备识别的类别必须是 1（基本）、2（常规）、3（扩展）或 4（单个对象）。");
+        }
+
+        var pdu = new byte[]
+        {
+            ModbusFunction.EncapsulatedInterfaceTransport,
+            ModbusFunction.ReadDeviceIdentificationMei,
+            deviceIdCode,
+            objectId
+        };
+        var response = await ExecuteAsync(unitId, pdu, cancellationToken).ConfigureAwait(false);
+        if (response.Length < 8
+            || response[0] != ModbusFunction.EncapsulatedInterfaceTransport
+            || response[1] != ModbusFunction.ReadDeviceIdentificationMei)
+        {
+            throw new ZeusProtocolException("读设备识别的响应长度异常。请核对从站功能码 0x2B/0x0E 实现。");
+        }
+
+        var objectCount = response[7];
+        var objects = new Dictionary<byte, byte[]>();
+        var offset = 8;
+        for (var i = 0; i < objectCount; i++)
+        {
+            if (offset + 2 > response.Length)
+            {
+                throw new ZeusProtocolException("读设备识别的对象列表被截断。");
+            }
+
+            var id = response[offset];
+            var length = response[offset + 1];
+            if (offset + 2 + length > response.Length)
+            {
+                throw new ZeusProtocolException("读设备识别的对象值被截断。");
+            }
+
+            objects[id] = response.AsSpan(offset + 2, length).ToArray();
+            offset += 2 + length;
+        }
+
+        return new ModbusDeviceIdentification(
+            response[2],
+            response[3],
+            response[4] != 0,
+            response[5],
+            objects);
+    }
+
+    /// <summary>读文件记录（功能码 0x14）。一次读取一条记录。</summary>
+    public async Task<ushort[]> ReadFileRecordAsync(
+        byte unitId,
+        ushort fileNumber,
+        ushort recordNumber,
+        ushort recordLength,
+        CancellationToken cancellationToken = default)
+    {
+        if (recordLength is < 1 or > 120)
+        {
+            throw new ZeusProtocolException("读文件记录的寄存器数量必须在 1 到 120 之间。");
+        }
+
+        var pdu = new byte[10];
+        pdu[0] = ModbusFunction.ReadFileRecord;
+        pdu[1] = 7;
+        pdu[2] = 6;
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(3, 2), fileNumber);
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(5, 2), recordNumber);
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(7, 2), recordLength);
+        var response = await ExecuteAsync(unitId, pdu, cancellationToken).ConfigureAwait(false);
+        if (response.Length < 4
+            || response[0] != ModbusFunction.ReadFileRecord
+            || response[2] != 6
+            || response[3] != recordLength * 2)
+        {
+            throw new ZeusProtocolException("读文件记录的响应长度异常。请核对从站功能码 0x14 实现。");
+        }
+
+        var values = new ushort[recordLength];
+        for (var i = 0; i < recordLength; i++)
+        {
+            values[i] = ModbusCodec.ReadUInt16BigEndian(response.AsSpan(4 + (i * 2), 2));
+        }
+
+        return values;
+    }
+
+    /// <summary>写文件记录（功能码 0x15）。一次写入一条记录。</summary>
+    public async Task WriteFileRecordAsync(
+        byte unitId,
+        ushort fileNumber,
+        ushort recordNumber,
+        IReadOnlyList<ushort> values,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        if (values.Count is < 1 or > 120)
+        {
+            throw new ZeusProtocolException("写文件记录的寄存器数量必须在 1 到 120 之间。");
+        }
+
+        var pdu = new byte[9 + (values.Count * 2)];
+        pdu[0] = ModbusFunction.WriteFileRecord;
+        pdu[1] = (byte)(7 + (values.Count * 2));
+        pdu[2] = 6;
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(3, 2), fileNumber);
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(5, 2), recordNumber);
+        ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(7, 2), (ushort)values.Count);
+        for (var i = 0; i < values.Count; i++)
+        {
+            ModbusCodec.WriteUInt16BigEndian(pdu.AsSpan(9 + (i * 2), 2), values[i]);
+        }
+
+        var response = await ExecuteAsync(unitId, pdu, cancellationToken).ConfigureAwait(false);
+        EnsureEcho(pdu, response, "写文件记录");
+    }
+
     /// <summary>写单个线圈。</summary>
     public async Task WriteSingleCoilAsync(byte unitId, ushort address, bool value, CancellationToken cancellationToken = default)
     {

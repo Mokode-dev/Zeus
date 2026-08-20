@@ -31,9 +31,16 @@ public sealed class ZeusHostBuilder
         Services.AddSingleton(Reconnect);
         Services.AddSingleton<HostRunState>();
         Services.AddSingleton<ZeusHostAccessor>();
-        Services.AddSingleton(sp => new PointTable(sp.GetRequiredService<DeviceRegistry>()));
+        Services.AddSingleton(sp => new PointTable(
+            sp.GetRequiredService<DeviceRegistry>(),
+            historyCapacity: 128,
+            maxHistoryPoints: 4096,
+            store: sp.GetService<IPointHistoryStore>()));
         Services.AddSingleton<IPointTable>(sp => sp.GetRequiredService<PointTable>());
         Services.AddSingleton<IPointTableWriter>(sp => sp.GetRequiredService<PointTable>());
+        Services.AddSingleton(sp => new PointAlarmTable(sp.GetRequiredService<PointTable>()));
+        Services.AddSingleton<IPointAlarmTable>(sp => sp.GetRequiredService<PointAlarmTable>());
+        Services.AddSingleton<ChannelSubscriptionMigrator>();
         Services.AddHostedService<ChannelLifecycleService>();
         Services.AddHostedService<AcquisitionLoopService>();
         Services.AddHostedService<ChannelReconnectService>();
@@ -73,13 +80,15 @@ public sealed class ZeusHostBuilder
         var channels = host.Services.GetRequiredService<ChannelRegistry>();
         var devices = host.Services.GetRequiredService<DeviceRegistry>();
         var points = host.Services.GetRequiredService<PointTable>();
+        var alarms = host.Services.GetRequiredService<PointAlarmTable>();
         var runState = host.Services.GetRequiredService<HostRunState>();
+        _ = host.Services.GetRequiredService<ChannelSubscriptionMigrator>();
         foreach (var registration in _registrations)
         {
             registration(host.Services, channels, devices);
         }
 
-        var runtime = new ZeusHostRuntime(host, channels, devices, points, runState);
+        var runtime = new ZeusHostRuntime(host, channels, devices, points, alarms, runState);
         host.Services.GetRequiredService<ZeusHostAccessor>().Host = runtime;
         return runtime;
     }

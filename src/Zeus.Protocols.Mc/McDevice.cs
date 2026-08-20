@@ -131,6 +131,33 @@ public sealed class McDevice : DeviceBase, IAcquisitionSource, IPointWriter, IAs
     public Task WriteRandomBitsAsync(IReadOnlyList<McBitWrite> values, CancellationToken cancellationToken = default)
         => _client.WriteRandomBitsAsync(values, cancellationToken);
 
+    /// <summary>多块批量读取。仅 3E/4E 帧支持。</summary>
+    public Task<McMultipleBlockReadResult> ReadMultipleBlocksAsync(
+        IReadOnlyList<McDeviceRange> wordBlocks,
+        IReadOnlyList<McDeviceRange>? bitBlocks = null,
+        CancellationToken cancellationToken = default)
+        => _client.ReadMultipleBlocksAsync(wordBlocks, bitBlocks, cancellationToken);
+
+    /// <summary>远程 RUN。仅 3E/4E 帧支持。</summary>
+    public Task RemoteRunAsync(CancellationToken cancellationToken = default)
+        => _client.RemoteRunAsync(cancellationToken);
+
+    /// <summary>远程 STOP。仅 3E/4E 帧支持。</summary>
+    public Task RemoteStopAsync(CancellationToken cancellationToken = default)
+        => _client.RemoteStopAsync(cancellationToken);
+
+    /// <summary>远程 PAUSE。仅 3E/4E 帧支持。</summary>
+    public Task RemotePauseAsync(CancellationToken cancellationToken = default)
+        => _client.RemotePauseAsync(cancellationToken);
+
+    /// <summary>远程锁存清除。仅 3E/4E 帧支持。</summary>
+    public Task RemoteLatchClearAsync(CancellationToken cancellationToken = default)
+        => _client.RemoteLatchClearAsync(cancellationToken);
+
+    /// <summary>远程复位。仅 3E/4E 帧支持。</summary>
+    public Task RemoteResetAsync(CancellationToken cancellationToken = default)
+        => _client.RemoteResetAsync(cancellationToken);
+
     /// <inheritdoc />
     public async Task WriteAsync(
         string pointName,

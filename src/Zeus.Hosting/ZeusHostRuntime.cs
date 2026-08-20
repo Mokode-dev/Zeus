@@ -23,18 +23,21 @@ internal sealed class ZeusHostRuntime : IZeusHost
     /// <param name="channels">通道目录。</param>
     /// <param name="devices">设备目录。</param>
     /// <param name="points">点表。</param>
+    /// <param name="alarms">报警队列。</param>
     /// <param name="runState">运行闸门。</param>
     public ZeusHostRuntime(
         IHost host,
         IChannelRegistry channels,
         IDeviceRegistry devices,
         IPointTable points,
+        IPointAlarmTable alarms,
         HostRunState runState)
     {
         _host = host;
         Channels = channels;
         Devices = devices;
         Points = points;
+        Alarms = alarms;
         _runState = runState;
         _logger = host.Services.GetService(typeof(ILogger<ZeusHostRuntime>)) as ILogger<ZeusHostRuntime>
             ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ZeusHostRuntime>.Instance;
@@ -48,6 +51,9 @@ internal sealed class ZeusHostRuntime : IZeusHost
 
     /// <inheritdoc />
     public IPointTable Points { get; }
+
+    /// <inheritdoc />
+    public IPointAlarmTable Alarms { get; }
 
     /// <inheritdoc />
     public IServiceProvider Services => _host.Services;

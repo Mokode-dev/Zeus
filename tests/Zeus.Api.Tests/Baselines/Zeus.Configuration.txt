@@ -28,6 +28,7 @@ namespace Zeus
     public sealed class DeviceConfiguration
     {
         public DeviceConfiguration() { }
+        public int AcknowledgeWindow { get; set; }
         public string Channel { get; set; }
         public int CommonAddress { get; set; }
         public int DestinationNetwork { get; set; }
@@ -40,6 +41,7 @@ namespace Zeus
         public int InterrogationQualifier { get; set; }
         public int IoNumber { get; set; }
         public int LocalTsap { get; set; }
+        public int MaxUnacknowledgedIFrames { get; set; }
         public string MeterAddress { get; set; }
         public int MonitoringTimer { get; set; }
         public bool MqttAutomaticKeepAlive { get; set; }
@@ -73,6 +75,9 @@ namespace Zeus
         public int SourceNode { get; set; }
         public int SourceUnit { get; set; }
         public int StationNumber { get; set; }
+        public int T1Milliseconds { get; set; }
+        public int T2Milliseconds { get; set; }
+        public int T3Milliseconds { get; set; }
         public int TcpRequestedClientNode { get; set; }
         public int? TimeoutMilliseconds { get; set; }
         public string Type { get; set; }
@@ -123,6 +128,7 @@ namespace Zeus
         public Zeus.AcquisitionConfiguration Acquisition { get; set; }
         public System.Collections.Generic.List<Zeus.ChannelConfiguration> Channels { get; set; }
         public System.Collections.Generic.List<Zeus.DeviceConfiguration> Devices { get; set; }
+        public string? PointHistoryFile { get; set; }
         public Zeus.ReconnectConfiguration Reconnect { get; set; }
     }
     public static class ZeusConfigurationLoader

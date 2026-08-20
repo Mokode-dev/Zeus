@@ -132,10 +132,15 @@ namespace Zeus
     }
     public sealed class S7SlaveMemory
     {
+        public const int DefaultMaxDataBlockCount = 256;
+        public const int DefaultMaxDataBlockSize = 65536;
         public S7SlaveMemory(int inputs = 1024, int outputs = 1024, int markers = 4096, int defaultDataBlockSize = 4096) { }
+        public S7SlaveMemory(int inputs, int outputs, int markers, int defaultDataBlockSize, int maxDataBlockSize, int maxDataBlockCount) { }
         public int DefaultDataBlockSize { get; }
         public byte[] Inputs { get; }
         public byte[] Markers { get; }
+        public int MaxDataBlockCount { get; }
+        public int MaxDataBlockSize { get; }
         public byte[] Outputs { get; }
         public byte[] GetDataBlock(int dbNumber, int minimumSize = 0) { }
     }

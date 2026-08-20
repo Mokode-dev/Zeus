@@ -42,6 +42,17 @@ namespace Zeus
         public bool CheckAccess() { }
         public void Post(System.Action action) { }
     }
+    public sealed class PointAlarmBindingSource : System.ComponentModel.INotifyPropertyChanged, System.IDisposable
+    {
+        public PointAlarmBindingSource(Zeus.IPointAlarmTable alarms, Zeus.IUiDispatcher? dispatcher = null) { }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointAlarmRecord> Active { get; }
+        public int ActiveCount { get; }
+        public bool HasActive { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointAlarmRecord> History { get; }
+        public int UnacknowledgedCount { get; }
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+        public void Dispose() { }
+    }
     public sealed class PointBindingSource : System.ComponentModel.INotifyPropertyChanged, System.IDisposable
     {
         public PointBindingSource(Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher? dispatcher = null, System.Func<object?, string>? formatter = null) { }
@@ -63,6 +74,26 @@ namespace Zeus
         public void Dispose() { }
         public System.Threading.Tasks.Task WriteAsync(object value, System.Threading.CancellationToken cancellationToken = default) { }
     }
+    public static class PointChartFormatting
+    {
+        public static System.Collections.Generic.IReadOnlyList<Zeus.PointChartSample> ToChartSamples(System.Collections.Generic.IEnumerable<Zeus.PointSnapshot> history) { }
+        public static bool TryToDouble(object? value, out double number) { }
+    }
+    public readonly struct PointChartSample : System.IEquatable<Zeus.PointChartSample>
+    {
+        public PointChartSample(System.DateTimeOffset Timestamp, double Value) { }
+        public System.DateTimeOffset Timestamp { get; init; }
+        public double Value { get; init; }
+    }
+    public sealed class PointDashboardSnapshot
+    {
+        public PointDashboardSnapshot(Zeus.PointSnapshot current, System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> history, System.Collections.Generic.IReadOnlyList<Zeus.PointChartSample> chart) { }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointChartSample> Chart { get; }
+        public Zeus.PointSnapshot Current { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> History { get; }
+        public bool IsAlarmed { get; }
+        public double? LatestValue { get; }
+    }
     public sealed class PointHistoryBindingSource : System.ComponentModel.INotifyPropertyChanged, System.IDisposable
     {
         public PointHistoryBindingSource(Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher? dispatcher = null) { }
@@ -80,9 +111,14 @@ namespace Zeus
     }
     public static class PointTableUiExtensions
     {
+        public static Zeus.PointAlarmBindingSource AsAlarmBindingSource(this Zeus.IPointAlarmTable alarms, Zeus.IUiDispatcher? dispatcher = null) { }
         public static Zeus.PointBindingSource AsBindingSource(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher? dispatcher = null, System.Func<object?, string>? formatter = null) { }
         public static Zeus.PointHistoryBindingSource AsHistoryBindingSource(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher? dispatcher = null) { }
+        public static Zeus.IUiBinding BindAlarms(this Zeus.IPointAlarmTable alarms, Zeus.IUiDispatcher dispatcher, System.Action<System.Collections.Generic.IReadOnlyList<Zeus.PointAlarmRecord>> setActive) { }
+        public static Zeus.IUiBinding BindChart(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<System.Collections.Generic.IReadOnlyList<Zeus.PointChartSample>> setSamples) { }
+        public static Zeus.IUiBinding BindDashboard(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<Zeus.PointDashboardSnapshot> setDashboard) { }
         public static Zeus.IUiBinding BindEnabled(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<bool> setEnabled, System.Func<Zeus.PointSnapshot, bool>? isEnabled = null) { }
+        public static Zeus.IUiBinding BindGauge(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<double> setRatio, double? minimum = default, double? maximum = default) { }
         public static Zeus.IUiBinding BindHistory(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot>> setHistory) { }
         public static Zeus.IUiBinding BindSnapshot(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<Zeus.PointSnapshot> setSnapshot) { }
         public static Zeus.IUiBinding BindText(this Zeus.IPointTable table, string pointName, Zeus.IUiDispatcher dispatcher, System.Action<string> setText, System.Func<object?, string>? formatter = null) { }

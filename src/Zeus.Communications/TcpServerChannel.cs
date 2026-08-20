@@ -8,10 +8,10 @@ using Microsoft.Extensions.Logging;
 namespace Zeus;
 
 /// <summary>
-/// 基于 <see cref="TcpListener"/> 的 TCP 服务端通道。所有客户端收到的数据都会作为 <see cref="ChannelBase.PublishData"/> 发布。
-/// 写入时会回复最近一个发送数据的客户端。
+/// 基于 <see cref="TcpListener"/> 的 TCP 服务端通道。所有客户端收到的数据都会作为通道接收事件发布。
+/// <see cref="IChannel.WriteAsync"/> 仍回复最近一个发送数据的客户端；需要指定对端时使用 <see cref="WriteAsync(EndPoint, ReadOnlyMemory{byte}, CancellationToken)"/>。
 /// </summary>
-public sealed class TcpServerChannel : ChannelBase
+public sealed class TcpServerChannel : ChannelBase, ISessionChannel
 {
     private readonly TcpServerOptions _options;
     private readonly ConcurrentDictionary<TcpClient, Task> _clients = new();
@@ -64,6 +64,9 @@ public sealed class TcpServerChannel : ChannelBase
 
     /// <summary>当前已连接客户端数量。</summary>
     public int ClientCount => _clients.Count;
+
+    /// <summary>当前已连接客户端远端端点快照。</summary>
+    IReadOnlyList<EndPoint> ISessionChannel.RemoteEndPoints => RemoteEndPoints.Cast<EndPoint>().ToArray();
 
     /// <summary>当前已连接客户端远端端点快照。</summary>
     public IReadOnlyList<IPEndPoint> RemoteEndPoints => _clients.Keys
@@ -129,6 +132,28 @@ public sealed class TcpServerChannel : ChannelBase
 
             throw new ZeusChannelException(Name, message, lastError);
         }
+    }
+
+    /// <summary>
+    /// 向指定远端写入。对端必须仍处于已连接状态。
+    /// </summary>
+    /// <param name="remoteEndPoint">目标客户端远端。</param>
+    /// <param name="buffer">待发送数据。</param>
+    /// <param name="cancellationToken">取消写入。</param>
+    public Task WriteAsync(EndPoint remoteEndPoint, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(remoteEndPoint);
+        if (State != ChannelState.Open)
+        {
+            throw new ZeusChannelException(
+                Name,
+                $"通道 {Name} 当前为 {State}，无法写入。请先调用宿主 StartAsync，或检查该通道是否已故障。");
+        }
+
+        var client = FindClient(remoteEndPoint) ?? throw new ZeusChannelException(
+            Name,
+            $"通道 {Name} 找不到远端 {remoteEndPoint} 对应的 TCP 客户端。请确认该连接仍在，或改用 BroadcastAsync。");
+        return WriteExclusiveAsync(token => WriteToClientAsync(client, buffer, token), cancellationToken);
     }
 
     /// <inheritdoc />
@@ -227,9 +252,14 @@ public sealed class TcpServerChannel : ChannelBase
 
         if (!_clients.ContainsKey(client))
         {
-            throw new ZeusChannelException(Name, $"通道 {Name} 最近的 TCP 客户端已断开，无法写入。请等待客户端重新发送请求。");
+            throw new ZeusChannelException(Name, $"通道 {Name} 最近的 TCP 客户端已断开，无法写入。请等待客户端重新发送请求，或使用带远端的 WriteAsync。");
         }
 
+        await WriteToClientAsync(client, buffer, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task WriteToClientAsync(TcpClient client, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+    {
         try
         {
             var stream = client.GetStream();
@@ -302,9 +332,10 @@ public sealed class TcpServerChannel : ChannelBase
                     return;
                 }
 
+                var remote = client.Client.RemoteEndPoint as IPEndPoint;
                 Volatile.Write(ref _lastClient, client);
-                Volatile.Write(ref _lastRemoteEndPoint, client.Client.RemoteEndPoint as IPEndPoint);
-                PublishData(buffer.AsSpan(0, read));
+                Volatile.Write(ref _lastRemoteEndPoint, remote);
+                PublishData(buffer.AsSpan(0, read), remote);
             }
         }
         catch (OperationCanceledException)
@@ -345,6 +376,33 @@ public sealed class TcpServerChannel : ChannelBase
         }
 
         client.Dispose();
+    }
+
+    private TcpClient? FindClient(EndPoint remoteEndPoint)
+    {
+        foreach (var client in _clients.Keys)
+        {
+            var endpoint = GetRemoteEndPoint(client);
+            if (endpoint is not null && EndPointsEqual(endpoint, remoteEndPoint))
+            {
+                return client;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool EndPointsEqual(EndPoint left, EndPoint right)
+    {
+        if (left.Equals(right))
+        {
+            return true;
+        }
+
+        return left is IPEndPoint leftIp
+            && right is IPEndPoint rightIp
+            && leftIp.Port == rightIp.Port
+            && leftIp.Address.Equals(rightIp.Address);
     }
 
     private static IPEndPoint? GetRemoteEndPoint(TcpClient client)

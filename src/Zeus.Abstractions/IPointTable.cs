@@ -35,6 +35,7 @@ public interface IPointTable
 
     /// <summary>
     /// 读取指定点最近的成功采样历史，顺序从旧到新。错误采集不会写入历史。
+    /// 若登记了 <see cref="IPointHistoryStore"/>，此处仍返回内存环形缓冲；持久化历史请直接查存储。
     /// </summary>
     /// <param name="name">点名或限定名。</param>
     IReadOnlyList<PointSnapshot> GetHistory(string name);

@@ -160,6 +160,51 @@ public abstract class ChannelBase : IChannel
         FlushDeferredReceive();
     }
 
+    /// <summary>
+    /// 在写锁内执行自定义写入。TCP/UDP 服务端按远端发送时使用，避免与默认 <see cref="WriteAsync"/> 交错。
+    /// </summary>
+    /// <param name="write">持锁期间执行的写入。</param>
+    /// <param name="cancellationToken">取消写入。</param>
+    protected async Task WriteExclusiveAsync(Func<CancellationToken, Task> write, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(write);
+        ThrowIfDisposed();
+        if (State != ChannelState.Open)
+        {
+            throw new ZeusChannelException(
+                Name,
+                $"通道 {Name} 当前为 {State}，无法写入。请先调用宿主 StartAsync，或检查该通道是否已故障。");
+        }
+
+        await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            ThrowIfDisposed();
+            if (State != ChannelState.Open)
+            {
+                throw new ZeusChannelException(
+                    Name,
+                    $"通道 {Name} 当前为 {State}，无法写入。请先调用宿主 StartAsync，或检查该通道是否已故障。");
+            }
+
+            try
+            {
+                await write(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not ZeusException)
+            {
+                SetState(ChannelState.Faulted, ex);
+                throw new ZeusChannelException(Name, $"通道 {Name} 写入失败：{ex.Message}。", ex);
+            }
+        }
+        finally
+        {
+            _writeGate.Release();
+        }
+
+        FlushDeferredReceive();
+    }
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
@@ -212,6 +257,14 @@ public abstract class ChannelBase : IChannel
     /// </summary>
     /// <param name="data">本次收到的字节。</param>
     protected void PublishData(ReadOnlySpan<byte> data)
+        => PublishData(data, null);
+
+    /// <summary>
+    /// 由具体传输在收到带远端的数据后调用。TCP/UDP 服务端应传入对端，便于按会话回写。
+    /// </summary>
+    /// <param name="data">本次收到的字节。</param>
+    /// <param name="remoteEndPoint">发送本段数据的远端。</param>
+    protected void PublishData(ReadOnlySpan<byte> data, System.Net.EndPoint? remoteEndPoint)
     {
         if (data.IsEmpty)
         {
@@ -220,11 +273,44 @@ public abstract class ChannelBase : IChannel
 
         var copy = data.ToArray();
         PublishPacketTrace(ChannelTraceDirection.Received, copy);
-        DataReceived?.Invoke(this, new ChannelDataReceivedEventArgs(copy));
+        DataReceived?.Invoke(this, new ChannelDataReceivedEventArgs(copy, remoteEndPoint));
     }
 
     /// <summary>
-    /// 发布通道报文追踪事件。具体传输在确认写入已提交后调用；接收方向由 <see cref="PublishData"/> 统一处理。
+    /// 热重载移除本实例前拷出事件订阅，供同名新通道接续。
+    /// </summary>
+    internal CapturedSubscriptions CaptureSubscriptions()
+    {
+        var captured = new CapturedSubscriptions(StateChanged, DataReceived, PacketTraced);
+        StateChanged = null;
+        DataReceived = null;
+        PacketTraced = null;
+        return captured;
+    }
+
+    /// <summary>
+    /// 把旧实例上的事件订阅接到本通道。已有订阅排在前面，避免覆盖新代码刚挂上的处理程序。
+    /// </summary>
+    internal void RestoreSubscriptions(CapturedSubscriptions subscriptions)
+    {
+        if (subscriptions.StateChanged is not null)
+        {
+            StateChanged = subscriptions.StateChanged + StateChanged;
+        }
+
+        if (subscriptions.DataReceived is not null)
+        {
+            DataReceived = subscriptions.DataReceived + DataReceived;
+        }
+
+        if (subscriptions.PacketTraced is not null)
+        {
+            PacketTraced = subscriptions.PacketTraced + PacketTraced;
+        }
+    }
+
+    /// <summary>
+    /// 发布通道报文追踪事件。具体传输在确认写入已提交后调用；接收方向由 <see cref="PublishData(ReadOnlySpan{byte})"/> 统一处理。
     /// </summary>
     /// <param name="direction">报文方向。</param>
     /// <param name="data">报文字节。</param>

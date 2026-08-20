@@ -18,7 +18,10 @@ namespace Zeus
     {
         public Iec104Client(Zeus.IChannel channel, Zeus.Iec104Options? options = null, System.TimeSpan? timeout = default) { }
         public Zeus.IChannel Channel { get; }
+        public bool IsDataTransferStarted { get; }
         public Zeus.Iec104Options Options { get; }
+        public int UnacknowledgedIncomingIFrames { get; }
+        public int UnacknowledgedOutgoingIFrames { get; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { }
         public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Zeus.Iec104InformationObject>> InterrogateAsync(System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task SendNormalizedSetpointAsync(int address, double value, System.Threading.CancellationToken cancellationToken = default) { }
@@ -50,6 +53,7 @@ namespace Zeus
     }
     public sealed class Iec104Exception : Zeus.ZeusProtocolException
     {
+        public Iec104Exception(string message) { }
         public Iec104Exception(byte typeId, Zeus.Iec104CauseOfTransmission cause) { }
         public Zeus.Iec104CauseOfTransmission Cause { get; }
         public byte TypeId { get; }
@@ -66,9 +70,15 @@ namespace Zeus
     public sealed class Iec104Options
     {
         public Iec104Options() { }
+        public int AcknowledgeWindow { get; set; }
         public int CommonAddress { get; set; }
         public int InterrogationQualifier { get; set; }
+        public int MaxUnacknowledgedIFrames { get; set; }
         public int OriginatorAddress { get; set; }
+        public System.TimeSpan T1 { get; set; }
+        public System.TimeSpan T2 { get; set; }
+        public System.TimeSpan T3 { get; set; }
+        public System.TimeSpan TestFrameInterval { get; set; }
     }
     public sealed class Iec104PointMap
     {
@@ -83,7 +93,10 @@ namespace Zeus
     public sealed class Iec104SlaveResponder : Zeus.IVirtualResponder
     {
         public Iec104SlaveResponder(Zeus.Iec104Options? options = null, Zeus.Iec104StationMemory? memory = null) { }
+        public bool ConfirmTestFrames { get; set; }
         public Zeus.Iec104StationMemory Memory { get; }
+        public int SupervisoryCount { get; }
+        public int TestFrameActivationCount { get; }
         public System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request) { }
     }
     public sealed class Iec104StationMemory

@@ -17,13 +17,16 @@ namespace Zeus
         public System.Threading.Tasks.Task CloseAsync(System.Threading.CancellationToken cancellationToken = default) { }
         protected abstract System.Threading.Tasks.Task CloseCoreAsync(System.Threading.CancellationToken cancellationToken);
         public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        protected virtual void FlushDeferredReceive() { }
         public System.Threading.Tasks.Task OpenAsync(System.Threading.CancellationToken cancellationToken = default) { }
         protected abstract System.Threading.Tasks.Task OpenCoreAsync(System.Threading.CancellationToken cancellationToken);
         protected void PublishData(System.ReadOnlySpan<byte> data) { }
+        protected void PublishData(System.ReadOnlySpan<byte> data, System.Net.EndPoint? remoteEndPoint) { }
         protected void PublishPacketTrace(Zeus.ChannelTraceDirection direction, System.ReadOnlySpan<byte> data) { }
         protected void SetState(Zeus.ChannelState next, System.Exception? error = null) { }
         public System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) { }
         protected abstract System.Threading.Tasks.Task WriteCoreAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken);
+        protected System.Threading.Tasks.Task WriteExclusiveAsync(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task> write, System.Threading.CancellationToken cancellationToken) { }
     }
     public sealed class ChannelRegistry : Zeus.IChannelRegistry
     {
@@ -53,10 +56,31 @@ namespace Zeus
         public bool TryGet<TDevice>(string name, out TDevice? device)
             where TDevice :  class, Zeus.IDevice { }
     }
+    public sealed class FilePointHistoryStore : System.IAsyncDisposable, Zeus.IPointHistoryStore
+    {
+        public FilePointHistoryStore(string path) { }
+        public FilePointHistoryStore(Zeus.FilePointHistoryStoreOptions options) { }
+        public string FilePath { get; }
+        public System.Threading.Tasks.ValueTask AppendAsync(Zeus.PointSnapshot snapshot, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+    }
+    public sealed class PointAlarmTable : Zeus.IPointAlarmTable
+    {
+        public PointAlarmTable(Zeus.IPointTable points, int historyCapacity = 256) { }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointAlarmRecord> Active { get; }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointAlarmRecord> History { get; }
+        public event System.EventHandler<Zeus.PointAlarmChangedEventArgs>? Changed;
+        public Zeus.PointAlarmRecord Acknowledge(System.Guid id, string? acknowledgedBy = null) { }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointAlarmRecord> AcknowledgeAll(string? acknowledgedBy = null) { }
+        public Zeus.PointAlarmRecord? AcknowledgePoint(string pointName, string? acknowledgedBy = null) { }
+        public void ClearDevice(string deviceName) { }
+    }
     public sealed class PointTable : Zeus.IPointTable, Zeus.IPointTableWriter
     {
         public PointTable(int historyCapacity = 128) { }
         public PointTable(Zeus.IDeviceRegistry? devices, int historyCapacity = 128) { }
+        public PointTable(Zeus.IDeviceRegistry? devices, int historyCapacity, int maxHistoryPoints) { }
+        public PointTable(Zeus.IDeviceRegistry? devices, int historyCapacity, int maxHistoryPoints, Zeus.IPointHistoryStore? store) { }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> All { get; }
         public int HistoryCapacity { get; }
         public event System.EventHandler<Zeus.PointChangedEventArgs>? Changed;
@@ -70,5 +94,11 @@ namespace Zeus
         public void Unregister(string qualifiedName) { }
         public void UnregisterDevice(string deviceName) { }
         public System.Threading.Tasks.Task WriteAsync(string name, object value, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public static class ProtocolReceiveBuffer
+    {
+        public const int DefaultMaxBytes = 1048576;
+        public static Zeus.ZeusProtocolException Overflow(string channelName, int maxBytes) { }
+        public static bool TryAppend(System.Collections.Generic.List<byte> buffer, System.ReadOnlySpan<byte> data, int maxBytes) { }
     }
 }

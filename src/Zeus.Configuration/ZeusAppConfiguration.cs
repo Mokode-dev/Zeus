@@ -21,6 +21,11 @@ public sealed class ZeusAppConfiguration
 
     /// <summary>设备列表。引用的通道必须先出现在 <see cref="Channels"/> 中。</summary>
     public List<DeviceConfiguration> Devices { get; set; } = [];
+
+    /// <summary>
+    /// 成功采样落盘的 JSONL 路径。省略时只保留内存历史。
+    /// </summary>
+    public string? PointHistoryFile { get; set; }
 }
 
 /// <summary>
