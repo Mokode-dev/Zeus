@@ -1,5 +1,28 @@
 # 更新记录
 
+## 0.16.0
+
+补齐 IEC 60870-5-104 链路层 t1/t2/t3 与 k/w 窗口，并加固通道并发、协议接收缓冲和 TCP 服务端暴露面。
+
+### 包含
+
+- IEC104：实现 t1 确认超时复位、t2/w 窗口 S 格式确认、t3 空闲 TESTFR act；JSON 支持 `t1Milliseconds`、`t2Milliseconds`、`t3Milliseconds`、`maxUnacknowledgedIFrames`、`acknowledgeWindow`
+- 通道：写入串行化，关闭前排空在途写入；虚拟通道把回写推迟到写锁释放后，避免 MQTT 在 `DataReceived` 栈上自死锁
+- 协议缓冲：各协议客户端接收缓冲默认上限 1 MiB；FINS/S7/Modbus TCP 长度字段先校验；DL/T 645 与 IEC104 坏帧滑动而不是抛死整轮
+- TCP 服务端：新增 `MaxClients`（默认 32）；默认监听地址改为 `127.0.0.1`，避免未配置时把虚拟从站暴露到全部网卡
+- 运行时：采集循环并行轮询设备；通道打开失败记 Error；热重载中途失败尽量回滚拓扑；桌面关闭改为后台释放宿主
+- 其它上限：S7 虚拟 PLC 限制单个 DB 与块数量；自定义帧收件箱上限；点表历史点数上限；配置指纹不再写入明文密码
+
+### 行为变化
+
+- IEC104 默认 `T3` 为 20 秒，空闲会发送 TESTFR act；联调虚拟站可把 `t3Milliseconds` 设为 0
+- `TcpServerOptions.LocalAddress` 默认从 `0.0.0.0` 改为 `127.0.0.1`；对外监听需显式指定
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.15 已发布的类型、成员和扩展方法签名
+- `0.16.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.15.0
 
 新增 SNMP v2c 协议栈，覆盖 OID GET/SET、community 访问控制、点表采集、点名写回、JSON 配置与虚拟 Agent 联调。
