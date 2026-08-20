@@ -128,10 +128,14 @@ public sealed class SerialPortChannel : ChannelBase
                 PublishData(buffer.AsSpan(0, read));
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // 接收回调位于框架线程池。此处吞掉瞬时读错误，避免拆掉 SerialPort 内部泵；
-            // 持续故障会在下一次写入或关闭时表面化。
+            // 接收回调位于框架线程池。拔线或句柄失效应进入故障态，交给自动重连；
+            // 瞬时错误同样记为 Faulted，避免界面一直显示 Open 却再也读不到数据。
+            if (State == ChannelState.Open)
+            {
+                SetState(ChannelState.Faulted, ex);
+            }
         }
     }
 }

@@ -8,9 +8,11 @@ namespace Zeus;
 public sealed class PointTable : IPointTable, IPointTableWriter
 {
     private const int DefaultHistoryCapacity = 128;
+    private const int DefaultMaxHistoryPoints = 4096;
 
     private readonly object _gate = new();
     private readonly int _historyCapacity;
+    private readonly int _maxHistoryPoints;
     private readonly IDeviceRegistry? _devices;
     private readonly List<string> _order = [];
     private readonly Dictionary<string, PointSnapshot> _byQualified = new(StringComparer.OrdinalIgnoreCase);
@@ -33,14 +35,31 @@ public sealed class PointTable : IPointTable, IPointTableWriter
     /// <param name="devices">设备目录。为 <c>null</c> 时禁止写回。</param>
     /// <param name="historyCapacity">每个点保留的最近成功采样数。设为 0 可关闭历史缓冲。</param>
     public PointTable(IDeviceRegistry? devices, int historyCapacity = DefaultHistoryCapacity)
+        : this(devices, historyCapacity, DefaultMaxHistoryPoints)
+    {
+    }
+
+    /// <summary>
+    /// 创建连接到设备目录的点表，并限制历史点数量，避免上千点时内存无界增长。
+    /// </summary>
+    /// <param name="devices">设备目录。为 <c>null</c> 时禁止写回。</param>
+    /// <param name="historyCapacity">每个点保留的最近成功采样数。设为 0 可关闭历史缓冲。</param>
+    /// <param name="maxHistoryPoints">允许保留历史的最大点数；超出后新点不再记历史。</param>
+    public PointTable(IDeviceRegistry? devices, int historyCapacity, int maxHistoryPoints)
     {
         if (historyCapacity < 0)
         {
             throw new ZeusException("点表历史容量不能为负数。");
         }
 
+        if (maxHistoryPoints < 0)
+        {
+            throw new ZeusException("点表历史点数上限不能为负数。");
+        }
+
         _devices = devices;
         _historyCapacity = historyCapacity;
+        _maxHistoryPoints = maxHistoryPoints;
     }
 
     /// <summary>每个点最多保留的最近成功采样数。</summary>
@@ -301,6 +320,11 @@ public sealed class PointTable : IPointTable, IPointTableWriter
 
         if (!_history.TryGetValue(snapshot.QualifiedName, out var items))
         {
+            if (_history.Count >= _maxHistoryPoints)
+            {
+                return;
+            }
+
             items = [];
             _history[snapshot.QualifiedName] = items;
         }

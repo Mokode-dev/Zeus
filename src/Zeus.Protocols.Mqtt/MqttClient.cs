@@ -12,6 +12,8 @@ public sealed class MqttClient : IAsyncDisposable
     private readonly Queue<MqttMessage> _messages = [];
     private readonly Dictionary<string, MqttQualityOfService> _subscriptions = new(StringComparer.Ordinal);
     private readonly Dictionary<ushort, MqttPublishPacket> _incomingExactlyOnce = [];
+    private readonly Queue<byte[]> _pendingControlWrites = [];
+    private readonly Queue<MqttMessage> _pendingEvents = [];
     private TaskCompletionSource<bool>? _dataPulse;
     private CancellationTokenSource? _keepAliveCts;
     private CancellationTokenSource? _reconnectCts;
@@ -192,13 +194,20 @@ public sealed class MqttClient : IAsyncDisposable
     /// <summary>解析当前已完整收到的发布消息并返回快照。</summary>
     public IReadOnlyList<MqttMessage> DrainMessages()
     {
+        List<byte[]> controlWrites;
+        List<MqttMessage> events;
+        IReadOnlyList<MqttMessage> result;
         lock (_bufferLock)
         {
             DrainPublishPacketsLocked();
-            var result = _messages.ToArray();
+            result = _messages.ToArray();
             _messages.Clear();
-            return result;
+            controlWrites = DequeueControlWritesLocked();
+            events = DequeueEventsLocked();
         }
+
+        FlushControlAndEvents(controlWrites, events);
+        return result;
     }
 
     /// <summary>发送 PINGREQ 并等待 PINGRESP。</summary>
@@ -230,7 +239,10 @@ public sealed class MqttClient : IAsyncDisposable
 
         while (true)
         {
-            TaskCompletionSource<bool> pulse;
+            TaskCompletionSource<bool>? pulse = null;
+            List<byte[]> controlWrites;
+            List<MqttMessage> events;
+            MqttMessage? matched = null;
             lock (_bufferLock)
             {
                 DrainPublishPacketsLocked();
@@ -239,11 +251,29 @@ public sealed class MqttClient : IAsyncDisposable
                     var message = _messages.Dequeue();
                     if (topicFilter is null || MqttCodec.TopicMatches(topicFilter, message.Topic))
                     {
-                        return message;
+                        matched = message;
+                        break;
                     }
                 }
 
-                pulse = _dataPulse = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                if (matched is null)
+                {
+                    pulse = _dataPulse = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
+
+                controlWrites = DequeueControlWritesLocked();
+                events = DequeueEventsLocked();
+            }
+
+            FlushControlAndEvents(controlWrites, events);
+            if (matched is { } found)
+            {
+                return found;
+            }
+
+            if (pulse is null)
+            {
+                continue;
             }
 
             await pulse.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -331,27 +361,44 @@ public sealed class MqttClient : IAsyncDisposable
         while (true)
         {
             timeoutCts.Token.ThrowIfCancellationRequested();
-            TaskCompletionSource<bool> pulse;
+            TaskCompletionSource<bool>? pulse = null;
+            List<byte[]> controlWrites;
+            List<MqttMessage> events;
+            MqttPacket? matched = null;
             lock (_bufferLock)
             {
                 if (MqttCodec.TryDecodePacket(_buffer, out var packet, out var consumed, _options.MaximumPacketSize))
                 {
                     _buffer.RemoveRange(0, consumed);
-                    if (RouteIncomingPacketLocked(packet))
+                    if (!RouteIncomingPacketLocked(packet))
                     {
-                        continue;
-                    }
+                        if (packet.Type != expected)
+                        {
+                            throw new MqttException($"MQTT {operation} 收到 {packet.Type}，期望 {expected}。");
+                        }
 
-                    if (packet.Type != expected)
-                    {
-                        throw new MqttException($"MQTT {operation} 收到 {packet.Type}，期望 {expected}。");
+                        TouchActivity();
+                        matched = packet;
                     }
-
-                    TouchActivity();
-                    return packet;
+                }
+                else
+                {
+                    pulse = _dataPulse = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 }
 
-                pulse = _dataPulse = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                controlWrites = DequeueControlWritesLocked();
+                events = DequeueEventsLocked();
+            }
+
+            FlushControlAndEvents(controlWrites, events);
+            if (matched is { } found)
+            {
+                return found;
+            }
+
+            if (pulse is null)
+            {
+                continue;
             }
 
             try
@@ -387,13 +434,13 @@ public sealed class MqttClient : IAsyncDisposable
                 var publish = MqttCodec.DecodePublish(packet);
                 if (publish.QualityOfService == MqttQualityOfService.AtLeastOnce)
                 {
-                    _ = WriteControlAsync(MqttCodec.EncodeAcknowledgement(MqttPacketType.PubAck, publish.PacketIdentifier!.Value));
+                    _pendingControlWrites.Enqueue(MqttCodec.EncodeAcknowledgement(MqttPacketType.PubAck, publish.PacketIdentifier!.Value));
                     EnqueuePublish(publish);
                 }
                 else if (publish.QualityOfService == MqttQualityOfService.ExactlyOnce)
                 {
                     _incomingExactlyOnce[publish.PacketIdentifier!.Value] = publish;
-                    _ = WriteControlAsync(MqttCodec.EncodeAcknowledgement(MqttPacketType.PubRec, publish.PacketIdentifier.Value));
+                    _pendingControlWrites.Enqueue(MqttCodec.EncodeAcknowledgement(MqttPacketType.PubRec, publish.PacketIdentifier.Value));
                 }
                 else
                 {
@@ -408,10 +455,10 @@ public sealed class MqttClient : IAsyncDisposable
                     EnqueuePublish(pending);
                 }
 
-                _ = WriteControlAsync(MqttCodec.EncodeAcknowledgement(MqttPacketType.PubComp, releaseIdentifier));
+                _pendingControlWrites.Enqueue(MqttCodec.EncodeAcknowledgement(MqttPacketType.PubComp, releaseIdentifier));
                 return true;
             case MqttPacketType.PingReq:
-                _ = WriteControlAsync(MqttCodec.EncodePingResp());
+                _pendingControlWrites.Enqueue(MqttCodec.EncodePingResp());
                 return true;
             case MqttPacketType.PubAck when packet.Type == MqttPacketType.PubAck:
             case MqttPacketType.PubRec when packet.Type == MqttPacketType.PubRec:
@@ -432,7 +479,7 @@ public sealed class MqttClient : IAsyncDisposable
             publish.Duplicate,
             publish.PacketIdentifier);
         _messages.Enqueue(message);
-        MessageReceived?.Invoke(this, message);
+        _pendingEvents.Enqueue(message);
     }
 
     private void DrainPublishPacketsLocked()
@@ -447,6 +494,50 @@ public sealed class MqttClient : IAsyncDisposable
             _buffer.RemoveRange(0, consumed);
             RouteIncomingPacketLocked(packet);
         }
+    }
+
+    private void FlushControlAndEvents(List<byte[]> controlWrites, List<MqttMessage> events)
+    {
+        foreach (var packet in controlWrites)
+        {
+            TouchActivity();
+            _ = WriteControlAsync(packet);
+        }
+
+        var handler = MessageReceived;
+        if (handler is null)
+        {
+            return;
+        }
+
+        foreach (var message in events)
+        {
+            handler(this, message);
+        }
+    }
+
+    private List<byte[]> DequeueControlWritesLocked()
+    {
+        if (_pendingControlWrites.Count == 0)
+        {
+            return [];
+        }
+
+        var result = _pendingControlWrites.ToArray().ToList();
+        _pendingControlWrites.Clear();
+        return result;
+    }
+
+    private List<MqttMessage> DequeueEventsLocked()
+    {
+        if (_pendingEvents.Count == 0)
+        {
+            return [];
+        }
+
+        var result = _pendingEvents.ToArray().ToList();
+        _pendingEvents.Clear();
+        return result;
     }
 
     private async Task WriteControlAsync(byte[] packet)
@@ -464,14 +555,29 @@ public sealed class MqttClient : IAsyncDisposable
 
     private void OnDataReceived(object? sender, ChannelDataReceivedEventArgs e)
     {
+        List<byte[]> controlWrites;
+        List<MqttMessage> events;
         lock (_bufferLock)
         {
-            _buffer.AddRange(e.Data.ToArray());
-            TouchActivity();
-            DrainUnsolicitedPacketsLocked();
-            _dataPulse?.TrySetResult(true);
-            _dataPulse = null;
+            if (!ProtocolReceiveBuffer.TryAppend(_buffer, e.Data.Span, _options.MaximumPacketSize))
+            {
+                _dataPulse?.TrySetException(ProtocolReceiveBuffer.Overflow(_channel.Name, _options.MaximumPacketSize));
+                _dataPulse = null;
+                controlWrites = DequeueControlWritesLocked();
+                events = DequeueEventsLocked();
+            }
+            else
+            {
+                TouchActivity();
+                DrainUnsolicitedPacketsLocked();
+                _dataPulse?.TrySetResult(true);
+                _dataPulse = null;
+                controlWrites = DequeueControlWritesLocked();
+                events = DequeueEventsLocked();
+            }
         }
+
+        FlushControlAndEvents(controlWrites, events);
     }
 
     private void DrainUnsolicitedPacketsLocked()
@@ -564,9 +670,12 @@ public sealed class MqttClient : IAsyncDisposable
             return;
         }
 
-        _reconnectCts?.Dispose();
+        var previous = _reconnectCts;
+        previous?.Cancel();
         _reconnectCts = new CancellationTokenSource();
-        _reconnectTask = ReconnectLoopAsync(_reconnectCts.Token);
+        var token = _reconnectCts.Token;
+        previous?.Dispose();
+        _reconnectTask = ReconnectLoopAsync(token);
     }
 
     private async Task ReconnectLoopAsync(CancellationToken cancellationToken)

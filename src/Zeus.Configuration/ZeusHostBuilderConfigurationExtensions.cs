@@ -76,9 +76,26 @@ public static class ZeusHostBuilderConfigurationExtensions
         var fullPath = Path.GetFullPath(path ?? state.Path ?? throw new ZeusException(
             "未指定配置文件路径。请传入 path，或先使用 AddJsonFile 装载。"));
         var document = ZeusConfigurationLoader.LoadFile(fullPath);
-        await ApplyRuntimeAsync(host, state.Last, document, cancellationToken).ConfigureAwait(false);
-        state.Last = document;
-        state.Path = fullPath;
+        var previous = state.Last ?? new ZeusAppConfiguration();
+        try
+        {
+            await ApplyRuntimeAsync(host, previous, document, cancellationToken).ConfigureAwait(false);
+            state.Last = document;
+            state.Path = fullPath;
+        }
+        catch
+        {
+            // 中途失败时尽量把拓扑恢复到热更新前，避免「日志说沿用旧配置」但通道已被拆掉。
+            try
+            {
+                await ApplyRuntimeAsync(host, document, previous, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch
+            {
+            }
+
+            throw;
+        }
     }
 
     /// <summary>
@@ -423,8 +440,8 @@ public static class ZeusHostBuilderConfigurationExtensions
                 device.TimeoutMilliseconds,
                 device.MeterAddress.Trim(),
                 device.WakeUpPreambleCount,
-                device.Password.Trim(),
-                device.OperatorCode.Trim(),
+                string.IsNullOrEmpty(device.Password) ? "0" : "1",
+                string.IsNullOrEmpty(device.OperatorCode) ? "0" : "1",
                 points);
         }
 
@@ -437,6 +454,11 @@ public static class ZeusHostBuilderConfigurationExtensions
                 device.CommonAddress,
                 device.OriginatorAddress,
                 device.InterrogationQualifier,
+                device.T1Milliseconds,
+                device.T2Milliseconds,
+                device.T3Milliseconds,
+                device.MaxUnacknowledgedIFrames,
+                device.AcknowledgeWindow,
                 points);
         }
 
@@ -448,7 +470,7 @@ public static class ZeusHostBuilderConfigurationExtensions
                 device.TimeoutMilliseconds,
                 device.MqttClientId,
                 device.MqttUsername,
-                device.MqttPassword,
+                string.IsNullOrEmpty(device.MqttPassword) ? "0" : "1",
                 device.MqttKeepAliveSeconds,
                 device.MqttCleanSession,
                 device.MqttWillTopic,
@@ -467,8 +489,8 @@ public static class ZeusHostBuilderConfigurationExtensions
                 device.Channel.Trim(),
                 type,
                 device.TimeoutMilliseconds,
-                device.SnmpCommunity,
-                device.SnmpWriteCommunity,
+                string.IsNullOrEmpty(device.SnmpCommunity) ? "0" : "1",
+                string.IsNullOrEmpty(device.SnmpWriteCommunity) ? "0" : "1",
                 device.SnmpInitialRequestId,
                 points);
         }
@@ -1394,7 +1416,12 @@ public static class ZeusHostBuilderConfigurationExtensions
         {
             CommonAddress = device.CommonAddress,
             OriginatorAddress = device.OriginatorAddress,
-            InterrogationQualifier = device.InterrogationQualifier
+            InterrogationQualifier = device.InterrogationQualifier,
+            T1 = TimeSpan.FromMilliseconds(device.T1Milliseconds),
+            T2 = TimeSpan.FromMilliseconds(device.T2Milliseconds),
+            T3 = TimeSpan.FromMilliseconds(device.T3Milliseconds),
+            MaxUnacknowledgedIFrames = device.MaxUnacknowledgedIFrames,
+            AcknowledgeWindow = device.AcknowledgeWindow
         };
 
     private static MqttOptions CreateMqttOptions(DeviceConfiguration device)

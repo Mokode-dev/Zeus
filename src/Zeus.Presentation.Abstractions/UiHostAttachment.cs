@@ -50,11 +50,11 @@ public sealed class UiHostAttachment : IAsyncDisposable
     }
 
     /// <summary>
-    /// 在界面线程上同步释放。窗口关闭事件无法方便地 await 时使用。
-    /// 停止过程不得再切回界面线程，否则会与本调用形成死锁。
+    /// 在后台释放宿主，避免在 UI 线程上同步等待通道关闭造成卡死。
+    /// 窗口关闭事件无法方便地 await 时使用。
     /// </summary>
     public void DisposeBlocking()
     {
-        DisposeAsync().AsTask().GetAwaiter().GetResult();
+        _ = DisposeAsync();
     }
 }

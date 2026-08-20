@@ -47,8 +47,9 @@ internal sealed class HostRunState
             }
 
             IsRunning = true;
-            _pauseCts.Dispose();
+            var previousPause = _pauseCts;
             _pauseCts = new CancellationTokenSource();
+            previousPause.Dispose();
             _runningSignal.TrySetResult();
             raise = true;
         }

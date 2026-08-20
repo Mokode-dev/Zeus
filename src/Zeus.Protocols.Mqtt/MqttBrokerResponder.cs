@@ -110,11 +110,7 @@ public sealed class MqttBrokerResponder : IVirtualResponder
             }
         }
 
-        if (buffer.Count != 0)
-        {
-            throw new MqttException("虚拟 MQTT Broker 收到不完整报文；一次虚拟通道写入应包含完整 MQTT 报文。");
-        }
-
+        // 半包留给下一次写入拼接；虚拟通道一次写入通常是完整报文，粘包也会在循环中拆完。
         return output.Count == 0 ? null : output.ToArray();
     }
 

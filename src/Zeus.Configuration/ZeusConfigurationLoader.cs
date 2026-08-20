@@ -553,6 +553,36 @@ public static class ZeusConfigurationLoader
             throw new ZeusException($"{path}.timeoutMilliseconds 必须大于 0。");
         }
 
+        if (device.T1Milliseconds < 0)
+        {
+            throw new ZeusException($"{path}.t1Milliseconds 不能为负数。");
+        }
+
+        if (device.T2Milliseconds < 0)
+        {
+            throw new ZeusException($"{path}.t2Milliseconds 不能为负数。");
+        }
+
+        if (device.T3Milliseconds < 0)
+        {
+            throw new ZeusException($"{path}.t3Milliseconds 不能为负数。");
+        }
+
+        if (device.T1Milliseconds > 0 && device.T2Milliseconds > 0 && device.T2Milliseconds >= device.T1Milliseconds)
+        {
+            throw new ZeusException($"{path}.t2Milliseconds 必须小于 t1Milliseconds。");
+        }
+
+        if (device.MaxUnacknowledgedIFrames is < 1 or > 32767)
+        {
+            throw new ZeusException($"{path}.maxUnacknowledgedIFrames 必须介于 1 与 32767 之间。");
+        }
+
+        if (device.AcknowledgeWindow is < 1 || device.AcknowledgeWindow >= device.MaxUnacknowledgedIFrames)
+        {
+            throw new ZeusException($"{path}.acknowledgeWindow 必须介于 1 与 maxUnacknowledgedIFrames-1 之间。");
+        }
+
         ValidateIec104Points(device.Points, path);
     }
 

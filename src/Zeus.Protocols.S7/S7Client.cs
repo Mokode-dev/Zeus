@@ -352,9 +352,11 @@ public sealed class S7Client : IAsyncDisposable
     {
         lock (_bufferLock)
         {
-            foreach (var value in e.Data.Span)
+            if (!ProtocolReceiveBuffer.TryAppend(_buffer, e.Data.Span, ProtocolReceiveBuffer.DefaultMaxBytes))
             {
-                _buffer.Add(value);
+                _dataPulse?.TrySetException(ProtocolReceiveBuffer.Overflow(_channel.Name, ProtocolReceiveBuffer.DefaultMaxBytes));
+                _dataPulse = null;
+                return;
             }
 
             _dataPulse?.TrySetResult(true);

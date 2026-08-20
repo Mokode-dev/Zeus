@@ -39,6 +39,13 @@ public sealed class TcpServerChannel : ChannelBase
                 $"通道 {Name} 的 {nameof(TcpServerOptions.Backlog)} 必须大于 0。当前值：{options.Backlog}。");
         }
 
+        if (options.MaxClients <= 0)
+        {
+            throw new ZeusChannelException(
+                Name,
+                $"通道 {Name} 的 {nameof(TcpServerOptions.MaxClients)} 必须大于 0。当前值：{options.MaxClients}。");
+        }
+
         _options = new TcpServerOptions
         {
             LocalAddress = localAddress.ToString(),
@@ -47,7 +54,8 @@ public sealed class TcpServerChannel : ChannelBase
             ReceiveBufferSize = CommunicationOptionGuard.NonNegativeBytes(
                 options.ReceiveBufferSize,
                 Name,
-                nameof(TcpServerOptions.ReceiveBufferSize))
+                nameof(TcpServerOptions.ReceiveBufferSize)),
+            MaxClients = options.MaxClients
         };
     }
 
@@ -65,7 +73,7 @@ public sealed class TcpServerChannel : ChannelBase
         .ToArray();
 
     /// <summary>最近一次收到数据的远端端点。尚未收到数据时为 <c>null</c>。</summary>
-    public IPEndPoint? LastRemoteEndPoint => _lastRemoteEndPoint;
+    public IPEndPoint? LastRemoteEndPoint => Volatile.Read(ref _lastRemoteEndPoint);
 
     /// <summary>
     /// 向所有当前已连接客户端广播字节。
@@ -213,7 +221,7 @@ public sealed class TcpServerChannel : ChannelBase
     /// <inheritdoc />
     protected override async Task WriteCoreAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
     {
-        var client = _lastClient ?? throw new ZeusChannelException(
+        var client = Volatile.Read(ref _lastClient) ?? throw new ZeusChannelException(
             Name,
             $"通道 {Name} 尚未收到任何 TCP 客户端数据，无法确定回复目标。请先等待客户端请求，或改用 TCP 客户端通道。");
 
@@ -243,9 +251,20 @@ public sealed class TcpServerChannel : ChannelBase
             while (!cancellationToken.IsCancellationRequested)
             {
                 var client = await listener.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
+                if (_clients.Count >= _options.MaxClients)
+                {
+                    client.Dispose();
+                    continue;
+                }
+
                 ConfigureClient(client);
                 var placeholder = Task.CompletedTask;
-                _clients[client] = placeholder;
+                if (!_clients.TryAdd(client, placeholder))
+                {
+                    client.Dispose();
+                    continue;
+                }
+
                 var loop = Task.Run(() => ReceiveLoopAsync(client, cancellationToken), CancellationToken.None);
                 _clients.TryUpdate(client, loop, placeholder);
             }
@@ -283,8 +302,8 @@ public sealed class TcpServerChannel : ChannelBase
                     return;
                 }
 
-                _lastClient = client;
-                _lastRemoteEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
+                Volatile.Write(ref _lastClient, client);
+                Volatile.Write(ref _lastRemoteEndPoint, client.Client.RemoteEndPoint as IPEndPoint);
                 PublishData(buffer.AsSpan(0, read));
             }
         }
@@ -319,10 +338,10 @@ public sealed class TcpServerChannel : ChannelBase
     private void RemoveClient(TcpClient client)
     {
         _clients.TryRemove(client, out _);
-        if (ReferenceEquals(_lastClient, client))
+        if (ReferenceEquals(Volatile.Read(ref _lastClient), client))
         {
-            _lastClient = null;
-            _lastRemoteEndPoint = null;
+            Volatile.Write(ref _lastClient, null);
+            Volatile.Write(ref _lastRemoteEndPoint, null);
         }
 
         client.Dispose();

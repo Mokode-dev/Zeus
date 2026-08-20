@@ -5,13 +5,15 @@ namespace Zeus;
 /// <summary>
 /// 通道公共状态机。
 /// 具体传输只需实现打开、关闭与写入三步，打开失败、重复开关与事件发布由本基类消化。
+/// 写入与开关使用两把锁：关闭会排空在途写入，避免与套接字释放交错。
 /// </summary>
 public abstract class ChannelBase : IChannel
 {
-    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
+    private readonly SemaphoreSlim _writeGate = new(1, 1);
     private readonly ILogger _logger;
-    private ChannelState _state = ChannelState.Created;
-    private bool _disposed;
+    private int _state = (int)ChannelState.Created;
+    private int _disposed;
 
     /// <summary>
     /// 初始化通道基类。
@@ -28,7 +30,7 @@ public abstract class ChannelBase : IChannel
     public string Name { get; }
 
     /// <inheritdoc />
-    public ChannelState State => _state;
+    public ChannelState State => (ChannelState)Volatile.Read(ref _state);
 
     /// <inheritdoc />
     public event EventHandler<ChannelStateChangedEventArgs>? StateChanged;
@@ -43,16 +45,17 @@ public abstract class ChannelBase : IChannel
     public async Task OpenAsync(CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_state == ChannelState.Open)
+            ThrowIfDisposed();
+            if (State == ChannelState.Open)
             {
                 return;
             }
 
             // 关闭或故障后再开：先尽力释放残留句柄，避免串口/套接字半开。
-            if (_state is ChannelState.Closed or ChannelState.Faulted)
+            if (State is ChannelState.Closed or ChannelState.Faulted)
             {
                 await CloseCoreQuietlyAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -76,22 +79,24 @@ public abstract class ChannelBase : IChannel
         }
         finally
         {
-            _gate.Release();
+            _lifecycleGate.Release();
         }
     }
 
     /// <inheritdoc />
     public async Task CloseAsync(CancellationToken cancellationToken = default)
     {
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_state is ChannelState.Closed or ChannelState.Created)
+            if (State is ChannelState.Closed or ChannelState.Created)
             {
-                _state = ChannelState.Closed;
+                SetState(ChannelState.Closed);
                 return;
             }
 
+            // 排空在途写入后再关底层，避免 WriteAsync 与 Dispose 套接字并发。
+            await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 await CloseCoreAsync(cancellationToken).ConfigureAwait(false);
@@ -100,13 +105,17 @@ public abstract class ChannelBase : IChannel
             {
                 _logger.LogWarning(ex, "通道 {Channel} 关闭时出现异常，仍将标记为已关闭。", Name);
             }
+            finally
+            {
+                _writeGate.Release();
+            }
 
             SetState(ChannelState.Closed);
             _logger.LogInformation("通道 {Channel} 已关闭。", Name);
         }
         finally
         {
-            _gate.Release();
+            _lifecycleGate.Release();
         }
     }
 
@@ -114,40 +123,59 @@ public abstract class ChannelBase : IChannel
     public async Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
-        if (_state != ChannelState.Open)
+        if (State != ChannelState.Open)
         {
             throw new ZeusChannelException(
                 Name,
-                $"通道 {Name} 当前为 {_state}，无法写入。请先调用宿主 StartAsync，或检查该通道是否已故障。");
+                $"通道 {Name} 当前为 {State}，无法写入。请先调用宿主 StartAsync，或检查该通道是否已故障。");
         }
 
+        await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await WriteCoreAsync(buffer, cancellationToken).ConfigureAwait(false);
+            ThrowIfDisposed();
+            if (State != ChannelState.Open)
+            {
+                throw new ZeusChannelException(
+                    Name,
+                    $"通道 {Name} 当前为 {State}，无法写入。请先调用宿主 StartAsync，或检查该通道是否已故障。");
+            }
+
+            try
+            {
+                await WriteCoreAsync(buffer, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not ZeusException)
+            {
+                SetState(ChannelState.Faulted, ex);
+                throw new ZeusChannelException(Name, $"通道 {Name} 写入失败：{ex.Message}。", ex);
+            }
         }
-        catch (Exception ex) when (ex is not ZeusException)
+        finally
         {
-            SetState(ChannelState.Faulted, ex);
-            throw new ZeusChannelException(Name, $"通道 {Name} 写入失败：{ex.Message}。", ex);
+            _writeGate.Release();
         }
+
+        // 写锁已释放后再发布延迟接收，避免虚拟通道在持锁栈上同步回写导致协议层自死锁。
+        FlushDeferredReceive();
     }
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        if (_disposed)
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
             return;
         }
 
-        _disposed = true;
         try
         {
             await CloseAsync().ConfigureAwait(false);
         }
         finally
         {
-            _gate.Dispose();
+            _lifecycleGate.Dispose();
+            _writeGate.Dispose();
             GC.SuppressFinalize(this);
         }
     }
@@ -166,11 +194,18 @@ public abstract class ChannelBase : IChannel
     protected abstract Task CloseCoreAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// 向底层写入字节。
+    /// 向底层写入字节。调用期间持有写锁，实现不得再进入 <see cref="WriteAsync"/>。
     /// </summary>
     /// <param name="buffer">待发送数据。</param>
     /// <param name="cancellationToken">取消写入。</param>
     protected abstract Task WriteCoreAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 写锁释放后调用。虚拟通道在此发布回显，避免在持锁栈上同步触发 <see cref="DataReceived"/>。
+    /// </summary>
+    protected virtual void FlushDeferredReceive()
+    {
+    }
 
     /// <summary>
     /// 由具体传输在收到数据后调用。基类会复制载荷再发布事件，避免订阅方看到内部缓冲。
@@ -211,13 +246,13 @@ public abstract class ChannelBase : IChannel
     /// <param name="error">可选故障原因。</param>
     protected void SetState(ChannelState next, Exception? error = null)
     {
-        var previous = _state;
+        var previous = (ChannelState)Volatile.Read(ref _state);
         if (previous == next && error is null)
         {
             return;
         }
 
-        _state = next;
+        Volatile.Write(ref _state, (int)next);
         StateChanged?.Invoke(this, new ChannelStateChangedEventArgs(previous, next, error));
     }
 
@@ -238,7 +273,7 @@ public abstract class ChannelBase : IChannel
 
     private void ThrowIfDisposed()
     {
-        if (_disposed)
+        if (Volatile.Read(ref _disposed) != 0)
         {
             throw new ObjectDisposedException(Name, $"通道 {Name} 已释放，不能再打开或写入。");
         }

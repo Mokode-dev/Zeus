@@ -4,10 +4,13 @@ namespace Zeus;
 
 /// <summary>
 /// 内存虚拟通道。默认把写入原样回显；传入 <see cref="IVirtualResponder"/> 时可模拟从站应答。
+/// 回写推迟到写锁释放之后，避免协议客户端在 <see cref="ChannelBase.DataReceived"/> 里再写同一通道时自死锁。
 /// </summary>
 public sealed class VirtualChannel : ChannelBase
 {
     private readonly IVirtualResponder? _responder;
+    private readonly object _pendingLock = new();
+    private readonly Queue<byte[]> _pendingReceives = [];
 
     /// <summary>
     /// 创建虚拟通道。
@@ -25,7 +28,15 @@ public sealed class VirtualChannel : ChannelBase
     protected override Task OpenCoreAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <inheritdoc />
-    protected override Task CloseCoreAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    protected override Task CloseCoreAsync(CancellationToken cancellationToken)
+    {
+        lock (_pendingLock)
+        {
+            _pendingReceives.Clear();
+        }
+
+        return Task.CompletedTask;
+    }
 
     /// <inheritdoc />
     protected override Task WriteCoreAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -34,16 +45,49 @@ public sealed class VirtualChannel : ChannelBase
         PublishPacketTrace(ChannelTraceDirection.Sent, buffer.Span);
         if (_responder is null)
         {
-            PublishData(buffer.Span);
+            EnqueueReceive(buffer.ToArray());
             return Task.CompletedTask;
         }
 
         var reply = _responder.Respond(buffer);
         if (reply is { } payload && !payload.IsEmpty)
         {
-            PublishData(payload.Span);
+            EnqueueReceive(payload.ToArray());
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    protected override void FlushDeferredReceive()
+    {
+        while (true)
+        {
+            byte[] payload;
+            lock (_pendingLock)
+            {
+                if (_pendingReceives.Count == 0)
+                {
+                    return;
+                }
+
+                payload = _pendingReceives.Dequeue();
+            }
+
+            PublishData(payload);
+        }
+    }
+
+    private void EnqueueReceive(byte[] payload)
+    {
+        if (payload.Length == 0)
+        {
+            return;
+        }
+
+        lock (_pendingLock)
+        {
+            _pendingReceives.Enqueue(payload);
+        }
     }
 }

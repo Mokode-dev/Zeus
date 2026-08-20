@@ -96,29 +96,24 @@ internal sealed class AcquisitionLoopService : BackgroundService
 
             firstCycle = false;
             var sources = SnapshotSources();
-            foreach (var source in sources)
+            if (sources.Count == 0)
             {
-                if (!_runState.IsRunning)
-                {
-                    break;
-                }
-
-                try
-                {
-                    await source.PollAsync(_table, stoppingToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                if (!await DelayOrStopAsync(stoppingToken).ConfigureAwait(false))
                 {
                     return;
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "采集源 {Source} 本轮失败，将在下一轮重试。", source.Name);
-                    foreach (var point in source.Points)
-                    {
-                        _table.PublishError(point.QualifiedName, ex.Message);
-                    }
-                }
+
+                continue;
+            }
+
+            var polls = sources.Select(source => PollOneAsync(source, stoppingToken)).ToArray();
+            try
+            {
+                await Task.WhenAll(polls).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return;
             }
 
             if (!await DelayOrStopAsync(stoppingToken).ConfigureAwait(false))
@@ -144,6 +139,10 @@ internal sealed class AcquisitionLoopService : BackgroundService
             return false;
         }
         catch (OperationCanceledException)
+        {
+            return true;
+        }
+        catch (ObjectDisposedException)
         {
             return true;
         }
@@ -183,6 +182,29 @@ internal sealed class AcquisitionLoopService : BackgroundService
                 {
                     _table.Register(point);
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 轮询单个采集源。失败只记日志并写入点错误，不阻断其余源。
+    /// </summary>
+    private async Task PollOneAsync(IAcquisitionSource source, CancellationToken stoppingToken)
+    {
+        try
+        {
+            await source.PollAsync(_table, stoppingToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "采集源 {Source} 本轮失败，将在下一轮重试。", source.Name);
+            foreach (var point in source.Points)
+            {
+                _table.PublishError(point.QualifiedName, ex.Message);
             }
         }
     }

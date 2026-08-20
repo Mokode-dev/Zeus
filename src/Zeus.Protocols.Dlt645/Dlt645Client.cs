@@ -147,15 +147,32 @@ public sealed class Dlt645Client : IAsyncDisposable
         while (true)
         {
             timeoutCts.Token.ThrowIfCancellationRequested();
+            Dlt645Frame? decoded = null;
             lock (_bufferLock)
             {
                 if (Dlt645Codec.TryDecodeFrame(_buffer, out var response, out var consumed))
                 {
                     _buffer.RemoveRange(0, consumed);
-                    return response;
+                    decoded = response;
                 }
+                else if (consumed > 0)
+                {
+                    _buffer.RemoveRange(0, Math.Min(consumed, _buffer.Count));
+                }
+                else
+                {
+                    _dataPulse = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
+            }
 
-                _dataPulse = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (decoded is { } found)
+            {
+                return found;
+            }
+
+            if (_dataPulse is null)
+            {
+                continue;
             }
 
             try
@@ -194,9 +211,11 @@ public sealed class Dlt645Client : IAsyncDisposable
     {
         lock (_bufferLock)
         {
-            foreach (var value in e.Data.Span)
+            if (!ProtocolReceiveBuffer.TryAppend(_buffer, e.Data.Span, ProtocolReceiveBuffer.DefaultMaxBytes))
             {
-                _buffer.Add(value);
+                _dataPulse?.TrySetException(ProtocolReceiveBuffer.Overflow(_channel.Name, ProtocolReceiveBuffer.DefaultMaxBytes));
+                _dataPulse = null;
+                return;
             }
 
             _dataPulse?.TrySetResult(true);

@@ -53,7 +53,8 @@ internal static class Dlt645Codec
 
         if (buffer[start + 7] != 0x68)
         {
-            throw new ZeusProtocolException("DL/T 645 帧缺少第二个 0x68。请确认通道连接的是 DL/T 645 设备。");
+            consumed = start + 1;
+            return false;
         }
 
         var length = buffer[start + 9];
@@ -66,14 +67,16 @@ internal static class Dlt645Codec
         var endIndex = start + frameLength - 1;
         if (buffer[endIndex] != 0x16)
         {
-            throw new ZeusProtocolException("DL/T 645 帧结束符不是 0x16。请检查波特率、校验位或协议类型。");
+            consumed = start + 1;
+            return false;
         }
 
         var expectedChecksum = buffer[start + frameLength - 2];
         var actualChecksum = ComputeChecksum(buffer, start, frameLength - 2);
         if (expectedChecksum != actualChecksum)
         {
-            throw new ZeusProtocolException($"DL/T 645 校验和错误，收到 0x{expectedChecksum:X2}，计算为 0x{actualChecksum:X2}。");
+            consumed = start + 1;
+            return false;
         }
 
         var data = new byte[length];

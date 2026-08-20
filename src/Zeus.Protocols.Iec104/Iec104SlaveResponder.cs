@@ -10,6 +10,8 @@ public sealed class Iec104SlaveResponder : IVirtualResponder
     private ushort _sendSequence;
     private ushort _receiveSequence;
     private bool _started;
+    private int _testFrameActivationCount;
+    private int _supervisoryCount;
 
     /// <summary>创建虚拟 IEC104 站。</summary>
     public Iec104SlaveResponder(Iec104Options? options = null, Iec104StationMemory? memory = null)
@@ -21,6 +23,17 @@ public sealed class Iec104SlaveResponder : IVirtualResponder
 
     /// <summary>可在测试中预置或断言的信息对象映像。</summary>
     public Iec104StationMemory Memory => _memory;
+
+    /// <summary>收到的 TESTFR act 次数，用于验证 t3 保活。</summary>
+    public int TestFrameActivationCount => _testFrameActivationCount;
+
+    /// <summary>收到的 S 格式确认次数，用于验证 t2/w 窗口。</summary>
+    public int SupervisoryCount => _supervisoryCount;
+
+    /// <summary>
+    /// 是否对 TESTFR act 回 TESTFR con。联调 t1 超时场景时可设为 <c>false</c>。
+    /// </summary>
+    public bool ConfirmTestFrames { get; set; } = true;
 
     /// <inheritdoc />
     public ReadOnlyMemory<byte>? Respond(ReadOnlyMemory<byte> request)
@@ -38,7 +51,14 @@ public sealed class Iec104SlaveResponder : IVirtualResponder
 
         if (Iec104Codec.IsTestFrameActivation(apdu))
         {
-            return Iec104Codec.EncodeTestFrameConfirmation();
+            _testFrameActivationCount++;
+            return ConfirmTestFrames ? Iec104Codec.EncodeTestFrameConfirmation() : null;
+        }
+
+        if (apdu.Format == Iec104FrameFormat.S)
+        {
+            _supervisoryCount++;
+            return null;
         }
 
         if (!_started || apdu.Format != Iec104FrameFormat.I)
@@ -88,7 +108,12 @@ public sealed class Iec104SlaveResponder : IVirtualResponder
         {
             CommonAddress = source.CommonAddress,
             OriginatorAddress = source.OriginatorAddress,
-            InterrogationQualifier = source.InterrogationQualifier
+            InterrogationQualifier = source.InterrogationQualifier,
+            T1 = source.T1,
+            T2 = source.T2,
+            T3 = source.T3,
+            MaxUnacknowledgedIFrames = source.MaxUnacknowledgedIFrames,
+            AcknowledgeWindow = source.AcknowledgeWindow
         };
 
     private static Iec104StationMemory CreateDefaultMemory()

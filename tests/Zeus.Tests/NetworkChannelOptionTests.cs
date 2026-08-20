@@ -74,6 +74,14 @@ public sealed class NetworkChannelOptionTests
         ];
         yield return
         [
+            new Action<ZeusHostBuilder>(builder => builder.AddTcpServer("tcp-server", options =>
+            {
+                options.MaxClients = 0;
+            })),
+            new[] { "tcp-server", nameof(TcpServerOptions.MaxClients), "大于 0" }
+        ];
+        yield return
+        [
             new Action<ZeusHostBuilder>(builder => builder.AddUdpClient("udp", options =>
             {
                 options.Host = null!;

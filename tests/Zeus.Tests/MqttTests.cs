@@ -234,4 +234,20 @@ public sealed class MqttTests
 
         throw new TimeoutException("等待 MQTT 条件超时。");
     }
+
+    [Fact]
+    public async Task QosPublish_DoesNotDeadlockOnVirtualChannel()
+    {
+        var broker = new MqttBrokerResponder();
+        await using var host = ZeusHost.Create(builder => builder.AddVirtualChannel("mqtt-link", broker));
+        await host.StartAsync();
+        await using var client = new MqttClient(host.Channels.Get("mqtt-link"), new MqttOptions { ClientId = "deadlock-client" });
+
+        await client.ConnectAsync();
+        await client.SubscribeAsync("factory/#", MqttQualityOfService.ExactlyOnce);
+        await client.PublishAsync("factory/qos2", "payload"u8.ToArray(), MqttQualityOfService.ExactlyOnce, retain: true)
+            .WaitAsync(TimeSpan.FromSeconds(3));
+        var message = await client.WaitForMessageAsync("factory/qos2").WaitAsync(TimeSpan.FromSeconds(3));
+        Assert.Equal("payload", Encoding.UTF8.GetString(message.Payload));
+    }
 }

@@ -13,6 +13,12 @@ public sealed class Iec104Exception : ZeusProtocolException
         Cause = cause;
     }
 
+    /// <summary>创建链路层或会话异常，例如 t1 超时。</summary>
+    public Iec104Exception(string message)
+        : base(message)
+    {
+    }
+
     /// <summary>ASDU 类型标识。</summary>
     public byte TypeId { get; }
 

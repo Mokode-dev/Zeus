@@ -130,4 +130,125 @@ public sealed class Iec104Tests
 
         throw new TimeoutException($"等待点 {name} 超时。");
     }
+
+    /// <summary>
+    /// 空闲超过 t3 应发送 TESTFR act，虚拟站回 TESTFR con 后链路保持。
+    /// </summary>
+    [Fact]
+    public async Task Client_SendsTestFrameAfterT3Idle()
+    {
+        var options = new Iec104Options
+        {
+            CommonAddress = 7,
+            T1 = TimeSpan.FromSeconds(2),
+            T2 = TimeSpan.FromMilliseconds(200),
+            T3 = TimeSpan.FromMilliseconds(80)
+        };
+        var slave = new Iec104SlaveResponder(options);
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddVirtualChannel("iec-link", slave);
+            builder.AddIec104("station", "iec-link", options);
+        });
+        await host.StartAsync();
+        var client = host.Devices.Get<Iec104Device>("station").Client;
+        await client.StartDataTransferAsync();
+
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+        while (DateTime.UtcNow < deadline && slave.TestFrameActivationCount == 0)
+        {
+            await Task.Delay(20);
+        }
+
+        Assert.True(slave.TestFrameActivationCount > 0);
+        Assert.True(client.IsDataTransferStarted);
+    }
+
+    /// <summary>
+    /// TESTFR act 在 t1 内未确认时应复位链路。
+    /// </summary>
+    [Fact]
+    public async Task Client_ResetsLinkWhenTestFrameTimesOutT1()
+    {
+        var options = new Iec104Options
+        {
+            CommonAddress = 7,
+            T1 = TimeSpan.FromMilliseconds(80),
+            T2 = TimeSpan.FromMilliseconds(40),
+            T3 = TimeSpan.FromMilliseconds(50)
+        };
+        var slave = new Iec104SlaveResponder(options) { ConfirmTestFrames = false };
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddVirtualChannel("iec-link", slave);
+            builder.AddIec104("station", "iec-link", options);
+        });
+        await host.StartAsync();
+        var client = host.Devices.Get<Iec104Device>("station").Client;
+        await client.StartDataTransferAsync();
+        Assert.True(client.IsDataTransferStarted);
+
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+        while (DateTime.UtcNow < deadline && client.IsDataTransferStarted)
+        {
+            await Task.Delay(20);
+        }
+
+        Assert.True(slave.TestFrameActivationCount > 0);
+        Assert.False(client.IsDataTransferStarted);
+    }
+
+    /// <summary>
+    /// 总召唤结束后应按 w/t2 发送 S 格式确认。
+    /// </summary>
+    [Fact]
+    public async Task Client_SendsSupervisoryAckAfterInterrogation()
+    {
+        var options = new Iec104Options
+        {
+            CommonAddress = 7,
+            T1 = TimeSpan.FromSeconds(2),
+            T2 = TimeSpan.FromMilliseconds(30),
+            T3 = TimeSpan.Zero,
+            MaxUnacknowledgedIFrames = 12,
+            AcknowledgeWindow = 2
+        };
+        var memory = new Iec104StationMemory();
+        memory.SetSinglePoint(1, true);
+        memory.SetScaled(100, 1);
+        memory.SetShortFloat(200, 1);
+        var slave = new Iec104SlaveResponder(options, memory);
+        await using var host = ZeusHost.Create(builder =>
+        {
+            builder.AddVirtualChannel("iec-link", slave);
+            builder.AddIec104("station", "iec-link", options);
+        });
+        await host.StartAsync();
+        var station = host.Devices.Get<Iec104Device>("station");
+        await station.InterrogateAsync();
+
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+        while (DateTime.UtcNow < deadline && slave.SupervisoryCount == 0)
+        {
+            await Task.Delay(20);
+        }
+
+        Assert.True(slave.SupervisoryCount > 0);
+        Assert.Equal(0, station.Client.UnacknowledgedIncomingIFrames);
+    }
+
+    /// <summary>
+    /// t2 必须小于 t1，w 必须小于 k。
+    /// </summary>
+    [Fact]
+    public void Options_RejectInvalidTimersAndWindows()
+    {
+        var t2Error = Assert.Throws<ZeusProtocolException>(() =>
+            Iec104Codec.ValidateOptions(new Iec104Options { T1 = TimeSpan.FromSeconds(1), T2 = TimeSpan.FromSeconds(1) }));
+        Assert.Contains("t2", t2Error.Message, StringComparison.OrdinalIgnoreCase);
+
+        var windowError = Assert.Throws<ZeusProtocolException>(() =>
+            Iec104Codec.ValidateOptions(new Iec104Options { MaxUnacknowledgedIFrames = 8, AcknowledgeWindow = 8 }));
+        Assert.Contains("w", windowError.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Zeus;
 
@@ -10,9 +11,10 @@ internal sealed class ZeusHostRuntime : IZeusHost
 {
     private readonly IHost _host;
     private readonly HostRunState _runState;
+    private readonly ILogger<ZeusHostRuntime> _logger;
     private readonly SemaphoreSlim _lifecycle = new(1, 1);
     private bool _genericHostStarted;
-    private bool _disposed;
+    private int _disposed;
 
     /// <summary>
     /// 使用已构建的 Generic Host 与目录创建运行时。
@@ -34,6 +36,8 @@ internal sealed class ZeusHostRuntime : IZeusHost
         Devices = devices;
         Points = points;
         _runState = runState;
+        _logger = host.Services.GetService(typeof(ILogger<ZeusHostRuntime>)) as ILogger<ZeusHostRuntime>
+            ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ZeusHostRuntime>.Instance;
     }
 
     /// <inheritdoc />
@@ -58,6 +62,7 @@ internal sealed class ZeusHostRuntime : IZeusHost
         await _lifecycle.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            ThrowIfDisposed();
             if (!_genericHostStarted)
             {
                 await _host.StartAsync(cancellationToken).ConfigureAwait(false);
@@ -101,12 +106,11 @@ internal sealed class ZeusHostRuntime : IZeusHost
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        if (_disposed)
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
             return;
         }
 
-        _disposed = true;
         try
         {
             await StopAsync().ConfigureAwait(false);
@@ -141,9 +145,11 @@ internal sealed class ZeusHostRuntime : IZeusHost
             {
                 await channel.OpenAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // 打开失败已记入通道 Faulted；自动重连服务会在运行闸门打开后重试。
+                // 必须打 Error，否则 StartAsync 成功会让现场以为通道已经可用。
+                _logger.LogError(ex, "通道 {Channel} 启动时打开失败，宿主仍将继续启动并由自动重连重试。", channel.Name);
             }
         }
     }
@@ -167,7 +173,7 @@ internal sealed class ZeusHostRuntime : IZeusHost
 
     private void ThrowIfDisposed()
     {
-        if (_disposed)
+        if (Volatile.Read(ref _disposed) != 0)
         {
             throw new ObjectDisposedException(nameof(ZeusHostRuntime), "宿主已释放，不能再次启动。请重新 ZeusHost.Create。");
         }

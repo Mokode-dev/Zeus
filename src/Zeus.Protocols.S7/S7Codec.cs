@@ -346,7 +346,7 @@ internal static class S7Codec
         }
 
         var length = (buffer[2] << 8) | buffer[3];
-        if (length < 7)
+        if (length < 7 || length > ProtocolReceiveBuffer.DefaultMaxBytes)
         {
             throw new ZeusProtocolException($"S7 TPKT 长度异常：{length}。");
         }

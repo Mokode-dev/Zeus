@@ -200,6 +200,9 @@ internal sealed class ChannelReconnectService : IHostedService, IDisposable
         catch (OperationCanceledException)
         {
         }
+        catch (ObjectDisposedException)
+        {
+        }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "通道 {Channel} 自动重连失败，将继续退避重试。", channel.Name);
@@ -279,7 +282,10 @@ internal sealed class ChannelReconnectService : IHostedService, IDisposable
             foreach (var attempt in _attempts.Values)
             {
                 attempt.Cts.Cancel();
+                attempt.Cts.Dispose();
             }
+
+            _attempts.Clear();
         }
     }
 

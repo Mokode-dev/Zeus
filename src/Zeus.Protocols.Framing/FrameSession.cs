@@ -12,6 +12,7 @@ public sealed class FrameSession : IAsyncDisposable
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _inboxLock = new();
     private readonly List<byte[]> _inbox = [];
+    private const int MaxInboxFrames = 64;
     private PendingFrameRequest? _waiter;
 
     /// <summary>
@@ -157,6 +158,11 @@ public sealed class FrameSession : IAsyncDisposable
                 }
                 else
                 {
+                    if (_inbox.Count >= MaxInboxFrames)
+                    {
+                        _inbox.RemoveAt(0);
+                    }
+
                     _inbox.Add(payload);
                 }
             }

@@ -92,6 +92,32 @@ public sealed class TcpServerChannelTests
         Assert.Contains("尚未收到", error.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// 超过 MaxClients 的新连接应被立即断开。
+    /// </summary>
+    [Fact]
+    public async Task TcpServerChannel_RejectsClientsBeyondMax()
+    {
+        await using var host = ZeusHost.Create(builder => builder.AddTcpServer("server", options =>
+        {
+            options.LocalAddress = "127.0.0.1";
+            options.LocalPort = 0;
+            options.MaxClients = 1;
+        }));
+        var channel = Assert.IsType<TcpServerChannel>(host.Channels.Get("server"));
+        await host.StartAsync();
+        var port = channel.LocalEndPoint?.Port ?? throw new InvalidOperationException("TCP 服务端未绑定端口。");
+
+        using var first = new TcpClient();
+        await first.ConnectAsync("127.0.0.1", port);
+        await WaitUntilAsync(() => channel.ClientCount == 1);
+
+        using var second = new TcpClient();
+        await second.ConnectAsync("127.0.0.1", port);
+        await Task.Delay(100);
+        Assert.Equal(1, channel.ClientCount);
+    }
+
     private static async Task<byte[]> ReadExactAsync(NetworkStream stream, int length)
     {
         var buffer = new byte[length];

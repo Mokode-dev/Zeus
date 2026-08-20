@@ -15,4 +15,8 @@
     <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Zeus.Tests" />
+  </ItemGroup>
+
 </Project>

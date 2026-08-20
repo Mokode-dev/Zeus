@@ -425,6 +425,7 @@ public static class ZeusHostBuilderCommunicationExtensions
         catch (Exception)
         {
             // 打开失败已进入 Faulted；自动重连服务会按退避重试。
+            // 调用方仍拿到通道实例，可通过 State 判断是否需要立即处理。
         }
 
         return channel;

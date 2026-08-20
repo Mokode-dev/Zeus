@@ -166,6 +166,17 @@ public sealed class S7Tests
         Assert.Contains("writable", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// 虚拟 PLC 不得按请求把单个 DB 扩到超过上限。
+    /// </summary>
+    [Fact]
+    public void SlaveMemory_RejectsOversizedDataBlock()
+    {
+        var memory = new S7SlaveMemory(1024, 1024, 4096, 64, maxDataBlockSize: 128, maxDataBlockCount: 2);
+        var error = Assert.Throws<ZeusException>(() => memory.GetDataBlock(1, 1024));
+        Assert.Contains("超过上限", error.Message, StringComparison.Ordinal);
+    }
+
     private static async Task<T> WaitForPointAsync<T>(IZeusHost host, string name)
     {
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(3);

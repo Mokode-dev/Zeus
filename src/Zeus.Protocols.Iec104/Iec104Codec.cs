@@ -32,6 +32,32 @@ internal static class Iec104Codec
         {
             throw new ZeusProtocolException($"IEC104 interrogationQualifier 必须介于 0 与 255 之间，当前为 {options.InterrogationQualifier}。");
         }
+
+        ValidateTimer(options.T1, nameof(options.T1));
+        ValidateTimer(options.T2, nameof(options.T2));
+        ValidateTimer(options.T3, nameof(options.T3));
+        if (options.T1 > TimeSpan.Zero && options.T2 > TimeSpan.Zero && options.T2 >= options.T1)
+        {
+            throw new ZeusProtocolException("IEC104 t2 必须小于 t1。");
+        }
+
+        if (options.MaxUnacknowledgedIFrames is < 1 or > 32767)
+        {
+            throw new ZeusProtocolException($"IEC104 k（MaxUnacknowledgedIFrames）必须介于 1 与 32767 之间，当前为 {options.MaxUnacknowledgedIFrames}。");
+        }
+
+        if (options.AcknowledgeWindow is < 1 || options.AcknowledgeWindow >= options.MaxUnacknowledgedIFrames)
+        {
+            throw new ZeusProtocolException($"IEC104 w（AcknowledgeWindow）必须介于 1 与 k-1 之间，当前 w={options.AcknowledgeWindow}，k={options.MaxUnacknowledgedIFrames}。");
+        }
+    }
+
+    private static void ValidateTimer(TimeSpan value, string name)
+    {
+        if (value < TimeSpan.Zero)
+        {
+            throw new ZeusProtocolException($"IEC104 {name} 不能为负数。");
+        }
     }
 
     public static void ValidateInformationObjectAddress(int address, string name)
@@ -47,6 +73,17 @@ internal static class Iec104Codec
     public static byte[] EncodeStartDataTransferConfirmation() => [Start, 4, 0x0B, 0x00, 0x00, 0x00];
 
     public static byte[] EncodeTestFrameConfirmation() => [Start, 4, 0x83, 0x00, 0x00, 0x00];
+
+    /// <summary>编码 TESTFR act，用于周期保活。</summary>
+    public static byte[] EncodeTestFrameActivation() => [Start, 4, 0x43, 0x00, 0x00, 0x00];
+
+    /// <summary>编码 S 格式确认帧，携带接收序号。</summary>
+    public static byte[] EncodeSupervisory(ushort receiveSequence)
+    {
+        var frame = new byte[] { Start, 4, 0x01, 0x00, 0x00, 0x00 };
+        WriteSequence(frame.AsSpan(4, 2), receiveSequence);
+        return frame;
+    }
 
     public static byte[] EncodeInterrogationCommand(Iec104Options options, ushort sendSequence, ushort receiveSequence)
     {
@@ -158,7 +195,8 @@ internal static class Iec104Codec
         var length = buffer[start + 1];
         if (length < 4)
         {
-            throw new ZeusProtocolException($"IEC104 APDU 长度 {length} 小于 4。请确认对端是 IEC104。");
+            consumed = start + 1;
+            return false;
         }
 
         var frameLength = 2 + length;
@@ -350,6 +388,8 @@ internal static class Iec104Codec
     public static bool IsStartDataTransferConfirmation(Iec104Apdu apdu) => apdu.Format == Iec104FrameFormat.U && apdu.Control == 0x0B;
 
     public static bool IsTestFrameActivation(Iec104Apdu apdu) => apdu.Format == Iec104FrameFormat.U && apdu.Control == 0x43;
+
+    public static bool IsTestFrameConfirmation(Iec104Apdu apdu) => apdu.Format == Iec104FrameFormat.U && apdu.Control == 0x83;
 
     private static byte[] EncodeIFrame(ushort sendSequence, ushort receiveSequence, List<byte> asdu)
     {

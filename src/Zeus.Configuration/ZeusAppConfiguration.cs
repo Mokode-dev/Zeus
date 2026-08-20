@@ -221,6 +221,21 @@ public sealed class DeviceConfiguration
     /// <summary>IEC104 总召唤限定词 QOI，默认 20。仅 IEC104。</summary>
     public int InterrogationQualifier { get; set; } = 20;
 
+    /// <summary>IEC104 t1（毫秒）：I/U 格式等待确认超时，默认 15000。0 表示关闭。仅 IEC104。</summary>
+    public int T1Milliseconds { get; set; } = 15000;
+
+    /// <summary>IEC104 t2（毫秒）：最迟发送 S 格式确认的等待，默认 10000。0 表示仅按 w 窗口确认。仅 IEC104。</summary>
+    public int T2Milliseconds { get; set; } = 10000;
+
+    /// <summary>IEC104 t3（毫秒）：空闲后发送 TESTFR act 的间隔，默认 20000。0 表示关闭保活。仅 IEC104。</summary>
+    public int T3Milliseconds { get; set; } = 20000;
+
+    /// <summary>IEC104 k：未确认 I 格式上限，默认 12。仅 IEC104。</summary>
+    public int MaxUnacknowledgedIFrames { get; set; } = 12;
+
+    /// <summary>IEC104 w：最迟在收到这么多 I 格式后必须确认，默认 8。仅 IEC104。</summary>
+    public int AcknowledgeWindow { get; set; } = 8;
+
     /// <summary>MQTT 客户端标识。省略时由设备名生成。仅 MQTT。</summary>
     public string? MqttClientId { get; set; }
 

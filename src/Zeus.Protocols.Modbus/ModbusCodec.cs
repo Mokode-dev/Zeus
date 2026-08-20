@@ -256,7 +256,12 @@ internal static class ModbusCodec
 
         var length = (buffer[4] << 8) | buffer[5];
         var total = 6 + length;
-        if (length < 2 || buffer.Count < total)
+        if (length < 2 || length > ProtocolReceiveBuffer.DefaultMaxBytes)
+        {
+            throw new ZeusProtocolException($"Modbus TCP 长度字段异常：{length}。");
+        }
+
+        if (buffer.Count < total)
         {
             return false;
         }

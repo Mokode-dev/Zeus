@@ -242,12 +242,14 @@ internal static class MqttCodec
 
         if (!terminated)
         {
-            throw new MqttException("MQTT 剩余长度编码超过 4 个字节。");
+            buffer.RemoveAt(0);
+            return false;
         }
 
         if (remaining > maximumPacketSize || index > maximumPacketSize - remaining)
         {
-            throw new MqttException($"MQTT 报文长度 {index + remaining} 超过允许值 {maximumPacketSize}。");
+            buffer.Clear();
+            return false;
         }
 
         if (buffer.Count < index + remaining)

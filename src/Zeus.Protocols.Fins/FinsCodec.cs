@@ -174,7 +174,7 @@ internal static class FinsCodec
         }
 
         var length = ReadUInt32BigEndian(buffer, 4);
-        if (length < 8 || length > int.MaxValue - 8)
+        if (length < 8 || length > ProtocolReceiveBuffer.DefaultMaxBytes)
         {
             throw new ZeusProtocolException($"FINS/TCP 长度字段异常：{length}。");
         }
