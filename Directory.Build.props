@@ -13,13 +13,13 @@
     <Product>Zeus</Product>
     <Description>面向 .NET 的 UI 无关上位机开发框架。把复杂留给 Zeus，把简单留给用户。</Description>
     <Copyright>Copyright © Zeus</Copyright>
-    <Version>0.16.0</Version>
+    <Version>0.17.0</Version>
     <NeutralLanguage>zh-Hans</NeutralLanguage>
     <IsPackable>false</IsPackable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageTags>zeus;host;modbus;mitsubishi;mc;siemens;s7;omron;fins;host-link;panasonic;mewtocol;ethernet-ip;cip;allen-bradley;dlt645;iec104;iec-60870-5-104;mqtt;mqtt311;snmp;snmpv2c;message-queue;electric-meter;serial;tcp;udp;winforms;wpf;industrial;scada</PackageTags>
-    <PackageReleaseNotes>0.16.0：IEC104 补齐 t1/t2/t3 与 k/w 窗口；报警队列与确认/复归、点历史落盘、图表/仪表盘绑定、热重载迁移通道订阅、TCP/UDP 按远端会话写入，以及 Modbus 设备识别/文件记录与 MC 多块批量、远程 RUN/STOP。</PackageReleaseNotes>
+    <PackageReleaseNotes>0.17.0：打开宿主 Logging/Configuration/Environment 构建面；通道与协议设备注入 ILogger；稳定 EventId 与日志作用域；AddCommunicationLogging 自动记录 TX/RX；停止时关闭失败不再吞掉。</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Mokode-dev/Zeus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Mokode-dev/Zeus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

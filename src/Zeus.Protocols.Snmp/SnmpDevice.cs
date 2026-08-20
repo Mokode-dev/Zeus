@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace Zeus;
 
 /// <summary>把 SNMP OID 映射为 Zeus 点表的设备。</summary>
@@ -13,8 +15,9 @@ public sealed class SnmpDevice : DeviceBase, IAcquisitionSource, IPointWriter, I
         IChannel channel,
         SnmpOptions? options = null,
         TimeSpan? timeout = null,
-        SnmpPointMap? pointMap = null)
-        : base(name, channel)
+        SnmpPointMap? pointMap = null,
+        ILogger<SnmpDevice>? logger = null)
+        : base(name, channel, logger)
     {
         _client = new SnmpClient(channel, options, timeout);
         _specs = pointMap?.Points.ToArray() ?? [];
@@ -52,6 +55,7 @@ public sealed class SnmpDevice : DeviceBase, IAcquisitionSource, IPointWriter, I
             }
             catch (Exception ex)
             {
+                LogAcquisitionFailed(ex, spec.Name);
                 table.PublishError(qualified, ex.Message);
             }
         }
@@ -81,6 +85,7 @@ public sealed class SnmpDevice : DeviceBase, IAcquisitionSource, IPointWriter, I
         }
         catch (Exception ex)
         {
+            LogWriteFailed(ex, spec.Name);
             table.PublishError(qualified, ex.Message);
             throw;
         }

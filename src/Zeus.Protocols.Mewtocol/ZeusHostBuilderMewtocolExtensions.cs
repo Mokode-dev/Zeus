@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 namespace Zeus;
 
 /// <summary>
@@ -14,8 +17,8 @@ public static class ZeusHostBuilderMewtocolExtensions
         TimeSpan? timeout = null,
         Action<MewtocolPointMap>? points = null)
     {
-        return builder.AddDevice(deviceName, channelName, (name, channel) =>
-            new MewtocolDevice(name, channel, options, timeout, BuildMap(points)));
+        return builder.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new MewtocolDevice(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<MewtocolDevice>>()));
     }
 
     /// <summary>在已构建的宿主上登记一台 Panasonic MEWTOCOL-COM 设备。</summary>
@@ -26,8 +29,8 @@ public static class ZeusHostBuilderMewtocolExtensions
         MewtocolOptions? options = null,
         TimeSpan? timeout = null,
         Action<MewtocolPointMap>? points = null)
-        => host.AddDevice(deviceName, channelName, (name, channel) =>
-            new MewtocolDevice(name, channel, options, timeout, BuildMap(points)));
+        => host.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new MewtocolDevice(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<MewtocolDevice>>()));
 
     private static MewtocolPointMap? BuildMap(Action<MewtocolPointMap>? configure)
     {

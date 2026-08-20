@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 namespace Zeus;
 
 /// <summary>
@@ -14,8 +17,8 @@ public static class ZeusHostBuilderEtherNetIpExtensions
         TimeSpan? timeout = null,
         Action<EtherNetIpPointMap>? points = null)
     {
-        return builder.AddDevice(deviceName, channelName, (name, channel) =>
-            new EtherNetIpDevice(name, channel, options, timeout, BuildMap(points)));
+        return builder.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new EtherNetIpDevice(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<EtherNetIpDevice>>()));
     }
 
     /// <summary>在已有通道上登记一台 Allen-Bradley EtherNet/IP 设备。</summary>
@@ -36,8 +39,8 @@ public static class ZeusHostBuilderEtherNetIpExtensions
         EtherNetIpOptions? options = null,
         TimeSpan? timeout = null,
         Action<EtherNetIpPointMap>? points = null)
-        => host.AddDevice(deviceName, channelName, (name, channel) =>
-            new EtherNetIpDevice(name, channel, options, timeout, BuildMap(points)));
+        => host.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new EtherNetIpDevice(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<EtherNetIpDevice>>()));
 
     /// <summary>在已构建的宿主上登记一台 Allen-Bradley EtherNet/IP 设备。</summary>
     public static EtherNetIpDevice AddEtherNetIp(

@@ -19,8 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- 宿主构建时登记订阅迁移器；测试访问内部通道订阅快照。 -->
+    <!-- 宿主与配置监视需要内部日志作用域；测试访问内部通道订阅快照。 -->
     <InternalsVisibleTo Include="Zeus.Hosting" />
+    <InternalsVisibleTo Include="Zeus.Configuration" />
     <InternalsVisibleTo Include="Zeus.Tests" />
   </ItemGroup>
 

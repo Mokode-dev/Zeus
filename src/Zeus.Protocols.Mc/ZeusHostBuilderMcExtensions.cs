@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 namespace Zeus;
 
 /// <summary>
@@ -22,8 +25,8 @@ public static class ZeusHostBuilderMcExtensions
         TimeSpan? timeout = null,
         Action<McPointMap>? points = null)
     {
-        return builder.AddDevice(deviceName, channelName, (name, channel) =>
-            new McDevice(name, channel, options, timeout, BuildMap(points)));
+        return builder.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new McDevice(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<McDevice>>()));
     }
 
     /// <summary>
@@ -56,8 +59,8 @@ public static class ZeusHostBuilderMcExtensions
         Mc3EOptions? options = null,
         TimeSpan? timeout = null,
         Action<McPointMap>? points = null)
-        => host.AddDevice(deviceName, channelName, (name, channel) =>
-            new McDevice(name, channel, options, timeout, BuildMap(points)));
+        => host.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new McDevice(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<McDevice>>()));
 
     /// <summary>
     /// 在已构建的宿主上登记一台 Mitsubishi MC 3E Binary 设备。

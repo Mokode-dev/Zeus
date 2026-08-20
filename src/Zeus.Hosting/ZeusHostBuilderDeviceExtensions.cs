@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Zeus;
 
 /// <summary>
@@ -24,7 +26,29 @@ public static class ZeusHostBuilderDeviceExtensions
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(factory);
 
-        builder.Register((_, channels, devices) =>
+        return builder.AddDevice(name, channelName, (_, deviceName, channel) => factory(deviceName, channel));
+    }
+
+    /// <summary>
+    /// 在指定通道上创建并登记设备，工厂可从容器取日志或其它服务。
+    /// </summary>
+    /// <typeparam name="TDevice">设备类型。</typeparam>
+    /// <param name="builder">宿主构建器。</param>
+    /// <param name="name">设备名，后续 <c>Devices.Get</c> 使用。</param>
+    /// <param name="channelName">已注册或即将在同一 <see cref="ZeusHost.Create"/> 中先注册的通道名。</param>
+    /// <param name="factory">由服务提供者、名称与通道构造设备。</param>
+    /// <returns>同一构建器。</returns>
+    public static ZeusHostBuilder AddDevice<TDevice>(
+        this ZeusHostBuilder builder,
+        string name,
+        string channelName,
+        Func<IServiceProvider, string, IChannel, TDevice> factory)
+        where TDevice : class, IDevice
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(factory);
+
+        builder.Register((services, channels, devices) =>
         {
             IChannel channel;
             try
@@ -38,7 +62,7 @@ public static class ZeusHostBuilderDeviceExtensions
                     ex);
             }
 
-            devices.Add(factory(name, channel));
+            devices.Add(factory(services, name, channel));
         });
 
         return builder;
@@ -62,6 +86,27 @@ public static class ZeusHostBuilderDeviceExtensions
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(factory);
+        return host.AddDevice(name, channelName, (_, deviceName, bound) => factory(deviceName, bound));
+    }
+
+    /// <summary>
+    /// 在已运行或已构建的宿主上登记设备，工厂可从容器取日志或其它服务。
+    /// </summary>
+    /// <typeparam name="TDevice">设备类型。</typeparam>
+    /// <param name="host">已构建的宿主。</param>
+    /// <param name="name">设备名。</param>
+    /// <param name="channelName">已存在的通道名。</param>
+    /// <param name="factory">由服务提供者、名称与通道构造设备。</param>
+    /// <returns>新登记的设备。</returns>
+    public static TDevice AddDevice<TDevice>(
+        this IZeusHost host,
+        string name,
+        string channelName,
+        Func<IServiceProvider, string, IChannel, TDevice> factory)
+        where TDevice : class, IDevice
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        ArgumentNullException.ThrowIfNull(factory);
 
         IChannel channel;
         try
@@ -75,7 +120,7 @@ public static class ZeusHostBuilderDeviceExtensions
                 ex);
         }
 
-        var device = factory(name, channel);
+        var device = factory(host.Services, name, channel);
         host.Devices.Add(device);
         return device;
     }

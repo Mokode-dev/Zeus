@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -18,11 +19,6 @@ public sealed class ZeusHostBuilder
     internal ZeusHostBuilder()
     {
         _inner = Host.CreateApplicationBuilder();
-        _inner.Logging.AddSimpleConsole(options =>
-        {
-            options.SingleLine = true;
-            options.TimestampFormat = "HH:mm:ss ";
-        });
         Services.AddSingleton<ChannelRegistry>();
         Services.AddSingleton<IChannelRegistry>(sp => sp.GetRequiredService<ChannelRegistry>());
         Services.AddSingleton<DeviceRegistry>();
@@ -35,7 +31,8 @@ public sealed class ZeusHostBuilder
             sp.GetRequiredService<DeviceRegistry>(),
             historyCapacity: 128,
             maxHistoryPoints: 4096,
-            store: sp.GetService<IPointHistoryStore>()));
+            store: sp.GetService<IPointHistoryStore>(),
+            logger: sp.GetService<ILogger<PointTable>>()));
         Services.AddSingleton<IPointTable>(sp => sp.GetRequiredService<PointTable>());
         Services.AddSingleton<IPointTableWriter>(sp => sp.GetRequiredService<PointTable>());
         Services.AddSingleton(sp => new PointAlarmTable(sp.GetRequiredService<PointTable>()));
@@ -60,6 +57,19 @@ public sealed class ZeusHostBuilder
     public IServiceCollection Services => _inner.Services;
 
     /// <summary>
+    /// 日志构建器。可接入 JSON Console、文件、Serilog 或按类别过滤；默认沿用 Generic Host 的控制台记录器。
+    /// </summary>
+    public ILoggingBuilder Logging => _inner.Logging;
+
+    /// <summary>
+    /// 配置管理器。可追加 <c>appsettings.json</c> 或环境变量，供日志级别等宿主配置使用。
+    /// </summary>
+    public ConfigurationManager Configuration => _inner.Configuration;
+
+    /// <summary>宿主环境，包含内容根目录与环境名。</summary>
+    public IHostEnvironment Environment => _inner.Environment;
+
+    /// <summary>
     /// 登记一个在构建完成后执行的通道/设备注册动作。
     /// 延迟到服务提供者就绪后再实例化通道，以便注入日志等依赖。
     /// </summary>
@@ -82,6 +92,9 @@ public sealed class ZeusHostBuilder
         var points = host.Services.GetRequiredService<PointTable>();
         var alarms = host.Services.GetRequiredService<PointAlarmTable>();
         var runState = host.Services.GetRequiredService<HostRunState>();
+        // 通信日志必须先于订阅迁移器订阅目录变更：热重载移除旧通道时先退订报文日志，避免处理器被迁到新实例后重复挂接。
+        // 构建期通道随后走 Added 事件，因此本服务仍能挂上 Create 回调里登记的通道。
+        _ = host.Services.GetService<ChannelCommunicationLogService>();
         _ = host.Services.GetRequiredService<ChannelSubscriptionMigrator>();
         foreach (var registration in _registrations)
         {

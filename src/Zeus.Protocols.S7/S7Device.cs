@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace Zeus;
 
 /// <summary>
@@ -19,13 +21,15 @@ public sealed class S7Device : DeviceBase, IAcquisitionSource, IPointWriter, IAs
     /// <param name="options">S7 会话选项。</param>
     /// <param name="timeout">应答超时。</param>
     /// <param name="pointMap">可选点表。为 <c>null</c> 或不含点时不参与周期采集。</param>
+    /// <param name="logger">诊断日志。宿主注册时自动注入。</param>
     public S7Device(
         string name,
         IChannel channel,
         S7Options? options = null,
         TimeSpan? timeout = null,
-        S7PointMap? pointMap = null)
-        : base(name, channel)
+        S7PointMap? pointMap = null,
+        ILogger<S7Device>? logger = null)
+        : base(name, channel, logger)
     {
         _client = new S7Client(channel, options, timeout);
         _specs = pointMap?.Points.ToArray() ?? [];
@@ -136,6 +140,7 @@ public sealed class S7Device : DeviceBase, IAcquisitionSource, IPointWriter, IAs
             }
             catch (Exception ex)
             {
+                LogAcquisitionFailed(ex, spec.Name);
                 table.PublishError(Name + "." + spec.Name, ex.Message);
             }
         }
@@ -178,6 +183,7 @@ public sealed class S7Device : DeviceBase, IAcquisitionSource, IPointWriter, IAs
         }
         catch (Exception ex)
         {
+            LogWriteFailed(ex, spec.Name);
             table.PublishError(qualified, ex.Message);
             throw;
         }

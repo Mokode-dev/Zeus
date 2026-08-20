@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.Logging;
 
 namespace Zeus;
 
@@ -19,8 +20,9 @@ public sealed class EtherNetIpDevice : DeviceBase, IAcquisitionSource, IPointWri
         IChannel channel,
         EtherNetIpOptions? options = null,
         TimeSpan? timeout = null,
-        EtherNetIpPointMap? pointMap = null)
-        : base(name, channel)
+        EtherNetIpPointMap? pointMap = null,
+        ILogger<EtherNetIpDevice>? logger = null)
+        : base(name, channel, logger)
     {
         _client = new EtherNetIpClient(channel, options, timeout);
         _specs = pointMap?.Points.ToArray() ?? [];
@@ -72,6 +74,7 @@ public sealed class EtherNetIpDevice : DeviceBase, IAcquisitionSource, IPointWri
             }
             catch (Exception ex)
             {
+                LogAcquisitionFailed(ex, spec.Name);
                 table.PublishError(qualified, ex.Message);
             }
         }
@@ -102,6 +105,7 @@ public sealed class EtherNetIpDevice : DeviceBase, IAcquisitionSource, IPointWri
         }
         catch (Exception ex)
         {
+            LogWriteFailed(ex, spec.Name);
             table.PublishError(qualified, ex.Message);
             throw;
         }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.Logging;
 
 namespace Zeus;
 
@@ -20,8 +21,9 @@ public sealed class FinsDevice : DeviceBase, IAcquisitionSource, IPointWriter, I
         FinsTransport transport,
         FinsOptions? options = null,
         TimeSpan? timeout = null,
-        FinsPointMap? pointMap = null)
-        : base(name, channel)
+        FinsPointMap? pointMap = null,
+        ILogger<FinsDevice>? logger = null)
+        : base(name, channel, logger)
     {
         _client = new FinsClient(channel, transport, options, timeout);
         Transport = transport;
@@ -103,6 +105,7 @@ public sealed class FinsDevice : DeviceBase, IAcquisitionSource, IPointWriter, I
             }
             catch (Exception ex)
             {
+                LogAcquisitionFailed(ex, group[0].Name);
                 foreach (var spec in group)
                 {
                     table.PublishError(Name + "." + spec.Name, ex.Message);
@@ -147,6 +150,7 @@ public sealed class FinsDevice : DeviceBase, IAcquisitionSource, IPointWriter, I
         }
         catch (Exception ex)
         {
+            LogWriteFailed(ex, spec.Name);
             table.PublishError(qualified, ex.Message);
             throw;
         }

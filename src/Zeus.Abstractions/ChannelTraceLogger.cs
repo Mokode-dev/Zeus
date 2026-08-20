@@ -50,6 +50,7 @@ public sealed class ChannelTraceLogger : IDisposable
 
         _logger.Log(
             _level,
+            ZeusLogEvents.PacketTrace,
             "通道 {Channel} {Direction} {ByteCount} 字节：{Hex}",
             _channel.Name,
             e.Direction,

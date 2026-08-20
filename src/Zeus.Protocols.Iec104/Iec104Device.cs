@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.Logging;
 
 namespace Zeus;
 
@@ -19,8 +20,9 @@ public sealed class Iec104Device : DeviceBase, IAcquisitionSource, IPointWriter,
         IChannel channel,
         Iec104Options? options = null,
         TimeSpan? timeout = null,
-        Iec104PointMap? pointMap = null)
-        : base(name, channel)
+        Iec104PointMap? pointMap = null,
+        ILogger<Iec104Device>? logger = null)
+        : base(name, channel, logger)
     {
         _client = new Iec104Client(channel, options, timeout);
         _specs = pointMap?.Points.ToArray() ?? [];
@@ -78,6 +80,7 @@ public sealed class Iec104Device : DeviceBase, IAcquisitionSource, IPointWriter,
             }
             catch (Exception ex)
             {
+                LogAcquisitionFailed(ex, spec.Name);
                 table.PublishError(qualified, ex.Message);
             }
         }
@@ -122,6 +125,7 @@ public sealed class Iec104Device : DeviceBase, IAcquisitionSource, IPointWriter,
         }
         catch (Exception ex)
         {
+            LogWriteFailed(ex, spec.Name);
             table.PublishError(qualified, ex.Message);
             throw;
         }

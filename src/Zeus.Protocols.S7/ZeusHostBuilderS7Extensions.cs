@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 namespace Zeus;
 
 /// <summary>
@@ -22,8 +25,8 @@ public static class ZeusHostBuilderS7Extensions
         TimeSpan? timeout = null,
         Action<S7PointMap>? points = null)
     {
-        return builder.AddDevice(deviceName, channelName, (name, channel) =>
-            new S7Device(name, channel, options, timeout, BuildMap(points)));
+        return builder.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new S7Device(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<S7Device>>()));
     }
 
     /// <summary>
@@ -36,8 +39,8 @@ public static class ZeusHostBuilderS7Extensions
         S7Options? options = null,
         TimeSpan? timeout = null,
         Action<S7PointMap>? points = null)
-        => host.AddDevice(deviceName, channelName, (name, channel) =>
-            new S7Device(name, channel, options, timeout, BuildMap(points)));
+        => host.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new S7Device(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<S7Device>>()));
 
     private static S7PointMap? BuildMap(Action<S7PointMap>? configure)
     {

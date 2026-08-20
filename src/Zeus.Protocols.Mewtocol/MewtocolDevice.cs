@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.Logging;
 
 namespace Zeus;
 
@@ -19,8 +20,9 @@ public sealed class MewtocolDevice : DeviceBase, IAcquisitionSource, IPointWrite
         IChannel channel,
         MewtocolOptions? options = null,
         TimeSpan? timeout = null,
-        MewtocolPointMap? pointMap = null)
-        : base(name, channel)
+        MewtocolPointMap? pointMap = null,
+        ILogger<MewtocolDevice>? logger = null)
+        : base(name, channel, logger)
     {
         _client = new MewtocolClient(channel, options, timeout);
         _specs = pointMap?.Points.ToArray() ?? [];
@@ -86,6 +88,7 @@ public sealed class MewtocolDevice : DeviceBase, IAcquisitionSource, IPointWrite
             }
             catch (Exception ex)
             {
+                LogAcquisitionFailed(ex, group[0].Name);
                 foreach (var spec in group)
                 {
                     table.PublishError(Name + "." + spec.Name, ex.Message);
@@ -140,6 +143,7 @@ public sealed class MewtocolDevice : DeviceBase, IAcquisitionSource, IPointWrite
         }
         catch (Exception ex)
         {
+            LogWriteFailed(ex, spec.Name);
             table.PublishError(qualified, ex.Message);
             throw;
         }

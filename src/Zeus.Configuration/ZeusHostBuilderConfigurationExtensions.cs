@@ -1556,11 +1556,15 @@ internal sealed class ZeusConfigurationWatchService : IDisposable, Microsoft.Ext
             }
 
             await host.ReloadAsync(_watch.Path).ConfigureAwait(false);
-            _logger.LogInformation("已热更新配置 {Path}：采集间隔、重连选项与通道/设备拓扑已同步。", _watch.Path);
+            using (LogScope.Begin(_logger, "Path", _watch.Path))
+            {
+                _logger.LogInformation(ZeusLogEvents.ConfigurationReloaded, "已热更新配置 {Path}：采集间隔、重连选项与通道/设备拓扑已同步。", _watch.Path);
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "配置文件 {Path} 热更新失败，继续使用上一份有效配置。", _watch.Path);
+            using var scope = LogScope.Begin(_logger, "Path", _watch.Path);
+            _logger.LogWarning(ZeusLogEvents.ConfigurationReloadFailed, ex, "配置文件 {Path} 热更新失败，继续使用上一份有效配置。", _watch.Path);
         }
         finally
         {

@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 namespace Zeus;
 
 /// <summary>
@@ -14,8 +17,8 @@ public static class ZeusHostBuilderDlt645Extensions
         TimeSpan? timeout = null,
         Action<Dlt645PointMap>? points = null)
     {
-        return builder.AddDevice(deviceName, channelName, (name, channel) =>
-            new Dlt645Device(name, channel, options, timeout, BuildMap(points)));
+        return builder.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new Dlt645Device(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<Dlt645Device>>()));
     }
 
     /// <summary>在已构建的宿主上登记一台 DL/T 645-2007 表计。</summary>
@@ -26,8 +29,8 @@ public static class ZeusHostBuilderDlt645Extensions
         Dlt645Options? options = null,
         TimeSpan? timeout = null,
         Action<Dlt645PointMap>? points = null)
-        => host.AddDevice(deviceName, channelName, (name, channel) =>
-            new Dlt645Device(name, channel, options, timeout, BuildMap(points)));
+        => host.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new Dlt645Device(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<Dlt645Device>>()));
 
     private static Dlt645PointMap? BuildMap(Action<Dlt645PointMap>? configure)
     {

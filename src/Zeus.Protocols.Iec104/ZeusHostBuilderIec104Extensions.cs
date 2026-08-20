@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 namespace Zeus;
 
 /// <summary>
@@ -14,8 +17,8 @@ public static class ZeusHostBuilderIec104Extensions
         TimeSpan? timeout = null,
         Action<Iec104PointMap>? points = null)
     {
-        return builder.AddDevice(deviceName, channelName, (name, channel) =>
-            new Iec104Device(name, channel, options, timeout, BuildMap(points)));
+        return builder.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new Iec104Device(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<Iec104Device>>()));
     }
 
     /// <summary>在已构建的宿主上登记一台 IEC104 站。</summary>
@@ -26,8 +29,8 @@ public static class ZeusHostBuilderIec104Extensions
         Iec104Options? options = null,
         TimeSpan? timeout = null,
         Action<Iec104PointMap>? points = null)
-        => host.AddDevice(deviceName, channelName, (name, channel) =>
-            new Iec104Device(name, channel, options, timeout, BuildMap(points)));
+        => host.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new Iec104Device(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<Iec104Device>>()));
 
     private static Iec104PointMap? BuildMap(Action<Iec104PointMap>? configure)
     {

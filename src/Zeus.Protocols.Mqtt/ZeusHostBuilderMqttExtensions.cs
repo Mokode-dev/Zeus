@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 namespace Zeus;
 
 /// <summary>注册 MQTT 主题设备。</summary>
@@ -12,8 +15,8 @@ public static class ZeusHostBuilderMqttExtensions
         TimeSpan? timeout = null,
         Action<MqttPointMap>? points = null)
     {
-        return builder.AddDevice(deviceName, channelName, (name, channel) =>
-            new MqttDevice(name, channel, options, timeout, BuildMap(points)));
+        return builder.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new MqttDevice(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<MqttDevice>>()));
     }
 
     /// <summary>在已构建宿主上登记一台 MQTT 设备。</summary>
@@ -24,8 +27,8 @@ public static class ZeusHostBuilderMqttExtensions
         MqttOptions? options = null,
         TimeSpan? timeout = null,
         Action<MqttPointMap>? points = null)
-        => host.AddDevice(deviceName, channelName, (name, channel) =>
-            new MqttDevice(name, channel, options, timeout, BuildMap(points)));
+        => host.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new MqttDevice(name, channel, options, timeout, BuildMap(points), services.GetService<ILogger<MqttDevice>>()));
 
     private static MqttPointMap? BuildMap(Action<MqttPointMap>? configure)
     {

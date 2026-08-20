@@ -65,7 +65,8 @@ public abstract class ChannelBase : IChannel
             {
                 await OpenCoreAsync(cancellationToken).ConfigureAwait(false);
                 SetState(ChannelState.Open);
-                _logger.LogInformation("通道 {Channel} 已打开。", Name);
+                using var scope = BeginChannelScope();
+                _logger.LogInformation(ZeusLogEvents.ChannelOpened, "通道 {Channel} 已打开。", Name);
             }
             catch (Exception ex)
             {
@@ -103,7 +104,8 @@ public abstract class ChannelBase : IChannel
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "通道 {Channel} 关闭时出现异常，仍将标记为已关闭。", Name);
+                using var scope = BeginChannelScope();
+                _logger.LogWarning(ZeusLogEvents.ChannelCloseWarning, ex, "通道 {Channel} 关闭时出现异常，仍将标记为已关闭。", Name);
             }
             finally
             {
@@ -111,7 +113,10 @@ public abstract class ChannelBase : IChannel
             }
 
             SetState(ChannelState.Closed);
-            _logger.LogInformation("通道 {Channel} 已关闭。", Name);
+            using (BeginChannelScope())
+            {
+                _logger.LogInformation(ZeusLogEvents.ChannelClosed, "通道 {Channel} 已关闭。", Name);
+            }
         }
         finally
         {
@@ -148,6 +153,8 @@ public abstract class ChannelBase : IChannel
             catch (Exception ex) when (ex is not ZeusException)
             {
                 SetState(ChannelState.Faulted, ex);
+                using var scope = BeginChannelScope();
+                _logger.LogWarning(ZeusLogEvents.ChannelWriteFailed, ex, "通道 {Channel} 写入失败。", Name);
                 throw new ZeusChannelException(Name, $"通道 {Name} 写入失败：{ex.Message}。", ex);
             }
         }
@@ -194,6 +201,8 @@ public abstract class ChannelBase : IChannel
             catch (Exception ex) when (ex is not ZeusException)
             {
                 SetState(ChannelState.Faulted, ex);
+                using var scope = BeginChannelScope();
+                _logger.LogWarning(ZeusLogEvents.ChannelWriteFailed, ex, "通道 {Channel} 写入失败。", Name);
                 throw new ZeusChannelException(Name, $"通道 {Name} 写入失败：{ex.Message}。", ex);
             }
         }
@@ -353,9 +362,13 @@ public abstract class ChannelBase : IChannel
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "通道 {Channel} 重开前清理传输资源时出现异常，将继续尝试打开。", Name);
+            using var scope = BeginChannelScope();
+            _logger.LogDebug(ZeusLogEvents.ChannelCleanup, ex, "通道 {Channel} 重开前清理传输资源时出现异常，将继续尝试打开。", Name);
         }
     }
+
+    /// <summary>打开带通道名的日志作用域。</summary>
+    private IDisposable BeginChannelScope() => LogScope.Begin(_logger, "Channel", Name);
 
     private void ThrowIfDisposed()
     {

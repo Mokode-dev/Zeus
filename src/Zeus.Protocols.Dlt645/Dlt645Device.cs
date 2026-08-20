@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace Zeus;
 
 /// <summary>
@@ -17,8 +19,9 @@ public sealed class Dlt645Device : DeviceBase, IAcquisitionSource, IPointWriter,
         IChannel channel,
         Dlt645Options? options = null,
         TimeSpan? timeout = null,
-        Dlt645PointMap? pointMap = null)
-        : base(name, channel)
+        Dlt645PointMap? pointMap = null,
+        ILogger<Dlt645Device>? logger = null)
+        : base(name, channel, logger)
     {
         _client = new Dlt645Client(channel, options, timeout);
         _specs = pointMap?.Points.ToArray() ?? [];
@@ -66,6 +69,7 @@ public sealed class Dlt645Device : DeviceBase, IAcquisitionSource, IPointWriter,
             }
             catch (Exception ex)
             {
+                LogAcquisitionFailed(ex, spec.Name);
                 table.PublishError(qualified, ex.Message);
             }
         }
@@ -112,6 +116,7 @@ public sealed class Dlt645Device : DeviceBase, IAcquisitionSource, IPointWriter,
         }
         catch (Exception ex)
         {
+            LogWriteFailed(ex, spec.Name);
             table.PublishError(qualified, ex.Message);
             throw;
         }

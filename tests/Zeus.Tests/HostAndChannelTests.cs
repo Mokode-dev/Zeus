@@ -196,6 +196,7 @@ public sealed class HostAndChannelTests
         await channel.WriteAsync(Encoding.ASCII.GetBytes("PONG"));
 
         Assert.Equal(2, logger.Messages.Count);
+        Assert.All(logger.EventIds, id => Assert.Equal(ZeusLogEvents.PacketTrace, id));
         Assert.Contains("loop", logger.Messages[0], StringComparison.Ordinal);
         Assert.Contains(nameof(ChannelTraceDirection.Sent), logger.Messages[0], StringComparison.Ordinal);
         Assert.Contains("50494E47", logger.Messages[0], StringComparison.Ordinal);
@@ -287,6 +288,8 @@ public sealed class HostAndChannelTests
     {
         public List<string> Messages { get; } = [];
 
+        public List<EventId> EventIds { get; } = [];
+
         public IDisposable? BeginScope<TState>(TState state)
             where TState : notnull
             => null;
@@ -300,6 +303,7 @@ public sealed class HostAndChannelTests
             Exception? exception,
             Func<TState, Exception?, string> formatter)
         {
+            EventIds.Add(eventId);
             Messages.Add(formatter(state, exception));
         }
     }

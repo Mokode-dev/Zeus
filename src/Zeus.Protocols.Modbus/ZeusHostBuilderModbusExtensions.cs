@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 namespace Zeus;
 
 /// <summary>
@@ -22,8 +25,8 @@ public static class ZeusHostBuilderModbusExtensions
         TimeSpan? timeout = null,
         Action<ModbusPointMap>? points = null)
     {
-        return builder.AddDevice(deviceName, channelName, (name, channel) =>
-            new ModbusDevice(name, channel, unitId, ModbusTransport.Rtu, timeout, BuildMap(points)));
+        return builder.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new ModbusDevice(name, channel, unitId, ModbusTransport.Rtu, timeout, BuildMap(points), services.GetService<ILogger<ModbusDevice>>()));
     }
 
     /// <summary>
@@ -43,8 +46,8 @@ public static class ZeusHostBuilderModbusExtensions
         TimeSpan? timeout = null,
         Action<ModbusPointMap>? points = null)
     {
-        return builder.AddDevice(deviceName, channelName, (name, channel) =>
-            new ModbusDevice(name, channel, unitId, ModbusTransport.Tcp, timeout, BuildMap(points)));
+        return builder.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new ModbusDevice(name, channel, unitId, ModbusTransport.Tcp, timeout, BuildMap(points), services.GetService<ILogger<ModbusDevice>>()));
     }
 
     /// <summary>
@@ -64,8 +67,8 @@ public static class ZeusHostBuilderModbusExtensions
         TimeSpan? timeout = null,
         Action<ModbusPointMap>? points = null)
     {
-        return builder.AddDevice(deviceName, channelName, (name, channel) =>
-            new ModbusDevice(name, channel, unitId, ModbusTransport.Ascii, timeout, BuildMap(points)));
+        return builder.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new ModbusDevice(name, channel, unitId, ModbusTransport.Ascii, timeout, BuildMap(points), services.GetService<ILogger<ModbusDevice>>()));
     }
 
     /// <summary>
@@ -78,8 +81,8 @@ public static class ZeusHostBuilderModbusExtensions
         byte unitId = 1,
         TimeSpan? timeout = null,
         Action<ModbusPointMap>? points = null)
-        => host.AddDevice(deviceName, channelName, (name, channel) =>
-            new ModbusDevice(name, channel, unitId, ModbusTransport.Rtu, timeout, BuildMap(points)));
+        => host.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new ModbusDevice(name, channel, unitId, ModbusTransport.Rtu, timeout, BuildMap(points), services.GetService<ILogger<ModbusDevice>>()));
 
     /// <summary>
     /// 在已构建的宿主上登记一台 Modbus TCP 设备。
@@ -91,8 +94,8 @@ public static class ZeusHostBuilderModbusExtensions
         byte unitId = 1,
         TimeSpan? timeout = null,
         Action<ModbusPointMap>? points = null)
-        => host.AddDevice(deviceName, channelName, (name, channel) =>
-            new ModbusDevice(name, channel, unitId, ModbusTransport.Tcp, timeout, BuildMap(points)));
+        => host.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new ModbusDevice(name, channel, unitId, ModbusTransport.Tcp, timeout, BuildMap(points), services.GetService<ILogger<ModbusDevice>>()));
 
     /// <summary>
     /// 在已构建的宿主上登记一台 Modbus ASCII 设备。
@@ -104,8 +107,8 @@ public static class ZeusHostBuilderModbusExtensions
         byte unitId = 1,
         TimeSpan? timeout = null,
         Action<ModbusPointMap>? points = null)
-        => host.AddDevice(deviceName, channelName, (name, channel) =>
-            new ModbusDevice(name, channel, unitId, ModbusTransport.Ascii, timeout, BuildMap(points)));
+        => host.AddDevice(deviceName, channelName, (services, name, channel) =>
+            new ModbusDevice(name, channel, unitId, ModbusTransport.Ascii, timeout, BuildMap(points), services.GetService<ILogger<ModbusDevice>>()));
 
     private static ModbusPointMap? BuildMap(Action<ModbusPointMap>? configure)
     {

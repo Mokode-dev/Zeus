@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace Zeus;
 
@@ -19,8 +20,9 @@ public sealed class MqttDevice : DeviceBase, IAcquisitionSource, IPointWriter, I
         IChannel channel,
         MqttOptions? options = null,
         TimeSpan? timeout = null,
-        MqttPointMap? pointMap = null)
-        : base(name, channel)
+        MqttPointMap? pointMap = null,
+        ILogger<MqttDevice>? logger = null)
+        : base(name, channel, logger)
     {
         _client = new MqttClient(channel, options, timeout, name + "-client");
         _specs = pointMap?.Points.ToArray() ?? [];
@@ -80,6 +82,7 @@ public sealed class MqttDevice : DeviceBase, IAcquisitionSource, IPointWriter, I
             }
             catch (Exception ex)
             {
+                LogAcquisitionFailed(ex, spec.Name);
                 table.PublishError(qualified, ex.Message);
             }
         }
@@ -115,6 +118,7 @@ public sealed class MqttDevice : DeviceBase, IAcquisitionSource, IPointWriter, I
         }
         catch (Exception ex)
         {
+            LogWriteFailed(ex, spec.Name);
             table.PublishError(qualified, ex.Message);
             throw;
         }

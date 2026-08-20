@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.Logging;
 
 namespace Zeus;
 
@@ -22,13 +23,15 @@ public sealed class McDevice : DeviceBase, IAcquisitionSource, IPointWriter, IAs
     /// <param name="options">MC 帧选项。</param>
     /// <param name="timeout">应答超时。</param>
     /// <param name="pointMap">可选点表。为 <c>null</c> 或不含点时不参与周期采集。</param>
+    /// <param name="logger">诊断日志。宿主注册时自动注入。</param>
     public McDevice(
         string name,
         IChannel channel,
         Mc3EOptions? options = null,
         TimeSpan? timeout = null,
-        McPointMap? pointMap = null)
-        : base(name, channel)
+        McPointMap? pointMap = null,
+        ILogger<McDevice>? logger = null)
+        : base(name, channel, logger)
     {
         _client = new McClient(channel, options, timeout);
         _options = _client.Options;
@@ -180,6 +183,7 @@ public sealed class McDevice : DeviceBase, IAcquisitionSource, IPointWriter, IAs
         }
         catch (Exception ex)
         {
+            LogWriteFailed(ex, spec.Name);
             table.PublishError(qualified, ex.Message);
             throw;
         }
@@ -200,6 +204,7 @@ public sealed class McDevice : DeviceBase, IAcquisitionSource, IPointWriter, IAs
             }
             catch (Exception ex)
             {
+                LogAcquisitionFailed(ex, group[0].Name);
                 foreach (var spec in group)
                 {
                     table.PublishError(Name + "." + spec.Name, ex.Message);

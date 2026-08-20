@@ -1,5 +1,29 @@
 # 更新记录
 
+## 0.17.0
+
+补齐宿主底座：打开日志与配置构建面，给通道和协议设备注入 `ILogger`，用稳定 EventId 与作用域写出结构化诊断，并提供可选的通道报文日志。
+
+### 包含
+
+- 构建器：新增 `builder.Logging`、`builder.Configuration`、`builder.Environment`；不再额外叠一份 SimpleConsole，默认沿用 Generic Host 控制台记录器
+- 设备注入：`AddDevice` 增加可接收 `IServiceProvider` 的工厂重载；官方协议设备构造函数增加可选 `ILogger<T>`，由 `AddModbusRtu` 等扩展从容器注入
+- 事件编号：新增 `ZeusLogEvents`，覆盖通道开关/写入失败、重连、采集失败、点写回失败、配置热更新和报文追踪
+- 作用域：通道、采集、重连、写回和配置热更新日志带上 `Channel` / `Device` / `Point` / `Path`
+- 报文日志：`builder.AddCommunicationLogging()` 给已有和后续通道自动挂 `ChannelTraceLogger`；热重载时先退订再挂到新实例
+- 协议：采集失败与点写回失败写入 `ILogger`，不再只进点表 `Error`
+- 生命周期：`StopAsync` 关闭通道失败改为 Warning，不再静默吞掉
+
+### 行为变化
+
+- 默认控制台不再叠加第二份 SimpleConsole；需要单行时间戳格式时请自行 `builder.Logging.AddSimpleConsole(...)`
+- 报文追踪写入 `ILogger` 时带 `ZeusLogEvents.PacketTrace`（6001）
+
+### 兼容承诺
+
+- 只新增公开 API，不删除或改变 0.16 已发布的类型、成员和扩展方法签名
+- `0.17.x` 补丁只修缺陷；破坏性变更进入后续次版本
+
 ## 0.16.0
 
 补齐 IEC 60870-5-104 链路层 t1/t2/t3 与 k/w 窗口，并加固通道并发、协议接收缓冲和 TCP 服务端暴露面。同时补齐上位机运行时闭环：报警队列、点历史落盘、图表/仪表盘绑定、热重载订阅迁移和 TCP/UDP 会话写入，并加深 Modbus 与 Mitsubishi MC。

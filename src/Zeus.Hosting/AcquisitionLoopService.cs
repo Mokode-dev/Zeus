@@ -206,7 +206,14 @@ internal sealed class AcquisitionLoopService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "采集源 {Source} 本轮失败，将在下一轮重试。", source.Name);
+            var values = new Dictionary<string, object> { ["Device"] = source.Name };
+            if (_devices.TryGet<IDevice>(source.Name, out var device) && device is not null)
+            {
+                values["Channel"] = device.Channel.Name;
+            }
+
+            using var scope = LogScope.Begin(_logger, values);
+            _logger.LogWarning(ZeusLogEvents.AcquisitionFailed, ex, "采集源 {Source} 本轮失败，将在下一轮重试。", source.Name);
             foreach (var point in source.Points)
             {
                 _table.PublishError(point.QualifiedName, ex.Message);

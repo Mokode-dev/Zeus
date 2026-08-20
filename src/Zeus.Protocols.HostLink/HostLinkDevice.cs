@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.Logging;
 
 namespace Zeus;
 
@@ -19,8 +20,9 @@ public sealed class HostLinkDevice : DeviceBase, IAcquisitionSource, IPointWrite
         IChannel channel,
         HostLinkOptions? options = null,
         TimeSpan? timeout = null,
-        HostLinkPointMap? pointMap = null)
-        : base(name, channel)
+        HostLinkPointMap? pointMap = null,
+        ILogger<HostLinkDevice>? logger = null)
+        : base(name, channel, logger)
     {
         _client = new HostLinkClient(channel, options, timeout);
         _specs = pointMap?.Points.ToArray() ?? [];
@@ -78,6 +80,7 @@ public sealed class HostLinkDevice : DeviceBase, IAcquisitionSource, IPointWrite
             }
             catch (Exception ex)
             {
+                LogAcquisitionFailed(ex, group[0].Name);
                 foreach (var spec in group)
                 {
                     table.PublishError(Name + "." + spec.Name, ex.Message);
@@ -132,6 +135,7 @@ public sealed class HostLinkDevice : DeviceBase, IAcquisitionSource, IPointWrite
         }
         catch (Exception ex)
         {
+            LogWriteFailed(ex, spec.Name);
             table.PublishError(qualified, ex.Message);
             throw;
         }

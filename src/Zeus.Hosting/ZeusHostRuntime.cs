@@ -155,7 +155,8 @@ internal sealed class ZeusHostRuntime : IZeusHost
             {
                 // 打开失败已记入通道 Faulted；自动重连服务会在运行闸门打开后重试。
                 // 必须打 Error，否则 StartAsync 成功会让现场以为通道已经可用。
-                _logger.LogError(ex, "通道 {Channel} 启动时打开失败，宿主仍将继续启动并由自动重连重试。", channel.Name);
+                using var scope = LogScope.Begin(_logger, "Channel", channel.Name);
+                _logger.LogError(ZeusLogEvents.ChannelOpenFailed, ex, "通道 {Channel} 启动时打开失败，宿主仍将继续启动并由自动重连重试。", channel.Name);
             }
         }
     }
@@ -171,8 +172,10 @@ internal sealed class ZeusHostRuntime : IZeusHost
             {
                 await channel.CloseAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                using var scope = LogScope.Begin(_logger, "Channel", channel.Name);
+                _logger.LogWarning(ZeusLogEvents.ChannelCloseWarning, ex, "通道 {Channel} 停止时关闭失败。", channel.Name);
             }
         }
     }

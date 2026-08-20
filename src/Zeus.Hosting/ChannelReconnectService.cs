@@ -172,11 +172,15 @@ internal sealed class ChannelReconnectService : IHostedService, IDisposable
             attempt = next;
         }
 
-        _logger.LogWarning(
-            "通道 {Channel} 已故障，将在 {Delay} ms 后进行第 {Attempt} 次自动重连。",
-            channel.Name,
-            (int)delay.TotalMilliseconds,
-            attempt);
+        using (LogScope.Begin(_logger, "Channel", channel.Name))
+        {
+            _logger.LogWarning(
+                ZeusLogEvents.ReconnectScheduled,
+                "通道 {Channel} 已故障，将在 {Delay} ms 后进行第 {Attempt} 次自动重连。",
+                channel.Name,
+                (int)delay.TotalMilliseconds,
+                attempt);
+        }
         _ = ReconnectAsync(channel, delay, cts, token);
     }
 
@@ -195,7 +199,10 @@ internal sealed class ChannelReconnectService : IHostedService, IDisposable
             }
 
             await channel.OpenAsync(cancellationToken).ConfigureAwait(false);
-            _logger.LogInformation("通道 {Channel} 已自动重连。", channel.Name);
+            using (LogScope.Begin(_logger, "Channel", channel.Name))
+            {
+                _logger.LogInformation(ZeusLogEvents.ReconnectSucceeded, "通道 {Channel} 已自动重连。", channel.Name);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -205,7 +212,8 @@ internal sealed class ChannelReconnectService : IHostedService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "通道 {Channel} 自动重连失败，将继续退避重试。", channel.Name);
+            using var scope = LogScope.Begin(_logger, "Channel", channel.Name);
+            _logger.LogWarning(ZeusLogEvents.ReconnectFailed, ex, "通道 {Channel} 自动重连失败，将继续退避重试。", channel.Name);
         }
         finally
         {

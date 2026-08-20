@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.Logging;
 
 namespace Zeus;
 
@@ -22,14 +23,16 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IPointWriter,
     /// <param name="transport">RTU、TCP 或 ASCII。</param>
     /// <param name="timeout">应答超时。</param>
     /// <param name="pointMap">可选点表。为 <c>null</c> 或不含点时不参与周期采集。</param>
+    /// <param name="logger">诊断日志。宿主注册时自动注入。</param>
     public ModbusDevice(
         string name,
         IChannel channel,
         byte unitId,
         ModbusTransport transport,
         TimeSpan? timeout = null,
-        ModbusPointMap? pointMap = null)
-        : base(name, channel)
+        ModbusPointMap? pointMap = null,
+        ILogger<ModbusDevice>? logger = null)
+        : base(name, channel, logger)
     {
         UnitId = unitId;
         Transport = transport;
@@ -151,6 +154,7 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IPointWriter,
         }
         catch (Exception ex)
         {
+            LogWriteFailed(ex, spec.Name);
             table.PublishError(qualified, ex.Message);
             throw;
         }
@@ -171,6 +175,7 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IPointWriter,
             }
             catch (Exception ex)
             {
+                LogAcquisitionFailed(ex, group[0].Name);
                 foreach (var spec in group)
                 {
                     table.PublishError(Name + "." + spec.Name, ex.Message);

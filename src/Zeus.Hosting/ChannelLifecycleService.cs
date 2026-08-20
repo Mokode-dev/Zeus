@@ -37,7 +37,8 @@ internal sealed class ChannelLifecycleService : IHostedService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "释放宿主时关闭通道 {Channel} 失败。", channel.Name);
+                using var scope = LogScope.Begin(_logger, "Channel", channel.Name);
+                _logger.LogWarning(ZeusLogEvents.ChannelCloseWarning, ex, "释放宿主时关闭通道 {Channel} 失败。", channel.Name);
             }
         }
     }

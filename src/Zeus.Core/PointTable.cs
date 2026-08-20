@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.Logging;
 
 namespace Zeus;
 
@@ -15,6 +16,7 @@ public sealed class PointTable : IPointTable, IPointTableWriter
     private readonly int _maxHistoryPoints;
     private readonly IDeviceRegistry? _devices;
     private readonly IPointHistoryStore? _store;
+    private readonly ILogger _logger;
     private readonly List<string> _order = [];
     private readonly Dictionary<string, PointSnapshot> _byQualified = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<PointSnapshot>> _history = new(StringComparer.OrdinalIgnoreCase);
@@ -63,6 +65,24 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         int historyCapacity,
         int maxHistoryPoints,
         IPointHistoryStore? store)
+        : this(devices, historyCapacity, maxHistoryPoints, store, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建连接到设备目录的点表，并可把成功采样交给可插拔存储。
+    /// </summary>
+    /// <param name="devices">设备目录。为 <c>null</c> 时禁止写回。</param>
+    /// <param name="historyCapacity">每个点保留的最近成功采样数。设为 0 可关闭历史缓冲。</param>
+    /// <param name="maxHistoryPoints">允许保留历史的最大点数；超出后新点不再记历史。</param>
+    /// <param name="store">可选落盘。为 <c>null</c> 时只保留内存历史。</param>
+    /// <param name="logger">写回失败时的诊断日志。允许为 <c>null</c>。</param>
+    public PointTable(
+        IDeviceRegistry? devices,
+        int historyCapacity,
+        int maxHistoryPoints,
+        IPointHistoryStore? store,
+        ILogger? logger)
     {
         if (historyCapacity < 0)
         {
@@ -78,6 +98,7 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         _historyCapacity = historyCapacity;
         _maxHistoryPoints = maxHistoryPoints;
         _store = store;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
     }
 
     /// <summary>每个点最多保留的最近成功采样数。</summary>
@@ -482,6 +503,19 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         catch (Exception ex)
         {
             // 设备未按约定写入错误快照时，点表仍补上 Error，避免界面只看到异常、看不到点状态。
+            using (LogScope.Begin(_logger, new Dictionary<string, object>
+            {
+                ["Device"] = definition.DeviceName,
+                ["Point"] = definition.Name
+            }))
+            {
+                _logger.LogWarning(
+                    ZeusLogEvents.PointWriteFailed,
+                    ex,
+                    "点 {Point} 写回失败。",
+                    definition.QualifiedName);
+            }
+
             PublishError(definition.QualifiedName, ex.Message);
             throw;
         }
