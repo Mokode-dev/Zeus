@@ -20,6 +20,10 @@ body:
         - Zeus.Protocols.HostLink
         - Zeus.Protocols.Mewtocol
         - Zeus.Protocols.EtherNetIp
+        - Zeus.Protocols.Dlt645
+        - Zeus.Protocols.Iec104
+        - Zeus.Protocols.Mqtt
+        - Zeus.Protocols.Snmp
         - Zeus.Configuration
         - Zeus.Presentation.Abstractions
         - Zeus.Presentation.WinForms
