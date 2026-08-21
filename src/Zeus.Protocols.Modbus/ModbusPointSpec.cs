@@ -16,6 +16,7 @@ public sealed class ModbusPointSpec
     /// <param name="alarmLimits">可选报警限。</param>
     /// <param name="writable">是否允许按点名写回。</param>
     /// <param name="scale">线性换算系数。写回时用工程值除以该系数得到寄存器值。</param>
+    /// <param name="signed">为 <c>true</c> 时把寄存器按有符号 Int16 解释，再乘以 scale。</param>
     internal ModbusPointSpec(
         string name,
         ModbusTable table,
@@ -24,7 +25,8 @@ public sealed class ModbusPointSpec
         Func<ushort, object>? convert,
         PointAlarmLimits? alarmLimits,
         bool writable = false,
-        double? scale = null)
+        double? scale = null,
+        bool signed = false)
     {
         Name = name;
         Table = table;
@@ -34,6 +36,7 @@ public sealed class ModbusPointSpec
         AlarmLimits = alarmLimits;
         Writable = writable;
         Scale = scale;
+        Signed = signed;
     }
 
     /// <summary>点名。</summary>
@@ -64,16 +67,21 @@ public sealed class ModbusPointSpec
     public double? Scale { get; }
 
     /// <summary>
+    /// 是否按有符号 Int16 解释原始寄存器。写回时同样限制在 <see cref="short"/> 范围。
+    /// </summary>
+    public bool Signed { get; }
+
+    /// <summary>
     /// 返回带报警限的新点描述。
     /// </summary>
     /// <param name="alarmLimits">报警限。</param>
     internal ModbusPointSpec WithAlarmLimits(PointAlarmLimits alarmLimits)
-        => new(Name, Table, Address, Kind, Convert, alarmLimits, Writable, Scale);
+        => new(Name, Table, Address, Kind, Convert, alarmLimits, Writable, Scale, Signed);
 
     /// <summary>
     /// 返回改为可写或只读的新点描述。
     /// </summary>
     /// <param name="writable">是否可写。</param>
     internal ModbusPointSpec WithWritable(bool writable)
-        => new(Name, Table, Address, Kind, Convert, AlarmLimits, writable, Scale);
+        => new(Name, Table, Address, Kind, Convert, AlarmLimits, writable, Scale, Signed);
 }

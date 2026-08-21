@@ -67,6 +67,18 @@ namespace Zeus
         public byte Quality { get; init; }
         public object Value { get; init; }
     }
+    public sealed class Iec104JsonBinder : Zeus.IZeusJsonBinder
+    {
+        public Iec104JsonBinder() { }
+        public System.Collections.Generic.IReadOnlyList<string> DeviceTypes { get; }
+        public System.Collections.Generic.IReadOnlyList<string> ResponderTypes { get; }
+        public void ApplyDevice(Zeus.IZeusHost host, Zeus.DeviceConfiguration device) { }
+        public void ApplyDevice(Zeus.ZeusHostBuilder builder, Zeus.DeviceConfiguration device) { }
+        public Zeus.IVirtualResponder? CreateResponder(Zeus.ChannelConfiguration channel) { }
+        public string DeviceFingerprint(Zeus.DeviceConfiguration device) { }
+        public void ValidateDevice(Zeus.DeviceConfiguration device, string path) { }
+        public void ValidateResponder(Zeus.ChannelConfiguration channel, string path) { }
+    }
     public sealed class Iec104Options
     {
         public Iec104Options() { }

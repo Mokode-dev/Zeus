@@ -48,6 +48,18 @@ namespace Zeus
         public uint? EncapsulationStatus { get; }
         public byte? GeneralStatus { get; }
     }
+    public sealed class EtherNetIpJsonBinder : Zeus.IZeusJsonBinder
+    {
+        public EtherNetIpJsonBinder() { }
+        public System.Collections.Generic.IReadOnlyList<string> DeviceTypes { get; }
+        public System.Collections.Generic.IReadOnlyList<string> ResponderTypes { get; }
+        public void ApplyDevice(Zeus.IZeusHost host, Zeus.DeviceConfiguration device) { }
+        public void ApplyDevice(Zeus.ZeusHostBuilder builder, Zeus.DeviceConfiguration device) { }
+        public Zeus.IVirtualResponder? CreateResponder(Zeus.ChannelConfiguration channel) { }
+        public string DeviceFingerprint(Zeus.DeviceConfiguration device) { }
+        public void ValidateDevice(Zeus.DeviceConfiguration device, string path) { }
+        public void ValidateResponder(Zeus.ChannelConfiguration channel, string path) { }
+    }
     public sealed class EtherNetIpOptions
     {
         public EtherNetIpOptions() { }

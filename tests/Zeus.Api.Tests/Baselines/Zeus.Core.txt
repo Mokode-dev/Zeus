@@ -5,6 +5,8 @@ namespace Zeus
         public AcquisitionOptions() { }
         public System.TimeSpan Interval { get; set; }
         public bool PollImmediately { get; set; }
+        public bool SerializePerChannel { get; set; }
+        public System.TimeSpan SourceTimeout { get; set; }
     }
     public abstract class ChannelBase : System.IAsyncDisposable, Zeus.IChannel
     {
@@ -89,14 +91,20 @@ namespace Zeus
         public PointTable(Zeus.IDeviceRegistry? devices, int historyCapacity, int maxHistoryPoints, Zeus.IPointHistoryStore? store, Microsoft.Extensions.Logging.ILogger? logger) { }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> All { get; }
         public int HistoryCapacity { get; }
+        public event System.EventHandler<Zeus.PointBatchChangedEventArgs>? BatchChanged;
         public event System.EventHandler<Zeus.PointChangedEventArgs>? Changed;
+        public void BeginBatch() { }
+        public void EndBatch() { }
         public Zeus.PointSnapshot Get(string name) { }
         public T Get<T>(string name) { }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> GetHistory(string name) { }
         public void Publish(string qualifiedName, object? value) { }
         public void PublishError(string qualifiedName, string error) { }
         public void Register(Zeus.PointDefinition definition) { }
+        public System.IDisposable Subscribe(string name, System.EventHandler<Zeus.PointChangedEventArgs> handler) { }
+        public bool TryGet(string name, out Zeus.PointSnapshot? snapshot) { }
         public bool TryGet<T>(string name, out T? value) { }
+        public bool TryGetDouble(string name, out double value) { }
         public void Unregister(string qualifiedName) { }
         public void UnregisterDevice(string deviceName) { }
         public System.Threading.Tasks.Task WriteAsync(string name, object value, System.Threading.CancellationToken cancellationToken = default) { }

@@ -281,6 +281,17 @@ public sealed class ModbusDevice : DeviceBase, IAcquisitionSource, IPointWriter,
             }
 
             var rounded = Math.Round(raw, MidpointRounding.AwayFromZero);
+            if (spec.Signed)
+            {
+                if (rounded is < short.MinValue or > short.MaxValue)
+                {
+                    throw new ZeusException(
+                        $"点 {Name}.{spec.Name} 的工程值 {engineering} 反算为 {rounded}，超出有符号寄存器 {short.MinValue}–{short.MaxValue}。");
+                }
+
+                return unchecked((ushort)(short)rounded);
+            }
+
             if (rounded is < ushort.MinValue or > ushort.MaxValue)
             {
                 throw new ZeusException(

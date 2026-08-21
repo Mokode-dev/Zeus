@@ -110,14 +110,20 @@ internal sealed class AcquisitionLoopService : BackgroundService
                 continue;
             }
 
-            var polls = sources.Select(source => PollOneAsync(source, stoppingToken)).ToArray();
+            _table.BeginBatch();
             try
             {
+                var groups = GroupSources(sources);
+                var polls = groups.Select(group => PollGroupAsync(group, stoppingToken)).ToArray();
                 await Task.WhenAll(polls).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 return;
+            }
+            finally
+            {
+                _table.EndBatch();
             }
 
             if (!await DelayOrStopAsync(stoppingToken).ConfigureAwait(false))
@@ -192,12 +198,40 @@ internal sealed class AcquisitionLoopService : BackgroundService
     }
 
     /// <summary>
-    /// 轮询单个采集源。失败只记日志并写入点错误，不阻断其余源。
+    /// 同一组内串行轮询；组与组之间由调用方并行。
+    /// </summary>
+    private async Task PollGroupAsync(IReadOnlyList<IAcquisitionSource> group, CancellationToken stoppingToken)
+    {
+        foreach (var source in group)
+        {
+            stoppingToken.ThrowIfCancellationRequested();
+            await PollOneAsync(source, stoppingToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// 轮询单个采集源。失败或超时只记日志并写入点错误，不阻断其余源。
     /// </summary>
     private async Task PollOneAsync(IAcquisitionSource source, CancellationToken stoppingToken)
     {
         try
         {
+            if (_options.SourceTimeout > TimeSpan.Zero)
+            {
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                timeoutCts.CancelAfter(_options.SourceTimeout);
+                try
+                {
+                    await source.PollAsync(_table, timeoutCts.Token).ConfigureAwait(false);
+                    return;
+                }
+                catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested)
+                {
+                    throw new TimeoutException(
+                        $"采集源 {source.Name} 超过 {_options.SourceTimeout.TotalMilliseconds:0} 毫秒未完成。");
+                }
+            }
+
             await source.PollAsync(_table, stoppingToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -223,4 +257,42 @@ internal sealed class AcquisitionLoopService : BackgroundService
 
     private IReadOnlyList<IAcquisitionSource> SnapshotSources()
         => _devices.All.OfType<IAcquisitionSource>().Where(source => source.Points.Count > 0).ToArray();
+
+    /// <summary>
+    /// 按通道分组。关闭串行时每个源单独一组，以便整表并行。
+    /// </summary>
+    private IReadOnlyList<IReadOnlyList<IAcquisitionSource>> GroupSources(IReadOnlyList<IAcquisitionSource> sources)
+    {
+        if (!_options.SerializePerChannel)
+        {
+            return sources.Select(IReadOnlyList<IAcquisitionSource> (source) => new[] { source }).ToArray();
+        }
+
+        var groups = new Dictionary<string, List<IAcquisitionSource>>(StringComparer.OrdinalIgnoreCase);
+        var ordered = new List<List<IAcquisitionSource>>();
+        foreach (var source in sources)
+        {
+            var key = ResolveChannelName(source);
+            if (!groups.TryGetValue(key, out var group))
+            {
+                group = [];
+                groups[key] = group;
+                ordered.Add(group);
+            }
+
+            group.Add(source);
+        }
+
+        return ordered.ToArray();
+    }
+
+    private string ResolveChannelName(IAcquisitionSource source)
+    {
+        if (_devices.TryGet<IDevice>(source.Name, out var device) && device is not null)
+        {
+            return device.Channel.Name;
+        }
+
+        return source.Name;
+    }
 }

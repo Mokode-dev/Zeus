@@ -444,7 +444,7 @@ public sealed class McTests
 
     private static async Task<T> WaitForPointAsync<T>(IZeusHost host, string name)
     {
-        if (host.Points.All.Count == 0)
+        if (!host.IsRunning)
         {
             await host.StartAsync();
         }

@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Zeus.Abstractions\Zeus.Abstractions.csproj" />
+    <ProjectReference Include="..\Zeus.Configuration\Zeus.Configuration.csproj" />
     <ProjectReference Include="..\Zeus.Core\Zeus.Core.csproj" />
     <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
   </ItemGroup>

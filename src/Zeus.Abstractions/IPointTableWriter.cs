@@ -36,4 +36,16 @@ public interface IPointTableWriter
     /// </summary>
     /// <param name="deviceName">设备名。</param>
     void UnregisterDevice(string deviceName);
+
+    /// <summary>
+    /// 开始一次发布批次。批次内的 <see cref="Publish"/> / <see cref="PublishError"/> 仍触发逐点 <c>Changed</c>，
+    /// 结束时再触发一次 <see cref="IPointTable.BatchChanged"/>。采集循环每轮会自动包一层。
+    /// 嵌套调用时只有最外层结束才会发布批次。
+    /// </summary>
+    void BeginBatch();
+
+    /// <summary>
+    /// 结束当前发布批次并触发 <see cref="IPointTable.BatchChanged"/>。未开始批次时忽略。
+    /// </summary>
+    void EndBatch();
 }

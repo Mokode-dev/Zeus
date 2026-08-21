@@ -159,15 +159,21 @@ namespace Zeus
     public interface IPointTable
     {
         System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> All { get; }
+        event System.EventHandler<Zeus.PointBatchChangedEventArgs>? BatchChanged;
         event System.EventHandler<Zeus.PointChangedEventArgs>? Changed;
         Zeus.PointSnapshot Get(string name);
         T Get<T>(string name);
         System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> GetHistory(string name);
+        System.IDisposable Subscribe(string name, System.EventHandler<Zeus.PointChangedEventArgs> handler);
+        bool TryGet(string name, out Zeus.PointSnapshot? snapshot);
         bool TryGet<T>(string name, out T? value);
+        bool TryGetDouble(string name, out double value);
         System.Threading.Tasks.Task WriteAsync(string name, object value, System.Threading.CancellationToken cancellationToken = default);
     }
     public interface IPointTableWriter
     {
+        void BeginBatch();
+        void EndBatch();
         void Publish(string qualifiedName, object? value);
         void PublishError(string qualifiedName, string error);
         void Register(Zeus.PointDefinition definition);
@@ -187,6 +193,7 @@ namespace Zeus
     public interface IVirtualResponder
     {
         System.ReadOnlyMemory<byte>? Respond(System.ReadOnlyMemory<byte> request);
+        System.Threading.Tasks.Task<System.ReadOnlyMemory<byte>?> RespondAsync(System.ReadOnlyMemory<byte> request, System.Threading.CancellationToken cancellationToken = default);
     }
     public interface IZeusHost : System.IAsyncDisposable
     {
@@ -207,10 +214,12 @@ namespace Zeus
     }
     public sealed class PointAlarmLimits
     {
-        public PointAlarmLimits(double? low = default, double? high = default) { }
+        public PointAlarmLimits(double? low = default, double? high = default, double deadband = 0) { }
+        public double Deadband { get; }
         public double? High { get; }
         public double? Low { get; }
         public Zeus.PointAlarmState Evaluate(object? value) { }
+        public Zeus.PointAlarmState Evaluate(object? value, Zeus.PointAlarmState previous) { }
     }
     public sealed class PointAlarmRecord
     {
@@ -242,6 +251,11 @@ namespace Zeus
         Acknowledged = 1,
         Cleared = 2,
     }
+    public sealed class PointBatchChangedEventArgs : System.EventArgs
+    {
+        public PointBatchChangedEventArgs(System.Collections.Generic.IReadOnlyList<Zeus.PointChangedEventArgs> changes) { }
+        public System.Collections.Generic.IReadOnlyList<Zeus.PointChangedEventArgs> Changes { get; }
+    }
     public sealed class PointChangedEventArgs : System.EventArgs
     {
         public PointChangedEventArgs(Zeus.PointSnapshot? previous, Zeus.PointSnapshot current) { }
@@ -263,6 +277,7 @@ namespace Zeus
     public sealed class PointSnapshot
     {
         public PointSnapshot(Zeus.PointDefinition definition, object? value, System.DateTimeOffset? updatedAt, string? error) { }
+        public PointSnapshot(Zeus.PointDefinition definition, object? value, System.DateTimeOffset? updatedAt, string? error, Zeus.PointAlarmState? previousAlarmState) { }
         public Zeus.PointAlarmState AlarmState { get; }
         public Zeus.PointDefinition Definition { get; }
         public string? Error { get; }
@@ -270,6 +285,11 @@ namespace Zeus
         public string QualifiedName { get; }
         public System.DateTimeOffset? UpdatedAt { get; }
         public object? Value { get; }
+        public bool TryGetDouble(out double number) { }
+    }
+    public static class PointValueConvert
+    {
+        public static bool TryToDouble(object? value, out double number) { }
     }
     public enum PointValueKind
     {

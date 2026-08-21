@@ -5,8 +5,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Zeus</RootNamespace>
     <AssemblyName>Zeus.Configuration</AssemblyName>
-    <Description>Zeus JSON 工程配置：装载通道/设备/点表，并热更新采集、重连与拓扑。</Description>
-    <PackageDescription>Zeus JSON 工程配置：装载通道/设备/点表，并热更新采集、重连与拓扑。</PackageDescription>
+    <Description>Zeus JSON 工程配置：装载通道/设备/点表，并热更新采集、重连与拓扑。不引用协议实现，请同时引用所用协议包。</Description>
+    <PackageDescription>Zeus JSON 工程配置：装载通道/设备/点表，并热更新采集、重连与拓扑。不引用协议实现，请同时引用所用协议包。</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,17 +14,6 @@
     <ProjectReference Include="..\Zeus.Communications\Zeus.Communications.csproj" />
     <ProjectReference Include="..\Zeus.Core\Zeus.Core.csproj" />
     <ProjectReference Include="..\Zeus.Hosting\Zeus.Hosting.csproj" />
-    <ProjectReference Include="..\Zeus.Protocols.HostLink\Zeus.Protocols.HostLink.csproj" />
-    <ProjectReference Include="..\Zeus.Protocols.Mc\Zeus.Protocols.Mc.csproj" />
-    <ProjectReference Include="..\Zeus.Protocols.Fins\Zeus.Protocols.Fins.csproj" />
-    <ProjectReference Include="..\Zeus.Protocols.Modbus\Zeus.Protocols.Modbus.csproj" />
-    <ProjectReference Include="..\Zeus.Protocols.S7\Zeus.Protocols.S7.csproj" />
-    <ProjectReference Include="..\Zeus.Protocols.EtherNetIp\Zeus.Protocols.EtherNetIp.csproj" />
-    <ProjectReference Include="..\Zeus.Protocols.Mewtocol\Zeus.Protocols.Mewtocol.csproj" />
-    <ProjectReference Include="..\Zeus.Protocols.Dlt645\Zeus.Protocols.Dlt645.csproj" />
-    <ProjectReference Include="..\Zeus.Protocols.Iec104\Zeus.Protocols.Iec104.csproj" />
-    <ProjectReference Include="..\Zeus.Protocols.Mqtt\Zeus.Protocols.Mqtt.csproj" />
-    <ProjectReference Include="..\Zeus.Protocols.Snmp\Zeus.Protocols.Snmp.csproj" />
   </ItemGroup>
 
 </Project>

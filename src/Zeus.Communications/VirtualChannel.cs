@@ -49,13 +49,19 @@ public sealed class VirtualChannel : ChannelBase
             return Task.CompletedTask;
         }
 
-        var reply = _responder.Respond(buffer);
+        return RespondAndEnqueueAsync(buffer, cancellationToken);
+    }
+
+    /// <summary>
+    /// 询问虚拟从站并排队回写。异步应答可模拟延时；返回空表示丢包。
+    /// </summary>
+    private async Task RespondAndEnqueueAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+    {
+        var reply = await _responder!.RespondAsync(buffer, cancellationToken).ConfigureAwait(false);
         if (reply is { } payload && !payload.IsEmpty)
         {
             EnqueueReceive(payload.ToArray());
         }
-
-        return Task.CompletedTask;
     }
 
     /// <inheritdoc />

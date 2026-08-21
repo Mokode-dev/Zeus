@@ -379,7 +379,7 @@ public sealed class AcquisitionTests
 
     private static async Task<T> WaitCoreAsync<T>(IZeusHost host, string name, bool hasExpected, T? expected)
     {
-        if (host.Points.All.Count == 0)
+        if (!host.IsRunning)
         {
             await host.StartAsync();
         }

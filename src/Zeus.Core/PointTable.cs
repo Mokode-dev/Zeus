@@ -22,6 +22,9 @@ public sealed class PointTable : IPointTable, IPointTableWriter
     private readonly Dictionary<string, List<PointSnapshot>> _history = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _shortToQualified = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _ambiguousShortNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<(string Pattern, EventHandler<PointChangedEventArgs> Handler)> _subscriptions = [];
+    private readonly List<PointChangedEventArgs> _batch = [];
+    private int _batchDepth;
 
     /// <summary>
     /// 创建未连接设备目录的点表。可以读写快照，但不能 <see cref="WriteAsync"/>。
@@ -99,6 +102,15 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         _maxHistoryPoints = maxHistoryPoints;
         _store = store;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+        if (devices is not null)
+        {
+            // 设备一登记就把点挂进点表，避免界面在 StartAsync 前扫到空表。
+            devices.Changed += OnDevicesChanged;
+            foreach (var device in devices.All)
+            {
+                RegisterDevicePoints(device);
+            }
+        }
     }
 
     /// <summary>每个点最多保留的最近成功采样数。</summary>
@@ -106,6 +118,9 @@ public sealed class PointTable : IPointTable, IPointTableWriter
 
     /// <inheritdoc />
     public event EventHandler<PointChangedEventArgs>? Changed;
+
+    /// <inheritdoc />
+    public event EventHandler<PointBatchChangedEventArgs>? BatchChanged;
 
     /// <inheritdoc />
     public IReadOnlyList<PointSnapshot> All
@@ -128,6 +143,50 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         }
 
         return snapshot;
+    }
+
+    /// <inheritdoc />
+    public bool TryGet(string name, out PointSnapshot? snapshot)
+        => TryGetSnapshot(name, out snapshot);
+
+    /// <inheritdoc />
+    public bool TryGetDouble(string name, out double value)
+    {
+        value = 0;
+        return TryGetSnapshot(name, out var snapshot)
+            && snapshot is not null
+            && snapshot.TryGetDouble(out value);
+    }
+
+    /// <inheritdoc />
+    public IDisposable Subscribe(string name, EventHandler<PointChangedEventArgs> handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ZeusException("订阅点名不能为空。");
+        }
+
+        var pattern = name.Trim();
+        lock (_gate)
+        {
+            _subscriptions.Add((pattern, handler));
+        }
+
+        return new DelegateSubscription(() =>
+        {
+            lock (_gate)
+            {
+                for (var i = _subscriptions.Count - 1; i >= 0; i--)
+                {
+                    if (_subscriptions[i].Pattern == pattern && _subscriptions[i].Handler == handler)
+                    {
+                        _subscriptions.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+        });
     }
 
     /// <inheritdoc />
@@ -185,8 +244,8 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         {
             if (_byQualified.ContainsKey(definition.QualifiedName))
             {
-                throw new ZeusException(
-                    $"点 {definition.QualifiedName} 已存在。同一设备内点名必须唯一。");
+                // 采集循环与设备目录都可能登记同一批点；重复登记视为幂等。
+                return;
             }
 
             _byQualified[definition.QualifiedName] = new PointSnapshot(definition, null, null, null);
@@ -228,13 +287,13 @@ public sealed class PointTable : IPointTable, IPointTableWriter
             }
 
             previous = existing;
-            current = new PointSnapshot(existing.Definition, value, DateTimeOffset.Now, null);
+            current = new PointSnapshot(existing.Definition, value, DateTimeOffset.Now, null, existing.AlarmState);
             _byQualified[qualifiedName] = current;
             AddHistory(current);
         }
 
         PersistHistory(current);
-        Changed?.Invoke(this, new PointChangedEventArgs(previous, current));
+        RaiseChanged(previous, current);
     }
 
     /// <inheritdoc />
@@ -260,11 +319,44 @@ public sealed class PointTable : IPointTable, IPointTableWriter
             }
 
             previous = existing;
-            current = new PointSnapshot(existing.Definition, existing.Value, existing.UpdatedAt, error);
+            current = new PointSnapshot(existing.Definition, existing.Value, existing.UpdatedAt, error, existing.AlarmState);
             _byQualified[qualifiedName] = current;
         }
 
-        Changed?.Invoke(this, new PointChangedEventArgs(previous, current));
+        RaiseChanged(previous, current);
+    }
+
+    /// <inheritdoc />
+    public void BeginBatch()
+    {
+        lock (_gate)
+        {
+            _batchDepth++;
+        }
+    }
+
+    /// <inheritdoc />
+    public void EndBatch()
+    {
+        PointChangedEventArgs[] changes;
+        lock (_gate)
+        {
+            if (_batchDepth == 0)
+            {
+                return;
+            }
+
+            _batchDepth--;
+            if (_batchDepth > 0)
+            {
+                return;
+            }
+
+            changes = _batch.ToArray();
+            _batch.Clear();
+        }
+
+        BatchChanged?.Invoke(this, new PointBatchChangedEventArgs(changes));
     }
 
     /// <inheritdoc />
@@ -521,6 +613,73 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         }
     }
 
+    private void OnDevicesChanged(object? sender, DeviceRegistryChangedEventArgs e)
+    {
+        if (e.Change == DeviceRegistryChange.Added)
+        {
+            RegisterDevicePoints(e.Device);
+            return;
+        }
+
+        UnregisterDevice(e.Device.Name);
+    }
+
+    /// <summary>
+    /// 把采集源声明的点立刻挂进点表，这样宿主构建完成后即可按名查找。
+    /// </summary>
+    private void RegisterDevicePoints(IDevice device)
+    {
+        if (device is not IAcquisitionSource source)
+        {
+            return;
+        }
+
+        foreach (var point in source.Points)
+        {
+            Register(point);
+        }
+    }
+
+    /// <summary>
+    /// 触发逐点变化，并按当前批次深度决定是否立即发布 <see cref="BatchChanged"/>。
+    /// </summary>
+    private void RaiseChanged(PointSnapshot? previous, PointSnapshot current)
+    {
+        var args = new PointChangedEventArgs(previous, current);
+        EventHandler<PointChangedEventArgs>[] targeted;
+        var emitImmediateBatch = false;
+        lock (_gate)
+        {
+            targeted = _subscriptions
+                .Where(item => MatchesSubscription(item.Pattern, current))
+                .Select(item => item.Handler)
+                .ToArray();
+            if (_batchDepth > 0)
+            {
+                _batch.Add(args);
+            }
+            else
+            {
+                emitImmediateBatch = true;
+            }
+        }
+
+        Changed?.Invoke(this, args);
+        foreach (var handler in targeted)
+        {
+            handler(this, args);
+        }
+
+        if (emitImmediateBatch)
+        {
+            BatchChanged?.Invoke(this, new PointBatchChangedEventArgs([args]));
+        }
+    }
+
+    private static bool MatchesSubscription(string pattern, PointSnapshot snapshot)
+        => snapshot.QualifiedName.Equals(pattern, StringComparison.OrdinalIgnoreCase)
+            || snapshot.Definition.Name.Equals(pattern, StringComparison.OrdinalIgnoreCase);
+
     private ZeusException CreateMissingException(string name)
     {
         lock (_gate)
@@ -549,6 +708,22 @@ public sealed class PointTable : IPointTable, IPointTableWriter
         {
             typed = default;
             return false;
+        }
+    }
+
+    /// <summary>
+    /// 点订阅句柄。释放时从点表退订。
+    /// </summary>
+    private sealed class DelegateSubscription : IDisposable
+    {
+        private Action? _dispose;
+
+        public DelegateSubscription(Action dispose) => _dispose = dispose;
+
+        public void Dispose()
+        {
+            var action = Interlocked.Exchange(ref _dispose, null);
+            action?.Invoke();
         }
     }
 }

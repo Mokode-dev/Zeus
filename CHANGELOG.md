@@ -1,5 +1,25 @@
 # 更新记录
 
+## 0.18.0
+
+从框架立场补齐上位机真正会交的税：点表查找、一轮刷新、工程值、采集调度、报警回差、JSON 与代码点表对齐，以及配置包与协议解耦。
+
+### 包含
+
+- 点表：`TryGet` 快照、`TryGetDouble`、`Subscribe(name)`、`BatchChanged`；`IPointTableWriter.BeginBatch` / `EndBatch`
+- 点在设备登记时即可查找，不必等到 `StartAsync`
+- 采集：默认同一通道串行轮询；可选 `AcquisitionOptions.SourceTimeout`
+- 报警：`PointAlarmLimits` 增加 `Deadband`；JSON 字段 `deadband`
+- Modbus：`HoldingRegister` / `InputRegister` 支持 `signed`；JSON 字段 `signed`
+- 虚拟从站：`IVirtualResponder.RespondAsync` 可模拟延时或丢包
+- 配置：`Zeus.Configuration` 不再引用协议包；协议程序集通过 `IZeusJsonBinder` 自行登记
+
+### 行为变化
+
+- 只引用 `Zeus.Configuration` 而不引用对应协议包时，JSON 里的设备类型会提示缺少绑定
+- 同一通道上的多台设备默认串行采集；可用 `serializePerChannel: false` 恢复整表并行
+- 点值变化在一轮采集结束时额外触发 `BatchChanged`
+
 ## 0.17.0
 
 补齐宿主底座，并清掉 0.x 为旧版留下的别名与双字段。这是 1.0 前的冻结面：公开 API、JSON 规范值和已文档化行为在 `0.17.x` 只修缺陷，不再改签名。

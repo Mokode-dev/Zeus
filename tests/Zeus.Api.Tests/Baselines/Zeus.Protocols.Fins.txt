@@ -52,6 +52,18 @@ namespace Zeus
         public ushort Command { get; }
         public ushort EndCode { get; }
     }
+    public sealed class FinsJsonBinder : Zeus.IZeusJsonBinder
+    {
+        public FinsJsonBinder() { }
+        public System.Collections.Generic.IReadOnlyList<string> DeviceTypes { get; }
+        public System.Collections.Generic.IReadOnlyList<string> ResponderTypes { get; }
+        public void ApplyDevice(Zeus.IZeusHost host, Zeus.DeviceConfiguration device) { }
+        public void ApplyDevice(Zeus.ZeusHostBuilder builder, Zeus.DeviceConfiguration device) { }
+        public Zeus.IVirtualResponder? CreateResponder(Zeus.ChannelConfiguration channel) { }
+        public string DeviceFingerprint(Zeus.DeviceConfiguration device) { }
+        public void ValidateDevice(Zeus.DeviceConfiguration device, string path) { }
+        public void ValidateResponder(Zeus.ChannelConfiguration channel, string path) { }
+    }
     public readonly struct FinsMemoryAddress : System.IEquatable<Zeus.FinsMemoryAddress>
     {
         public FinsMemoryAddress(Zeus.FinsMemoryAreaCode Area, ushort WordAddress, byte BitOffset = 0) { }

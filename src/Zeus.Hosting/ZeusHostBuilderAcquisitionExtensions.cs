@@ -34,6 +34,11 @@ public static class ZeusHostBuilderAcquisitionExtensions
             throw new ZeusException("采集间隔必须大于零。请使用例如 TimeSpan.FromMilliseconds(500)。");
         }
 
+        if (builder.Acquisition.SourceTimeout < TimeSpan.Zero)
+        {
+            throw new ZeusException("采集源超时不能为负数。设为 TimeSpan.Zero 表示不在宿主层额外限时。");
+        }
+
         return builder;
     }
 

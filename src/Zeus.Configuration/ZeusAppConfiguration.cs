@@ -56,6 +56,16 @@ public sealed class AcquisitionConfiguration
 
     /// <summary>启动后是否立刻采第一轮，默认 true。</summary>
     public bool PollImmediately { get; set; } = true;
+
+    /// <summary>
+    /// 单个采集源本轮超时（毫秒）。省略或 0 表示不在宿主层额外限时。
+    /// </summary>
+    public int SourceTimeoutMilliseconds { get; set; }
+
+    /// <summary>
+    /// 同一通道上的设备是否串行轮询，默认 true。
+    /// </summary>
+    public bool SerializePerChannel { get; set; } = true;
 }
 
 /// <summary>
@@ -355,15 +365,27 @@ public sealed class PointConfiguration
     /// <summary>
     /// 寄存器换算系数。例如 0.1 表示原始值乘 0.1 后写入点表。
     /// 仅对保持/输入寄存器有效；省略则保留原始 ushort。
+    /// 允许负数，表示按有符号方向缩放；与 <see cref="Signed"/> 同时使用时仍按有符号原始值相乘。
     /// </summary>
     [JsonPropertyName("scale")]
     public double? Scale { get; set; }
+
+    /// <summary>
+    /// 为 <c>true</c> 时把 16 位寄存器按有符号 Int16 解释再乘 <see cref="Scale"/>。
+    /// 用于放电电流等以补码存放的量。仅 Modbus 保持/输入寄存器有效。
+    /// </summary>
+    public bool Signed { get; set; }
 
     /// <summary>可选低报阈值。仅寄存器点支持，按换算后的值判断。</summary>
     public double? LowAlarmLimit { get; set; }
 
     /// <summary>可选高报阈值。仅寄存器点支持，按换算后的值判断。</summary>
     public double? HighAlarmLimit { get; set; }
+
+    /// <summary>
+    /// 报警回差。已越限后必须回到阈值内侧该距离才复归。省略为 0。
+    /// </summary>
+    public double Deadband { get; set; }
 
     /// <summary>
     /// 是否允许按点名写回。默认 false。

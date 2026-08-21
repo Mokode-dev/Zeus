@@ -5,6 +5,8 @@ namespace Zeus
         public AcquisitionConfiguration() { }
         public int IntervalMilliseconds { get; set; }
         public bool PollImmediately { get; set; }
+        public bool SerializePerChannel { get; set; }
+        public int SourceTimeoutMilliseconds { get; set; }
     }
     public sealed class ChannelConfiguration
     {
@@ -86,6 +88,17 @@ namespace Zeus
         public int WakeUpPreambleCount { get; set; }
         public string WordOrder { get; set; }
     }
+    public interface IZeusJsonBinder
+    {
+        System.Collections.Generic.IReadOnlyList<string> DeviceTypes { get; }
+        System.Collections.Generic.IReadOnlyList<string> ResponderTypes { get; }
+        void ApplyDevice(Zeus.IZeusHost host, Zeus.DeviceConfiguration device);
+        void ApplyDevice(Zeus.ZeusHostBuilder builder, Zeus.DeviceConfiguration device);
+        Zeus.IVirtualResponder? CreateResponder(Zeus.ChannelConfiguration channel);
+        string DeviceFingerprint(Zeus.DeviceConfiguration device);
+        void ValidateDevice(Zeus.DeviceConfiguration device, string path);
+        void ValidateResponder(Zeus.ChannelConfiguration channel, string path);
+    }
     public sealed class PointConfiguration
     {
         public PointConfiguration() { }
@@ -98,6 +111,7 @@ namespace Zeus
         public string DataType { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("db")]
         public int DbNumber { get; set; }
+        public double Deadband { get; set; }
         public string? DeviceCode { get; set; }
         public double? HighAlarmLimit { get; set; }
         public double? LowAlarmLimit { get; set; }
@@ -107,6 +121,7 @@ namespace Zeus
         public string? Oid { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("scale")]
         public double? Scale { get; set; }
+        public bool Signed { get; set; }
         public string Table { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("tag")]
         public string? Tag { get; set; }
@@ -134,7 +149,17 @@ namespace Zeus
     {
         public static Zeus.ZeusAppConfiguration LoadFile(string path) { }
         public static Zeus.ZeusAppConfiguration LoadJson(string json, string sourceName = "配置") { }
+        public static string Normalize(string? value) { }
         public static void Validate(Zeus.ZeusAppConfiguration document, string sourceName = "配置") { }
+    }
+    public static class ZeusConfigurationText
+    {
+        public static Zeus.PointAlarmLimits? CreateAlarmLimits(Zeus.PointConfiguration point) { }
+        public static void EnsureName(string? name, string path) { }
+        public static string Normalize(string? value) { }
+        public static string PointFingerprint(Zeus.PointConfiguration point) { }
+        public static void ValidateAlarmLimit(double? value, string path) { }
+        public static void ValidatePointAlarms(Zeus.PointConfiguration point, string path) { }
     }
     public static class ZeusHostBuilderConfigurationExtensions
     {
@@ -142,5 +167,13 @@ namespace Zeus
         public static Zeus.ZeusHostBuilder AddJsonFile(this Zeus.ZeusHostBuilder builder, string path, bool watch = true) { }
         public static void ReloadAcquisition(this Zeus.IZeusHost host, string path) { }
         public static System.Threading.Tasks.Task ReloadAsync(this Zeus.IZeusHost host, string? path = null, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public static class ZeusJsonBinders
+    {
+        public static System.Collections.Generic.IReadOnlyList<Zeus.IZeusJsonBinder> All { get; }
+        public static Zeus.IZeusJsonBinder? FindDevice(string normalizedType) { }
+        public static Zeus.IZeusJsonBinder? FindResponder(string normalizedResponder) { }
+        public static void Probe() { }
+        public static void Register(Zeus.IZeusJsonBinder binder) { }
     }
 }

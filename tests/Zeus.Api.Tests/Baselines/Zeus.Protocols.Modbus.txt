@@ -103,6 +103,18 @@ namespace Zeus
         public const byte WriteSingleCoil = 5;
         public const byte WriteSingleRegister = 6;
     }
+    public sealed class ModbusJsonBinder : Zeus.IZeusJsonBinder
+    {
+        public ModbusJsonBinder() { }
+        public System.Collections.Generic.IReadOnlyList<string> DeviceTypes { get; }
+        public System.Collections.Generic.IReadOnlyList<string> ResponderTypes { get; }
+        public void ApplyDevice(Zeus.IZeusHost host, Zeus.DeviceConfiguration device) { }
+        public void ApplyDevice(Zeus.ZeusHostBuilder builder, Zeus.DeviceConfiguration device) { }
+        public Zeus.IVirtualResponder? CreateResponder(Zeus.ChannelConfiguration channel) { }
+        public string DeviceFingerprint(Zeus.DeviceConfiguration device) { }
+        public void ValidateDevice(Zeus.DeviceConfiguration device, string path) { }
+        public void ValidateResponder(Zeus.ChannelConfiguration channel, string path) { }
+    }
     public sealed class ModbusPointMap
     {
         public ModbusPointMap() { }
@@ -114,12 +126,14 @@ namespace Zeus
         public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, Zeus.PointAlarmLimits alarmLimits) { }
         public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, double scale, Zeus.PointAlarmLimits alarmLimits) { }
         public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, System.Func<ushort, double> convert, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.ModbusPointMap HoldingRegister(string name, ushort address, double scale, bool signed, Zeus.PointAlarmLimits? alarmLimits = null) { }
         public Zeus.ModbusPointMap InputRegister(string name, ushort address) { }
         public Zeus.ModbusPointMap InputRegister(string name, ushort address, double scale) { }
         public Zeus.ModbusPointMap InputRegister(string name, ushort address, System.Func<ushort, double> convert) { }
         public Zeus.ModbusPointMap InputRegister(string name, ushort address, Zeus.PointAlarmLimits alarmLimits) { }
         public Zeus.ModbusPointMap InputRegister(string name, ushort address, double scale, Zeus.PointAlarmLimits alarmLimits) { }
         public Zeus.ModbusPointMap InputRegister(string name, ushort address, System.Func<ushort, double> convert, Zeus.PointAlarmLimits alarmLimits) { }
+        public Zeus.ModbusPointMap InputRegister(string name, ushort address, double scale, bool signed, Zeus.PointAlarmLimits? alarmLimits = null) { }
         public Zeus.ModbusPointMap WithAlarmLimits(string name, double? low = default, double? high = default) { }
         public Zeus.ModbusPointMap Writable(string name) { }
     }
@@ -131,6 +145,7 @@ namespace Zeus
         public Zeus.PointValueKind Kind { get; }
         public string Name { get; }
         public double? Scale { get; }
+        public bool Signed { get; }
         public Zeus.ModbusTable Table { get; }
         public bool Writable { get; }
     }
