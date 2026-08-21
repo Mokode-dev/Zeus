@@ -18,7 +18,7 @@
       "points": [
         { "name": "temperature", "tag": "Temperature", "dataType": "int", "scale": 0.1, "writable": true },
         { "name": "running", "tag": "Running", "dataType": "bool", "writable": true },
-        { "name": "speed", "tagName": "Program:Main.Speed", "dataType": "dint" }
+        { "name": "speed", "tag": "Program:Main.Speed", "dataType": "dint" }
       ]
     }
   ]

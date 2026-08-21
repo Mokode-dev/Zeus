@@ -143,10 +143,10 @@ public static class ZeusConfigurationLoader
                     }
 
                     break;
-                case "tcp-server" or "tcpserver":
+                case "tcp-server":
                     ValidateTcpServerChannel(channel, path);
                     break;
-                case "udp-server" or "udpserver":
+                case "udp-server":
                     ValidateUdpServerChannel(channel, path);
                     break;
                 default:
@@ -224,7 +224,7 @@ public static class ZeusConfigurationLoader
             }
             else
             {
-                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、modbus-ascii、mitsubishi-mc、siemens-s7、omron-fins、omron-host-link、panasonic-mewtocol、ethernet-ip、dlt645、iec104、mqtt、snmp。");
+                throw new ZeusException($"{path}.type「{device.Type}」不受支持。可选 modbus-rtu、modbus-tcp、modbus-ascii、mitsubishi-mc、siemens-s7、omron-fins-udp、omron-fins-tcp、omron-host-link、panasonic-mewtocol、ethernet-ip、dlt645、iec104、mqtt、snmp。");
             }
         }
     }
@@ -237,7 +237,7 @@ public static class ZeusConfigurationLoader
         }
 
         var responder = Normalize(channel.Responder);
-        if (responder is not ("modbus" or "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "fins" or "omron-fins" or "omronfins" or "host-link" or "hostlink" or "omron-host-link" or "omronhostlink" or "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley" or "dlt645" or "dlt-645" or "dlt645-2007" or "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104" or "mqtt" or "snmp" or "snmp-v2c" or "snmpv2c"))
+        if (responder is not ("modbus" or "mc" or "s7" or "fins" or "host-link" or "mewtocol" or "ethernet-ip" or "dlt645" or "iec104" or "mqtt" or "snmp"))
         {
             throw new ZeusException($"{path}.responder「{channel.Responder}」不受支持。当前支持 modbus、mc、s7、fins、host-link、mewtocol、ethernet-ip、dlt645、iec104、mqtt、snmp，或省略以回显写入。");
         }
@@ -247,7 +247,7 @@ public static class ZeusConfigurationLoader
             return;
         }
 
-        if (responder is "snmp" or "snmp-v2c" or "snmpv2c")
+        if (responder == "snmp")
         {
             ValidateCommunity(channel.SnmpCommunity, $"{path}.snmpCommunity");
             if (channel.SnmpWriteCommunity is not null)
@@ -258,19 +258,19 @@ public static class ZeusConfigurationLoader
             return;
         }
 
-        if (responder is "dlt645" or "dlt-645" or "dlt645-2007")
+        if (responder == "dlt645")
         {
             ValidateDlt645Address(channel.MeterAddress, $"{path}.meterAddress");
             return;
         }
 
-        if (responder is "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104")
+        if (responder == "iec104")
         {
             ValidateUInt16(channel.CommonAddress, $"{path}.commonAddress");
             return;
         }
 
-        if (responder is "host-link" or "hostlink" or "omron-host-link" or "omronhostlink")
+        if (responder == "host-link")
         {
             if (channel.UnitId > 31)
             {
@@ -280,7 +280,7 @@ public static class ZeusConfigurationLoader
             return;
         }
 
-        if (responder is "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol")
+        if (responder == "mewtocol")
         {
             if (channel.UnitId is < 1 or > 99)
             {
@@ -290,15 +290,15 @@ public static class ZeusConfigurationLoader
             return;
         }
 
-        if (responder is "mc" or "mitsubishi-mc" or "mitsubishimc" or "s7" or "siemens-s7" or "siemenss7" or "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley")
+        if (responder is "mc" or "s7" or "ethernet-ip")
         {
             return;
         }
 
         var transport = Normalize(channel.Transport);
-        if (responder is "fins" or "omron-fins" or "omronfins")
+        if (responder == "fins")
         {
-            if (transport is not ("udp" or "tcp" or "rtu"))
+            if (transport is not ("udp" or "tcp"))
             {
                 throw new ZeusException($"{path}.transport「{channel.Transport}」不受支持。FINS 虚拟从站可选 udp、tcp。");
             }
@@ -377,7 +377,7 @@ public static class ZeusConfigurationLoader
             }
 
             var table = Normalize(point.Table);
-            if (table is not ("holding" or "holdingregister" or "input" or "inputregister" or "coil" or "discrete" or "discreteinput"))
+            if (table is not ("holding" or "input" or "coil" or "discrete"))
             {
                 throw new ZeusException($"{path}.table「{point.Table}」不受支持。可选 holding、input、coil、discrete。");
             }
@@ -400,12 +400,12 @@ public static class ZeusConfigurationLoader
             }
 
             if ((point.LowAlarmLimit is not null || point.HighAlarmLimit is not null)
-                && table is "coil" or "discrete" or "discreteinput")
+                && table is "coil" or "discrete")
             {
                 throw new ZeusException($"{path} 是布尔点，不能配置 lowAlarmLimit 或 highAlarmLimit。");
             }
 
-            if (point.Writable && table is "input" or "inputregister" or "discrete" or "discreteinput")
+            if (point.Writable && table is "input" or "discrete")
             {
                 throw new ZeusException($"{path} 位于只读数据区，不能设置 writable: true。");
             }
@@ -670,7 +670,12 @@ public static class ZeusConfigurationLoader
                 throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
             }
 
-            var deviceCode = ParseMcDeviceCode(point.DeviceCode ?? point.Table, $"{path}.deviceCode");
+            if (string.IsNullOrWhiteSpace(point.DeviceCode))
+            {
+                throw new ZeusException($"{path}.deviceCode 必须指定。Mitsubishi MC 可选 D、M、X、Y、W、R、ZR。");
+            }
+
+            var deviceCode = ParseMcDeviceCode(point.DeviceCode, $"{path}.deviceCode");
             if (frameType == McFrameType.Frame1E && deviceCode == McDeviceCode.ExtendedFileRegister)
             {
                 throw new ZeusException($"{path}.deviceCode 为 ZR，但 MC 1E 帧不支持 ZR。请改用 3e/4e，或移除该点。");
@@ -806,7 +811,12 @@ public static class ZeusConfigurationLoader
             }
 
             var dataType = ParseFinsDataType(point.DataType, $"{path}.dataType");
-            var area = ParseFinsMemoryAreaCode(point.Area ?? point.Table, dataType, $"{path}.area");
+            if (string.IsNullOrWhiteSpace(point.Area))
+            {
+                throw new ZeusException($"{path}.area 必须指定。FINS 可选 cio、wr、hr、ar、dm、tc、em、em0–em18。");
+            }
+
+            var area = ParseFinsMemoryAreaCode(point.Area, dataType, $"{path}.area");
             if (point.Address is < 0 or > ushort.MaxValue)
             {
                 throw new ZeusException($"{path}.address 必须介于 0 与 65535 之间。");
@@ -816,7 +826,7 @@ public static class ZeusConfigurationLoader
             {
                 if (!area.IsBit)
                 {
-                    throw new ZeusException($"{path}.area「{point.Area ?? point.Table}」不是 FINS 位区。");
+                    throw new ZeusException($"{path}.area「{point.Area}」不是 FINS 位区。");
                 }
 
                 if (point.BitOffset is < 0 or > 15)
@@ -828,7 +838,7 @@ public static class ZeusConfigurationLoader
             {
                 if (!area.IsWord)
                 {
-                    throw new ZeusException($"{path}.area「{point.Area ?? point.Table}」不是 FINS 字区。");
+                    throw new ZeusException($"{path}.area「{point.Area}」不是 FINS 字区。");
                 }
 
                 if (point.BitOffset != 0)
@@ -878,7 +888,12 @@ public static class ZeusConfigurationLoader
             }
 
             var dataType = ParseHostLinkDataType(point.DataType, $"{path}.dataType");
-            ParseHostLinkArea(point.Area ?? point.Table, $"{path}.area");
+            if (string.IsNullOrWhiteSpace(point.Area))
+            {
+                throw new ZeusException($"{path}.area 必须指定。Host Link 可选 cio、lr、hr、ar、dm。");
+            }
+
+            ParseHostLinkArea(point.Area, $"{path}.area");
             if (point.Address is < 0 or > 9999)
             {
                 throw new ZeusException($"{path}.address 必须介于 0 与 9999 之间。");
@@ -937,7 +952,12 @@ public static class ZeusConfigurationLoader
             }
 
             var dataType = ParseMewtocolDataType(point.DataType, $"{path}.dataType");
-            var areaText = point.Area ?? point.Table;
+            if (string.IsNullOrWhiteSpace(point.Area))
+            {
+                throw new ZeusException($"{path}.area 必须指定。MEWTOCOL 数据区可选 dt、ld、fl；接点区可选 x、y、r、l。");
+            }
+
+            var areaText = point.Area;
             var isContact = TryParseMewtocolContactArea(areaText, out var contactArea);
             if (!isContact)
             {
@@ -1006,11 +1026,6 @@ public static class ZeusConfigurationLoader
             if (!names.Add(point.Name.Trim()))
             {
                 throw new ZeusException($"{path}.name「{point.Name}」在同一设备内重复。");
-            }
-
-            if (point.TagName is not null && string.IsNullOrWhiteSpace(point.TagName))
-            {
-                throw new ZeusException($"{path}.tagName 不能为空字符串。");
             }
 
             if (point.Tag is not null && string.IsNullOrWhiteSpace(point.Tag))
@@ -1269,82 +1284,82 @@ public static class ZeusConfigurationLoader
         => (value ?? string.Empty).Trim().ToLowerInvariant().Replace("_", "-");
 
     internal static bool IsModbusDeviceType(string type)
-        => type is "modbus-rtu" or "modbusrtu" or "rtu" or "modbus-tcp" or "modbustcp" or "tcp" or "modbus-ascii" or "modbusascii" or "ascii";
+        => type is "modbus-rtu" or "modbus-tcp" or "modbus-ascii";
 
     internal static bool IsModbusTcpDeviceType(string type)
-        => type is "modbus-tcp" or "modbustcp" or "tcp";
+        => type is "modbus-tcp";
 
     internal static bool IsModbusAsciiDeviceType(string type)
-        => type is "modbus-ascii" or "modbusascii" or "ascii";
+        => type is "modbus-ascii";
 
     internal static bool IsMcDeviceType(string type)
-        => type is "mitsubishi-mc" or "mitsubishimc" or "mc" or "melsec-mc" or "melsecmc" or "mc-3e" or "mc3e";
+        => type is "mitsubishi-mc";
 
     internal static bool IsS7DeviceType(string type)
-        => type is "siemens-s7" or "siemenss7" or "s7" or "s7-comm" or "s7comm";
+        => type is "siemens-s7";
 
     internal static bool IsFinsDeviceType(string type)
-        => type is "omron-fins" or "omronfins" or "fins" or "fins-udp" or "finsudp" or "omron-fins-udp" or "omronfinsudp" or "fins-tcp" or "finstcp" or "omron-fins-tcp" or "omronfinstcp";
+        => type is "omron-fins-udp" or "omron-fins-tcp";
 
     internal static bool IsFinsTcpDeviceType(string type)
-        => type is "fins-tcp" or "finstcp" or "omron-fins-tcp" or "omronfinstcp";
+        => type is "omron-fins-tcp";
 
     internal static bool IsHostLinkDeviceType(string type)
-        => type is "omron-host-link" or "omronhostlink" or "host-link" or "hostlink" or "omron-hostlink";
+        => type is "omron-host-link";
 
     internal static bool IsMewtocolDeviceType(string type)
-        => type is "panasonic-mewtocol" or "panasonicmewtocol" or "mewtocol" or "mewtocol-com" or "mewtocolcom" or "panasonic";
+        => type is "panasonic-mewtocol";
 
     internal static bool IsEtherNetIpDeviceType(string type)
-        => type is "ethernet-ip" or "ethernetip" or "ether-net-ip" or "cip" or "ab-cip" or "abcip" or "allen-bradley" or "allenbradley" or "ab-ethernet-ip" or "abethernetip";
+        => type is "ethernet-ip";
 
     internal static bool IsDlt645DeviceType(string type)
-        => type is "dlt645" or "dlt-645" or "dlt645-2007" or "dlt-645-2007" or "dl-t645" or "dl-t-645";
+        => type is "dlt645";
 
     internal static bool IsIec104DeviceType(string type)
-        => type is "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104" or "iec-60870-104" or "iec60870-104";
+        => type is "iec104";
 
     internal static bool IsMqttDeviceType(string type)
-        => type is "mqtt" or "mqtt311" or "mqtt-3-1-1" or "mqtt3" or "mqtt-v3";
+        => type is "mqtt";
 
     internal static bool IsSnmpDeviceType(string type)
-        => type is "snmp" or "snmp-v2c" or "snmpv2c" or "snmp2c";
+        => type is "snmp";
 
     internal static McFrameType ParseMcFrameType(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        var token = Normalize(value);
         return token switch
         {
-            "1e" or "frame1e" => McFrameType.Frame1E,
-            "3e" or "frame3e" or "" => McFrameType.Frame3E,
-            "4e" or "frame4e" => McFrameType.Frame4E,
+            "1e" => McFrameType.Frame1E,
+            "3e" or "" => McFrameType.Frame3E,
+            "4e" => McFrameType.Frame4E,
             _ => throw new ZeusException($"{path}「{value}」不受支持。可选 1e、3e、4e。")
         };
     }
 
     internal static McDataEncoding ParseMcDataEncoding(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        var token = Normalize(value);
         return token switch
         {
-            "binary" or "bin" or "" => McDataEncoding.Binary,
-            "ascii" or "asc" => McDataEncoding.Ascii,
+            "binary" or "" => McDataEncoding.Binary,
+            "ascii" => McDataEncoding.Ascii,
             _ => throw new ZeusException($"{path}「{value}」不受支持。可选 binary、ascii。")
         };
     }
 
     internal static McDeviceCode ParseMcDeviceCode(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
+        var token = Normalize(value);
         return token switch
         {
-            "d" or "data" or "dataregister" or "holding" or "holdingregister" => McDeviceCode.DataRegister,
-            "m" or "internal" or "internalrelay" or "coil" => McDeviceCode.InternalRelay,
-            "x" or "input" or "inputrelay" => McDeviceCode.InputRelay,
-            "y" or "output" or "outputrelay" => McDeviceCode.OutputRelay,
-            "w" or "link" or "linkregister" => McDeviceCode.LinkRegister,
-            "r" or "file" or "fileregister" => McDeviceCode.FileRegister,
-            "zr" or "extendedfile" or "extendedfileregister" => McDeviceCode.ExtendedFileRegister,
+            "d" => McDeviceCode.DataRegister,
+            "m" => McDeviceCode.InternalRelay,
+            "x" => McDeviceCode.InputRelay,
+            "y" => McDeviceCode.OutputRelay,
+            "w" => McDeviceCode.LinkRegister,
+            "r" => McDeviceCode.FileRegister,
+            "zr" => McDeviceCode.ExtendedFileRegister,
             _ => throw new ZeusException($"{path}「{value}」不受支持。可选 D、M、X、Y、W、R、ZR。")
         };
     }
@@ -1360,88 +1375,82 @@ public static class ZeusConfigurationLoader
 
     internal static S7Area ParseS7Area(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "db" or "datablock" or "data" => S7Area.DataBlock,
-            "m" or "marker" or "markers" or "merker" or "merkers" => S7Area.Merkers,
-            "i" or "input" or "inputs" => S7Area.Inputs,
-            "q" or "output" or "outputs" => S7Area.Outputs,
+            "db" => S7Area.DataBlock,
+            "m" => S7Area.Merkers,
+            "i" => S7Area.Inputs,
+            "q" => S7Area.Outputs,
             _ => throw new ZeusException($"{path}「{value}」不受支持。可选 db、m、i、q。")
         };
     }
 
     internal static S7DataType ParseS7DataType(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "bool" or "bit" => S7DataType.Bool,
-            "byte" or "b" => S7DataType.Byte,
-            "word" or "w" or "uint16" or "ushort" => S7DataType.Word,
-            "dword" or "dw" or "uint32" or "uint" => S7DataType.DWord,
-            "int" or "int16" or "short" => S7DataType.Int,
-            "dint" or "int32" => S7DataType.DInt,
-            "real" or "float" or "single" => S7DataType.Real,
+            "bool" => S7DataType.Bool,
+            "byte" => S7DataType.Byte,
+            "word" => S7DataType.Word,
+            "dword" => S7DataType.DWord,
+            "int" => S7DataType.Int,
+            "dint" => S7DataType.DInt,
+            "real" => S7DataType.Real,
             _ => throw new ZeusException($"{path}「{value}」不受支持。可选 bool、byte、word、dword、int、dint、real。")
         };
     }
 
     internal static FinsDataType ParseFinsDataType(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "word" or "w" or "uint16" or "ushort" => FinsDataType.Word,
-            "bit" or "bool" or "boolean" => FinsDataType.Bit,
-            "int" or "int16" or "short" => FinsDataType.Int16,
-            "uint32" or "udint" or "dword" or "dw" => FinsDataType.UInt32,
-            "int32" or "dint" => FinsDataType.Int32,
-            "real" or "float" or "single" => FinsDataType.Real,
+            "" or "word" => FinsDataType.Word,
+            "bit" => FinsDataType.Bit,
+            "int16" => FinsDataType.Int16,
+            "uint32" => FinsDataType.UInt32,
+            "int32" => FinsDataType.Int32,
+            "real" => FinsDataType.Real,
             _ => throw new ZeusException($"{path}「{value}」不受支持。FINS 可选 bit、word、int16、uint32、int32、real。")
         };
     }
 
     internal static HostLinkDataType ParseHostLinkDataType(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "word" or "w" or "uint16" or "ushort" => HostLinkDataType.Word,
-            "bit" or "bool" or "boolean" => HostLinkDataType.Bit,
-            "int" or "int16" or "short" => HostLinkDataType.Int16,
-            "uint32" or "udint" or "dword" or "dw" => HostLinkDataType.UInt32,
-            "int32" or "dint" => HostLinkDataType.Int32,
-            "real" or "float" or "single" => HostLinkDataType.Real,
+            "" or "word" => HostLinkDataType.Word,
+            "bit" => HostLinkDataType.Bit,
+            "int16" => HostLinkDataType.Int16,
+            "uint32" => HostLinkDataType.UInt32,
+            "int32" => HostLinkDataType.Int32,
+            "real" => HostLinkDataType.Real,
             _ => throw new ZeusException($"{path}「{value}」不受支持。Host Link 可选 bit、word、int16、uint32、int32、real。")
         };
     }
 
     internal static MewtocolDataType ParseMewtocolDataType(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "word" or "w" or "uint16" or "ushort" => MewtocolDataType.Word,
-            "bit" or "bool" or "boolean" => MewtocolDataType.Bit,
-            "int" or "int16" or "short" => MewtocolDataType.Int16,
-            "uint32" or "udint" or "dword" or "dw" => MewtocolDataType.UInt32,
-            "int32" or "dint" => MewtocolDataType.Int32,
-            "real" or "float" or "single" => MewtocolDataType.Real,
+            "" or "word" => MewtocolDataType.Word,
+            "bit" => MewtocolDataType.Bit,
+            "int16" => MewtocolDataType.Int16,
+            "uint32" => MewtocolDataType.UInt32,
+            "int32" => MewtocolDataType.Int32,
+            "real" => MewtocolDataType.Real,
             _ => throw new ZeusException($"{path}「{value}」不受支持。MEWTOCOL 可选 bit、word、int16、uint32、int32、real。")
         };
     }
 
     internal static HostLinkArea ParseHostLinkArea(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "cio" or "ir" or "inputoutput" => HostLinkArea.Cio,
-            "lr" or "link" => HostLinkArea.Link,
-            "hr" or "holding" => HostLinkArea.Holding,
-            "ar" or "aux" or "auxiliary" => HostLinkArea.Auxiliary,
-            "dm" or "data" or "datamemory" => HostLinkArea.DataMemory,
+            "cio" => HostLinkArea.Cio,
+            "lr" => HostLinkArea.Link,
+            "hr" => HostLinkArea.Holding,
+            "ar" => HostLinkArea.Auxiliary,
+            "dm" => HostLinkArea.DataMemory,
             _ => throw new ZeusException($"{path}「{value}」不受支持。Host Link 可选 cio、lr、hr、ar、dm。")
         };
     }
@@ -1458,16 +1467,15 @@ public static class ZeusConfigurationLoader
 
     internal static bool TryParseMewtocolDataArea(string? value, out MewtocolDataArea area)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        switch (token)
+        switch (Normalize(value))
         {
-            case "" or "dt" or "d" or "data" or "dataregister":
+            case "dt":
                 area = MewtocolDataArea.DataRegister;
                 return true;
-            case "ld" or "linkdata" or "linkdataregister":
+            case "ld":
                 area = MewtocolDataArea.LinkDataRegister;
                 return true;
-            case "fl" or "f" or "file" or "fileregister":
+            case "fl":
                 area = MewtocolDataArea.FileRegister;
                 return true;
             default:
@@ -1488,19 +1496,18 @@ public static class ZeusConfigurationLoader
 
     internal static bool TryParseMewtocolContactArea(string? value, out MewtocolContactArea area)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        switch (token)
+        switch (Normalize(value))
         {
-            case "x" or "input" or "externalinput":
+            case "x":
                 area = MewtocolContactArea.ExternalInput;
                 return true;
-            case "y" or "output" or "externaloutput":
+            case "y":
                 area = MewtocolContactArea.ExternalOutput;
                 return true;
-            case "r" or "relay" or "internal" or "internalrelay":
+            case "r":
                 area = MewtocolContactArea.InternalRelay;
                 return true;
-            case "l" or "lr" or "link" or "linkrelay":
+            case "l":
                 area = MewtocolContactArea.LinkRelay;
                 return true;
             default:
@@ -1511,133 +1518,123 @@ public static class ZeusConfigurationLoader
 
     internal static FinsWordOrder ParseFinsWordOrder(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "highwordfirst" or "highfirst" or "big" or "bigendian" => FinsWordOrder.HighWordFirst,
-            "lowwordfirst" or "lowfirst" or "little" or "littleendian" => FinsWordOrder.LowWordFirst,
+            "" or "high-word-first" => FinsWordOrder.HighWordFirst,
+            "low-word-first" => FinsWordOrder.LowWordFirst,
             _ => throw new ZeusException($"{path}「{value}」不受支持。可选 high-word-first、low-word-first。")
         };
     }
 
     internal static HostLinkWordOrder ParseHostLinkWordOrder(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "highwordfirst" or "highfirst" or "big" or "bigendian" => HostLinkWordOrder.HighWordFirst,
-            "lowwordfirst" or "lowfirst" or "little" or "littleendian" => HostLinkWordOrder.LowWordFirst,
+            "" or "high-word-first" => HostLinkWordOrder.HighWordFirst,
+            "low-word-first" => HostLinkWordOrder.LowWordFirst,
             _ => throw new ZeusException($"{path}「{value}」不受支持。可选 high-word-first、low-word-first。")
         };
     }
 
     internal static MewtocolWordOrder ParseMewtocolWordOrder(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "highwordfirst" or "highfirst" or "big" or "bigendian" => MewtocolWordOrder.HighWordFirst,
-            "lowwordfirst" or "lowfirst" or "little" or "littleendian" => MewtocolWordOrder.LowWordFirst,
+            "" or "high-word-first" => MewtocolWordOrder.HighWordFirst,
+            "low-word-first" => MewtocolWordOrder.LowWordFirst,
             _ => throw new ZeusException($"{path}「{value}」不受支持。可选 high-word-first、low-word-first。")
         };
     }
 
     internal static FinsMemoryAreaCode ParseFinsMemoryAreaCode(string? value, FinsDataType dataType, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        var bit = dataType == FinsDataType.Bit || token.EndsWith("bit", StringComparison.Ordinal);
-        var word = dataType != FinsDataType.Bit || token.EndsWith("word", StringComparison.Ordinal);
-        var compact = token.Replace("word", string.Empty, StringComparison.Ordinal).Replace("bit", string.Empty, StringComparison.Ordinal);
-        if (compact.StartsWith("em", StringComparison.Ordinal) && compact.Length > 2 && int.TryParse(compact[2..], out var bank))
+        var token = Normalize(value);
+        var bit = dataType == FinsDataType.Bit;
+        if (token.StartsWith("em", StringComparison.Ordinal) && token.Length > 2 && int.TryParse(token[2..], out var bank))
         {
             return bit ? FinsMemoryAreaCode.EmBankBit(bank) : FinsMemoryAreaCode.EmBankWord(bank);
         }
 
-        return compact switch
+        return token switch
         {
-            "cio" or "" => bit ? FinsMemoryAreaCode.CioBit : FinsMemoryAreaCode.CioWord,
-            "wr" or "work" => bit ? FinsMemoryAreaCode.WorkBit : FinsMemoryAreaCode.WorkWord,
-            "hr" or "holding" => bit ? FinsMemoryAreaCode.HoldingBit : FinsMemoryAreaCode.HoldingWord,
-            "ar" or "aux" or "auxiliary" => bit ? FinsMemoryAreaCode.AuxiliaryBit : FinsMemoryAreaCode.AuxiliaryWord,
-            "dm" or "data" or "datamemory" => bit ? FinsMemoryAreaCode.DataMemoryBit : FinsMemoryAreaCode.DataMemoryWord,
-            "tc" or "timcnt" or "timercounter" or "timer" or "counter" => bit ? FinsMemoryAreaCode.TimerCounterFlag : FinsMemoryAreaCode.TimerCounterValue,
-            "em" or "currentem" or "emcurrent" => bit ? FinsMemoryAreaCode.CurrentEmBit : FinsMemoryAreaCode.CurrentEmWord,
+            "cio" => bit ? FinsMemoryAreaCode.CioBit : FinsMemoryAreaCode.CioWord,
+            "wr" => bit ? FinsMemoryAreaCode.WorkBit : FinsMemoryAreaCode.WorkWord,
+            "hr" => bit ? FinsMemoryAreaCode.HoldingBit : FinsMemoryAreaCode.HoldingWord,
+            "ar" => bit ? FinsMemoryAreaCode.AuxiliaryBit : FinsMemoryAreaCode.AuxiliaryWord,
+            "dm" => bit ? FinsMemoryAreaCode.DataMemoryBit : FinsMemoryAreaCode.DataMemoryWord,
+            "tc" => bit ? FinsMemoryAreaCode.TimerCounterFlag : FinsMemoryAreaCode.TimerCounterValue,
+            "em" => bit ? FinsMemoryAreaCode.CurrentEmBit : FinsMemoryAreaCode.CurrentEmWord,
             _ => throw new ZeusException($"{path}「{value}」不受支持。FINS 可选 cio、wr、hr、ar、dm、tc、em、em0–em18。")
         };
     }
 
     internal static EtherNetIpDataType ParseEtherNetIpDataType(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "dint" or "int32" => EtherNetIpDataType.DInt,
-            "bool" or "boolean" or "bit" => EtherNetIpDataType.Bool,
-            "sint" or "int8" or "sbyte" => EtherNetIpDataType.SInt,
-            "int" or "int16" or "short" => EtherNetIpDataType.Int,
-            "lint" or "int64" or "long" => EtherNetIpDataType.LInt,
-            "usint" or "uint8" or "byte" => EtherNetIpDataType.USInt,
-            "uint" or "uint16" or "ushort" or "word" => EtherNetIpDataType.UInt,
-            "udint" or "uint32" or "dword" => EtherNetIpDataType.UDInt,
-            "ulint" or "uint64" or "ulong" => EtherNetIpDataType.ULInt,
-            "real" or "float" or "single" => EtherNetIpDataType.Real,
-            "lreal" or "double" => EtherNetIpDataType.LReal,
+            "bool" => EtherNetIpDataType.Bool,
+            "sint" => EtherNetIpDataType.SInt,
+            "int" => EtherNetIpDataType.Int,
+            "dint" => EtherNetIpDataType.DInt,
+            "lint" => EtherNetIpDataType.LInt,
+            "usint" => EtherNetIpDataType.USInt,
+            "uint" => EtherNetIpDataType.UInt,
+            "udint" => EtherNetIpDataType.UDInt,
+            "ulint" => EtherNetIpDataType.ULInt,
+            "real" => EtherNetIpDataType.Real,
+            "lreal" => EtherNetIpDataType.LReal,
             _ => throw new ZeusException($"{path}「{value}」不受支持。EtherNet/IP 可选 bool、sint、int、dint、lint、usint、uint、udint、ulint、real、lreal。")
         };
     }
 
     internal static Dlt645DataType ParseDlt645DataType(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "bcd" or "decimal" or "number" => Dlt645DataType.Bcd,
-            "raw" or "bytes" or "rawbytes" or "hex" => Dlt645DataType.RawBytes,
+            "" or "bcd" => Dlt645DataType.Bcd,
+            "raw" => Dlt645DataType.RawBytes,
             _ => throw new ZeusException($"{path}「{value}」不受支持。DL/T 645 可选 bcd、raw。")
         };
     }
 
     internal static Iec104DataType ParseIec104DataType(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "singlepoint" or "single" or "sp" or "bool" or "boolean" => Iec104DataType.SinglePoint,
-            "normalized" or "normalize" or "nva" or "measurednormalized" => Iec104DataType.Normalized,
-            "scaled" or "scale" or "sva" or "int16" or "short" => Iec104DataType.Scaled,
-            "shortfloat" or "float" or "real" or "singleprecision" => Iec104DataType.ShortFloat,
+            "single-point" => Iec104DataType.SinglePoint,
+            "normalized" => Iec104DataType.Normalized,
+            "scaled" => Iec104DataType.Scaled,
+            "short-float" => Iec104DataType.ShortFloat,
             _ => throw new ZeusException($"{path}「{value}」不受支持。IEC104 可选 single-point、normalized、scaled、short-float。")
         };
     }
 
     internal static MqttDataType ParseMqttDataType(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "text" or "string" or "utf8" => MqttDataType.Text,
-            "bool" or "boolean" or "bit" => MqttDataType.Boolean,
-            "int" or "int32" or "integer" => MqttDataType.Int32,
-            "long" or "int64" => MqttDataType.Int64,
-            "double" or "float" or "real" or "number" => MqttDataType.Double,
-            "bytes" or "bytearray" or "raw" or "binary" => MqttDataType.Bytes,
+            "" or "text" => MqttDataType.Text,
+            "boolean" => MqttDataType.Boolean,
+            "int32" => MqttDataType.Int32,
+            "int64" => MqttDataType.Int64,
+            "double" => MqttDataType.Double,
+            "bytes" => MqttDataType.Bytes,
             _ => throw new ZeusException($"{path}「{value}」不受支持。MQTT 可选 text、boolean、int32、int64、double、bytes。")
         };
     }
 
     internal static SnmpDataType ParseSnmpDataType(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "integer" or "int" or "int32" or "int64" => SnmpDataType.Integer,
-            "gauge" or "gauge32" or "uint" or "uint32" => SnmpDataType.Gauge32,
-            "counter" or "counter32" => SnmpDataType.Counter32,
-            "timeticks" or "ticks" or "time" => SnmpDataType.TimeTicks,
-            "text" or "string" or "utf8" => SnmpDataType.Text,
-            "octetstring" or "bytes" or "raw" or "binary" => SnmpDataType.OctetString,
-            "oid" or "objectidentifier" => SnmpDataType.ObjectIdentifier,
-            "ip" or "ipaddress" or "ipv4" => SnmpDataType.IpAddress,
+            "integer" => SnmpDataType.Integer,
+            "gauge32" => SnmpDataType.Gauge32,
+            "counter32" => SnmpDataType.Counter32,
+            "timeticks" => SnmpDataType.TimeTicks,
+            "text" => SnmpDataType.Text,
+            "octet-string" => SnmpDataType.OctetString,
+            "oid" => SnmpDataType.ObjectIdentifier,
+            "ip-address" => SnmpDataType.IpAddress,
             _ => throw new ZeusException($"{path}「{value}」不受支持。SNMP 可选 integer、gauge32、counter32、timeticks、text、octet-string、oid、ip-address。")
         };
     }
@@ -1647,12 +1644,11 @@ public static class ZeusConfigurationLoader
 
     internal static MqttQualityOfService ParseMqttQualityOfService(string? value, string path)
     {
-        var token = Normalize(value).Replace("-", string.Empty, StringComparison.Ordinal).Replace("_", string.Empty, StringComparison.Ordinal);
-        return token switch
+        return Normalize(value) switch
         {
-            "" or "0" or "qos0" or "atmostonce" => MqttQualityOfService.AtMostOnce,
-            "1" or "qos1" or "atleastonce" => MqttQualityOfService.AtLeastOnce,
-            "2" or "qos2" or "exactlyonce" => MqttQualityOfService.ExactlyOnce,
+            "" or "0" => MqttQualityOfService.AtMostOnce,
+            "1" => MqttQualityOfService.AtLeastOnce,
+            "2" => MqttQualityOfService.ExactlyOnce,
             _ => throw new ZeusException($"{path}「{value}」不受支持。MQTT QoS 可选 0、1、2。")
         };
     }

@@ -124,7 +124,7 @@ public sealed class DeviceConfiguration
     /// <summary>绑定的通道名。</summary>
     public string Channel { get; set; } = string.Empty;
 
-    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>modbus-ascii</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins</c>、<c>omron-host-link</c>、<c>panasonic-mewtocol</c>、<c>ethernet-ip</c>、<c>dlt645</c>、<c>iec104</c>、<c>mqtt</c> 或 <c>snmp</c>。</summary>
+    /// <summary>类型：<c>modbus-rtu</c>、<c>modbus-tcp</c>、<c>modbus-ascii</c>、<c>mitsubishi-mc</c>、<c>siemens-s7</c>、<c>omron-fins-udp</c>、<c>omron-fins-tcp</c>、<c>omron-host-link</c>、<c>panasonic-mewtocol</c>、<c>ethernet-ip</c>、<c>dlt645</c>、<c>iec104</c>、<c>mqtt</c> 或 <c>snmp</c>。</summary>
     public string Type { get; set; } = "modbus-rtu";
 
     /// <summary>从站/单元标识，默认 1。Host Link 使用 0-31 单元号；MEWTOCOL 使用 1-99 站号。</summary>
@@ -310,16 +310,13 @@ public sealed class PointConfiguration
     /// <summary>MQTT 点写回时是否设置 retain，默认 true。仅 MQTT。</summary>
     public bool MqttRetain { get; set; } = true;
 
-    /// <summary>EtherNet/IP 标签名。省略时使用 <see cref="Name"/>。</summary>
-    public string? TagName { get; set; }
-
-    /// <summary>EtherNet/IP 标签名短写，JSON 字段名为 <c>tag</c>。</summary>
+    /// <summary>EtherNet/IP 标签名。省略时使用 <see cref="Name"/>。JSON 字段名为 <c>tag</c>。</summary>
     [JsonPropertyName("tag")]
     public string? Tag { get; set; }
 
     /// <summary>
     /// Modbus 数据区：<c>holding</c>、<c>input</c>、<c>coil</c>、<c>discrete</c>。
-    /// Mitsubishi MC 也可兼容使用 <c>D</c>、<c>M</c> 等软元件代码；推荐改用 <see cref="DeviceCode"/>。
+    /// Mitsubishi MC 点忽略该字段，必须使用 <see cref="DeviceCode"/>。
     /// </summary>
     public string Table { get; set; } = "holding";
 

@@ -29,7 +29,7 @@ namespace Zeus
     }
     public sealed class HostLinkDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
     {
-        public HostLinkDevice(string name, Zeus.IChannel channel, Zeus.HostLinkOptions? options = null, System.TimeSpan? timeout = default, Zeus.HostLinkPointMap? pointMap = null) { }
+        public HostLinkDevice(string name, Zeus.IChannel channel, Zeus.HostLinkOptions? options = null, System.TimeSpan? timeout = default, Zeus.HostLinkPointMap? pointMap = null, Microsoft.Extensions.Logging.ILogger<Zeus.HostLinkDevice>? logger = null) { }
         public Zeus.HostLinkClient Client { get; }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { }

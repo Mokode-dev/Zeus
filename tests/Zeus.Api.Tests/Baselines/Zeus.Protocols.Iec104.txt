@@ -39,7 +39,7 @@ namespace Zeus
     }
     public sealed class Iec104Device : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
     {
-        public Iec104Device(string name, Zeus.IChannel channel, Zeus.Iec104Options? options = null, System.TimeSpan? timeout = default, Zeus.Iec104PointMap? pointMap = null) { }
+        public Iec104Device(string name, Zeus.IChannel channel, Zeus.Iec104Options? options = null, System.TimeSpan? timeout = default, Zeus.Iec104PointMap? pointMap = null, Microsoft.Extensions.Logging.ILogger<Zeus.Iec104Device>? logger = null) { }
         public Zeus.Iec104Client Client { get; }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { }
@@ -78,7 +78,6 @@ namespace Zeus
         public System.TimeSpan T1 { get; set; }
         public System.TimeSpan T2 { get; set; }
         public System.TimeSpan T3 { get; set; }
-        public System.TimeSpan TestFrameInterval { get; set; }
     }
     public sealed class Iec104PointMap
     {

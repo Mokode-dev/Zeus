@@ -26,7 +26,7 @@ namespace Zeus
     }
     public sealed class ModbusDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
     {
-        public ModbusDevice(string name, Zeus.IChannel channel, byte unitId, Zeus.ModbusTransport transport, System.TimeSpan? timeout = default, Zeus.ModbusPointMap? pointMap = null) { }
+        public ModbusDevice(string name, Zeus.IChannel channel, byte unitId, Zeus.ModbusTransport transport, System.TimeSpan? timeout = default, Zeus.ModbusPointMap? pointMap = null, Microsoft.Extensions.Logging.ILogger<Zeus.ModbusDevice>? logger = null) { }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
         public Zeus.ModbusTransport Transport { get; }
         public byte UnitId { get; }

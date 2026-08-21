@@ -19,7 +19,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageTags>zeus;host;modbus;mitsubishi;mc;siemens;s7;omron;fins;host-link;panasonic;mewtocol;ethernet-ip;cip;allen-bradley;dlt645;iec104;iec-60870-5-104;mqtt;mqtt311;snmp;snmpv2c;message-queue;electric-meter;serial;tcp;udp;winforms;wpf;industrial;scada</PackageTags>
-    <PackageReleaseNotes>0.17.0：打开宿主 Logging/Configuration/Environment 构建面；通道与协议设备注入 ILogger；稳定 EventId 与日志作用域；AddCommunicationLogging 自动记录 TX/RX；停止时关闭失败不再吞掉。</PackageReleaseNotes>
+    <PackageReleaseNotes>0.17.0：打开宿主 Logging/Configuration/Environment 构建面；通道与协议设备注入 ILogger；稳定 EventId 与日志作用域；AddCommunicationLogging 自动记录 TX/RX；删除 Mc3EOptions/AddMitsubishiMc3E/TestFrameInterval/tagName 等旧版别名，JSON 只接受手册规范值。0.17.x 只修缺陷，不改已发布签名。</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Mokode-dev/Zeus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Mokode-dev/Zeus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

@@ -12,7 +12,7 @@ await using var app = ZeusHost.Create(builder =>
 {
     builder.AddAcquisition(TimeSpan.FromMilliseconds(100));
     builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-    builder.AddMitsubishiMc3E("plc", "plc-bus", points: map =>
+    builder.AddMitsubishiMc("plc", "plc-bus", points: map =>
     {
         map.DataRegister("temperature", 100, 0.1, new PointAlarmLimits(low: 5, high: 80))
             .Writable("temperature");

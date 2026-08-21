@@ -1,17 +1,5 @@
 namespace Zeus
 {
-    public sealed class Mc3EOptions
-    {
-        public Mc3EOptions() { }
-        public Zeus.McDataEncoding DataEncoding { get; set; }
-        public Zeus.McFrameType FrameType { get; set; }
-        public ushort IoNumber { get; set; }
-        public ushort MonitoringTimer { get; set; }
-        public byte NetworkNumber { get; set; }
-        public byte PcNumber { get; set; }
-        public ushort SerialNumber { get; set; }
-        public byte StationNumber { get; set; }
-    }
     public readonly struct McBitWrite : System.IEquatable<Zeus.McBitWrite>
     {
         public McBitWrite(Zeus.McDeviceCode DeviceCode, int Address, bool Value) { }
@@ -21,9 +9,9 @@ namespace Zeus
     }
     public sealed class McClient : System.IAsyncDisposable
     {
-        public McClient(Zeus.IChannel channel, Zeus.Mc3EOptions? options = null, System.TimeSpan? timeout = default) { }
+        public McClient(Zeus.IChannel channel, Zeus.McOptions? options = null, System.TimeSpan? timeout = default) { }
         public Zeus.IChannel Channel { get; }
-        public Zeus.Mc3EOptions Options { get; }
+        public Zeus.McOptions Options { get; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { }
         public System.Threading.Tasks.Task<byte[]> ExecuteAsync(ushort command, ushort subcommand, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task ExecuteRemoteControlAsync(Zeus.McRemoteControlMode mode, System.Threading.CancellationToken cancellationToken = default) { }
@@ -48,7 +36,7 @@ namespace Zeus
     }
     public sealed class McDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
     {
-        public McDevice(string name, Zeus.IChannel channel, Zeus.Mc3EOptions? options = null, System.TimeSpan? timeout = default, Zeus.McPointMap? pointMap = null) { }
+        public McDevice(string name, Zeus.IChannel channel, Zeus.McOptions? options = null, System.TimeSpan? timeout = default, Zeus.McPointMap? pointMap = null, Microsoft.Extensions.Logging.ILogger<Zeus.McDevice>? logger = null) { }
         public Zeus.McClient Client { get; }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { }
@@ -127,6 +115,18 @@ namespace Zeus
         public McMultipleBlockReadResult(System.Collections.Generic.IReadOnlyList<ushort> wordValues, System.Collections.Generic.IReadOnlyList<bool> bitValues) { }
         public bool[] BitValues { get; }
         public ushort[] WordValues { get; }
+    }
+    public sealed class McOptions
+    {
+        public McOptions() { }
+        public Zeus.McDataEncoding DataEncoding { get; set; }
+        public Zeus.McFrameType FrameType { get; set; }
+        public ushort IoNumber { get; set; }
+        public ushort MonitoringTimer { get; set; }
+        public byte NetworkNumber { get; set; }
+        public byte PcNumber { get; set; }
+        public ushort SerialNumber { get; set; }
+        public byte StationNumber { get; set; }
     }
     public sealed class McPointMap
     {
@@ -216,9 +216,7 @@ namespace Zeus
     }
     public static class ZeusHostBuilderMcExtensions
     {
-        public static Zeus.McDevice AddMitsubishiMc(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.Mc3EOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.McPointMap>? points = null) { }
-        public static Zeus.ZeusHostBuilder AddMitsubishiMc(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.Mc3EOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.McPointMap>? points = null) { }
-        public static Zeus.McDevice AddMitsubishiMc3E(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.Mc3EOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.McPointMap>? points = null) { }
-        public static Zeus.ZeusHostBuilder AddMitsubishiMc3E(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.Mc3EOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.McPointMap>? points = null) { }
+        public static Zeus.McDevice AddMitsubishiMc(this Zeus.IZeusHost host, string deviceName, string channelName, Zeus.McOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.McPointMap>? points = null) { }
+        public static Zeus.ZeusHostBuilder AddMitsubishiMc(this Zeus.ZeusHostBuilder builder, string deviceName, string channelName, Zeus.McOptions? options = null, System.TimeSpan? timeout = default, System.Action<Zeus.McPointMap>? points = null) { }
     }
 }

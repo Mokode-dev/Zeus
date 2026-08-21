@@ -23,7 +23,7 @@ internal static class Mc3ECodec
     private const byte OneEWriteBits = 0x02;
     private const byte OneEWriteWords = 0x03;
 
-    public static byte[] EncodeRequest(Mc3EOptions options, ushort command, ushort subcommand, ReadOnlySpan<byte> data)
+    public static byte[] EncodeRequest(McOptions options, ushort command, ushort subcommand, ReadOnlySpan<byte> data)
     {
         ArgumentNullException.ThrowIfNull(options);
         if (options.FrameType == McFrameType.Frame1E)
@@ -36,7 +36,7 @@ internal static class Mc3ECodec
             : EncodeBinaryRequest(options, command, subcommand, data);
     }
 
-    public static byte[] EncodeDeviceRequest(Mc3EOptions options, McOperation operation, ReadOnlySpan<byte> canonicalData)
+    public static byte[] EncodeDeviceRequest(McOptions options, McOperation operation, ReadOnlySpan<byte> canonicalData)
     {
         ArgumentNullException.ThrowIfNull(options);
         var (command, subcommand) = ToCommand(operation);
@@ -47,7 +47,7 @@ internal static class Mc3ECodec
 
     public static bool TryDecodeRawResponse(
         IReadOnlyList<byte> buffer,
-        Mc3EOptions options,
+        McOptions options,
         out ushort endCode,
         out byte[] data,
         out int consumed)
@@ -67,7 +67,7 @@ internal static class Mc3ECodec
 
     public static bool TryDecodeDeviceResponse(
         IReadOnlyList<byte> buffer,
-        Mc3EOptions options,
+        McOptions options,
         McPendingRequest pending,
         out ushort endCode,
         out byte[] data,
@@ -289,7 +289,7 @@ internal static class Mc3ECodec
     /// <summary>
     /// 把二进制载荷编码进 ASCII 帧数据区（每字节两个十六进制字符）。
     /// </summary>
-    public static byte[] EncodeRawPayload(Mc3EOptions options, ReadOnlySpan<byte> binary)
+    public static byte[] EncodeRawPayload(McOptions options, ReadOnlySpan<byte> binary)
     {
         ArgumentNullException.ThrowIfNull(options);
         if (options.DataEncoding != McDataEncoding.Ascii)
@@ -514,7 +514,7 @@ internal static class Mc3ECodec
             _ => McOperation.Unknown
         };
 
-    private static byte[] EncodeBinaryRequest(Mc3EOptions options, ushort command, ushort subcommand, ReadOnlySpan<byte> data)
+    private static byte[] EncodeBinaryRequest(McOptions options, ushort command, ushort subcommand, ReadOnlySpan<byte> data)
     {
         var payloadLength = 2 + 2 + data.Length;
         var requestLength = 2 + payloadLength;
@@ -548,7 +548,7 @@ internal static class Mc3ECodec
         return frame;
     }
 
-    private static byte[] EncodeAsciiRequest(Mc3EOptions options, ushort command, ushort subcommand, ReadOnlySpan<byte> data)
+    private static byte[] EncodeAsciiRequest(McOptions options, ushort command, ushort subcommand, ReadOnlySpan<byte> data)
     {
         var requestLength = 12 + data.Length;
         if (requestLength > ushort.MaxValue)
@@ -1004,7 +1004,7 @@ internal static class Mc3ECodec
         return true;
     }
 
-    private static byte[] Encode1ERequest(Mc3EOptions options, McOperation operation, ReadOnlySpan<byte> canonicalData)
+    private static byte[] Encode1ERequest(McOptions options, McOperation operation, ReadOnlySpan<byte> canonicalData)
     {
         if (operation is McOperation.RandomRead or McOperation.RandomWriteWords or McOperation.RandomWriteBits)
         {
@@ -1016,7 +1016,7 @@ internal static class Mc3ECodec
             : Encode1EBinaryRequest(options, operation, canonicalData);
     }
 
-    private static byte[] Encode1EBinaryRequest(Mc3EOptions options, McOperation operation, ReadOnlySpan<byte> canonicalData)
+    private static byte[] Encode1EBinaryRequest(McOptions options, McOperation operation, ReadOnlySpan<byte> canonicalData)
     {
         var deviceData = Encode1EBinaryDeviceData(operation, canonicalData);
         var frame = new byte[4 + deviceData.Length];
@@ -1027,7 +1027,7 @@ internal static class Mc3ECodec
         return frame;
     }
 
-    private static byte[] Encode1EAsciiRequest(Mc3EOptions options, McOperation operation, ReadOnlySpan<byte> canonicalData)
+    private static byte[] Encode1EAsciiRequest(McOptions options, McOperation operation, ReadOnlySpan<byte> canonicalData)
     {
         var deviceData = Encode1EAsciiDeviceData(operation, canonicalData);
         var frame = new byte[8 + deviceData.Length];
@@ -1077,7 +1077,7 @@ internal static class Mc3ECodec
         return frame;
     }
 
-    private static byte[] EncodeDeviceData(Mc3EOptions options, McOperation operation, ReadOnlySpan<byte> canonicalData)
+    private static byte[] EncodeDeviceData(McOptions options, McOperation operation, ReadOnlySpan<byte> canonicalData)
         => options.DataEncoding == McDataEncoding.Ascii
             ? Encode3EAsciiDeviceData(operation, canonicalData)
             : canonicalData.ToArray();
@@ -1086,7 +1086,7 @@ internal static class Mc3ECodec
     {
         if (operation == McOperation.Unknown)
         {
-            return EncodeRawPayload(new Mc3EOptions { DataEncoding = McDataEncoding.Ascii }, canonicalData);
+            return EncodeRawPayload(new McOptions { DataEncoding = McDataEncoding.Ascii }, canonicalData);
         }
 
         if (operation == McOperation.RandomRead)
@@ -1448,7 +1448,7 @@ internal static class Mc3ECodec
         {
             // 远程控制等无数据命令保持空载荷；多块读取等原始命令把二进制编成 ASCII 十六进制。
             return operation == McOperation.Unknown && payload.Length > 0
-                ? EncodeRawPayload(new Mc3EOptions { DataEncoding = McDataEncoding.Ascii }, payload)
+                ? EncodeRawPayload(new McOptions { DataEncoding = McDataEncoding.Ascii }, payload)
                 : [];
         }
 
@@ -1701,7 +1701,7 @@ internal static class Mc3ECodec
             _ => (data.Length >= 6 ? ReadUInt16LittleEndian(data.Slice(4, 2)) : (ushort)0, 0)
         };
 
-    private static void WriteBinaryRoute(Span<byte> destination, Mc3EOptions options)
+    private static void WriteBinaryRoute(Span<byte> destination, McOptions options)
     {
         destination[0] = options.NetworkNumber;
         destination[1] = options.PcNumber;
@@ -1717,7 +1717,7 @@ internal static class Mc3ECodec
         destination[4] = context.StationNumber;
     }
 
-    private static void WriteAsciiRoute(Span<byte> destination, Mc3EOptions options)
+    private static void WriteAsciiRoute(Span<byte> destination, McOptions options)
     {
         WriteAsciiHex(destination, 0, options.NetworkNumber, 2);
         WriteAsciiHex(destination, 2, options.PcNumber, 2);

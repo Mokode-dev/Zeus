@@ -110,7 +110,6 @@ namespace Zeus
         public string Table { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("tag")]
         public string? Tag { get; set; }
-        public string? TagName { get; set; }
         public string? Topic { get; set; }
         public bool Writable { get; set; }
     }

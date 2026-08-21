@@ -36,7 +36,7 @@ namespace Zeus
     }
     public sealed class MewtocolDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
     {
-        public MewtocolDevice(string name, Zeus.IChannel channel, Zeus.MewtocolOptions? options = null, System.TimeSpan? timeout = default, Zeus.MewtocolPointMap? pointMap = null) { }
+        public MewtocolDevice(string name, Zeus.IChannel channel, Zeus.MewtocolOptions? options = null, System.TimeSpan? timeout = default, Zeus.MewtocolPointMap? pointMap = null, Microsoft.Extensions.Logging.ILogger<Zeus.MewtocolDevice>? logger = null) { }
         public Zeus.MewtocolClient Client { get; }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { }

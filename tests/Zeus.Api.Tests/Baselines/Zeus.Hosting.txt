@@ -1,5 +1,11 @@
 namespace Zeus
 {
+    public sealed class CommunicationLoggingOptions
+    {
+        public CommunicationLoggingOptions() { }
+        public string Category { get; set; }
+        public Microsoft.Extensions.Logging.LogLevel Level { get; set; }
+    }
     public static class ZeusHost
     {
         public static Zeus.IZeusHost Create(System.Action<Zeus.ZeusHostBuilder>? configure = null) { }
@@ -7,6 +13,9 @@ namespace Zeus
     public sealed class ZeusHostBuilder
     {
         public Zeus.AcquisitionOptions Acquisition { get; }
+        public Microsoft.Extensions.Configuration.ConfigurationManager Configuration { get; }
+        public Microsoft.Extensions.Hosting.IHostEnvironment Environment { get; }
+        public Microsoft.Extensions.Logging.ILoggingBuilder Logging { get; }
         public Zeus.ChannelReconnectOptions Reconnect { get; }
         public Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
         public void Register(System.Action<System.IServiceProvider, Zeus.ChannelRegistry, Zeus.DeviceRegistry> registration) { }
@@ -23,9 +32,18 @@ namespace Zeus
     {
         public static TDevice AddDevice<TDevice>(this Zeus.IZeusHost host, string name, string channelName, System.Func<string, Zeus.IChannel, TDevice> factory)
             where TDevice :  class, Zeus.IDevice { }
+        public static TDevice AddDevice<TDevice>(this Zeus.IZeusHost host, string name, string channelName, System.Func<System.IServiceProvider, string, Zeus.IChannel, TDevice> factory)
+            where TDevice :  class, Zeus.IDevice { }
         public static Zeus.ZeusHostBuilder AddDevice<TDevice>(this Zeus.ZeusHostBuilder builder, string name, string channelName, System.Func<string, Zeus.IChannel, TDevice> factory)
+            where TDevice :  class, Zeus.IDevice { }
+        public static Zeus.ZeusHostBuilder AddDevice<TDevice>(this Zeus.ZeusHostBuilder builder, string name, string channelName, System.Func<System.IServiceProvider, string, Zeus.IChannel, TDevice> factory)
             where TDevice :  class, Zeus.IDevice { }
         public static System.Threading.Tasks.Task RemoveChannelAsync(this Zeus.IZeusHost host, string name, bool removeBoundDevices = true, System.Threading.CancellationToken cancellationToken = default) { }
         public static System.Threading.Tasks.Task RemoveDeviceAsync(this Zeus.IZeusHost host, string name, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public static class ZeusHostBuilderLoggingExtensions
+    {
+        public static Zeus.ZeusHostBuilder AddCommunicationLogging(this Zeus.ZeusHostBuilder builder, Microsoft.Extensions.Logging.LogLevel level = 1) { }
+        public static Zeus.ZeusHostBuilder AddCommunicationLogging(this Zeus.ZeusHostBuilder builder, System.Action<Zeus.CommunicationLoggingOptions> configure) { }
     }
 }

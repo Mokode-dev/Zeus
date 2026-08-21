@@ -29,7 +29,7 @@ namespace Zeus
     }
     public sealed class EtherNetIpDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
     {
-        public EtherNetIpDevice(string name, Zeus.IChannel channel, Zeus.EtherNetIpOptions? options = null, System.TimeSpan? timeout = default, Zeus.EtherNetIpPointMap? pointMap = null) { }
+        public EtherNetIpDevice(string name, Zeus.IChannel channel, Zeus.EtherNetIpOptions? options = null, System.TimeSpan? timeout = default, Zeus.EtherNetIpPointMap? pointMap = null, Microsoft.Extensions.Logging.ILogger<Zeus.EtherNetIpDevice>? logger = null) { }
         public Zeus.EtherNetIpClient Client { get; }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { }

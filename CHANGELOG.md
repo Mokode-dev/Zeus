@@ -2,7 +2,7 @@
 
 ## 0.17.0
 
-补齐宿主底座：打开日志与配置构建面，给通道和协议设备注入 `ILogger`，用稳定 EventId 与作用域写出结构化诊断，并提供可选的通道报文日志。
+补齐宿主底座，并清掉 0.x 为旧版留下的别名与双字段。这是 1.0 前的冻结面：公开 API、JSON 规范值和已文档化行为在 `0.17.x` 只修缺陷，不再改签名。
 
 ### 包含
 
@@ -13,16 +13,30 @@
 - 报文日志：`builder.AddCommunicationLogging()` 给已有和后续通道自动挂 `ChannelTraceLogger`；热重载时先退订再挂到新实例
 - 协议：采集失败与点写回失败写入 `ILogger`，不再只进点表 `Error`
 - 生命周期：`StopAsync` 关闭通道失败改为 Warning，不再静默吞掉
+- MC：`Mc3EOptions` 正名为 `McOptions`；删除 `AddMitsubishiMc3E`，统一使用 `AddMitsubishiMc`
+- JSON：设备类型、虚拟从站 `responder`、点字段只接受手册中的规范值；EtherNet/IP 标签只认 `tag`；MC 点必须写 `deviceCode`，不再从 `table` 回退
 
 ### 行为变化
 
 - 默认控制台不再叠加第二份 SimpleConsole；需要单行时间戳格式时请自行 `builder.Logging.AddSimpleConsole(...)`
 - 报文追踪写入 `ILogger` 时带 `ZeusLogEvents.PacketTrace`（6001）
 
+### 破坏性变更
+
+从 `0.16.x` 升级时请对照：
+
+- 删除 `Iec104Options.TestFrameInterval`，改用 `T3`
+- 删除 `AddMitsubishiMc3E`；`Mc3EOptions` 重命名为 `McOptions`
+- 删除点配置的 `tagName`，EtherNet/IP 只用 `tag`
+- JSON `type` / `responder` / `table` / `deviceCode` / `area` / `dataType` 不再接受同义别名（例如 `mc`、`modbusrtu`、`holdingregister`、`siemenss7`）
+- Mitsubishi MC 点必须提供 `deviceCode`，不能再把软元件写在 `table` 里
+- FINS / Host Link / MEWTOCOL 点必须提供 `area`，不能再回退到 `table`
+
 ### 兼容承诺
 
-- 只新增公开 API，不删除或改变 0.16 已发布的类型、成员和扩展方法签名
-- `0.17.x` 补丁只修缺陷；破坏性变更进入后续次版本
+- `0.17.x` 补丁只修缺陷，不删除、重命名或改变已发布的公开类型、成员、扩展方法签名、JSON 规范字段和 `ZeusLogEvents` 编号
+- 允许新增公开 API 与 JSON 字段
+- 配方、权限、自动更新、新品牌驱动进入后续次版本或 `1.1`；破坏性变更进入 `1.0` 之后的大版本
 
 ## 0.16.0
 

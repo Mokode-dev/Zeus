@@ -4,19 +4,19 @@ using Microsoft.Extensions.Logging;
 namespace Zeus;
 
 /// <summary>
-/// Mitsubishi MC Protocol 设备封装。默认使用 3E Binary，可通过 <see cref="Mc3EOptions"/> 切换帧类型和编码。
+/// Mitsubishi MC Protocol 设备封装。默认使用 3E Binary，可通过 <see cref="McOptions"/> 切换帧类型和编码。
 /// 声明了点表后实现 <see cref="IAcquisitionSource"/>，由宿主采集循环自动轮询；
 /// 标为可写的点实现 <see cref="IPointWriter"/>，可通过点表按名称下发。
 /// </summary>
 public sealed class McDevice : DeviceBase, IAcquisitionSource, IPointWriter, IAsyncDisposable
 {
     private readonly McClient _client;
-    private readonly Mc3EOptions _options;
+    private readonly McOptions _options;
     private readonly IReadOnlyList<McPointSpec> _specs;
     private readonly IReadOnlyList<PointDefinition> _points;
 
     /// <summary>
-    /// 创建 MC 设备。通常由 <c>AddMitsubishiMc3E</c> 构造。
+    /// 创建 MC 设备。通常由 <c>AddMitsubishiMc</c> 构造。
     /// </summary>
     /// <param name="name">设备名。</param>
     /// <param name="channel">传输通道。</param>
@@ -27,7 +27,7 @@ public sealed class McDevice : DeviceBase, IAcquisitionSource, IPointWriter, IAs
     public McDevice(
         string name,
         IChannel channel,
-        Mc3EOptions? options = null,
+        McOptions? options = null,
         TimeSpan? timeout = null,
         McPointMap? pointMap = null,
         ILogger<McDevice>? logger = null)
@@ -416,7 +416,7 @@ public sealed class McDevice : DeviceBase, IAcquisitionSource, IPointWriter, IAs
             ? 256
             : _options.DataEncoding == McDataEncoding.Ascii ? 3584 : 7168;
 
-    private static void EnsurePointMapSupported(Mc3EOptions options, IReadOnlyList<McPointSpec> specs)
+    private static void EnsurePointMapSupported(McOptions options, IReadOnlyList<McPointSpec> specs)
     {
         if (options.FrameType != McFrameType.Frame1E)
         {

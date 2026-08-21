@@ -289,6 +289,23 @@ namespace Zeus
         public ZeusException(string message) { }
         public ZeusException(string message, System.Exception innerException) { }
     }
+    public static class ZeusLogEvents
+    {
+        public static readonly Microsoft.Extensions.Logging.EventId AcquisitionFailed;
+        public static readonly Microsoft.Extensions.Logging.EventId ChannelCleanup;
+        public static readonly Microsoft.Extensions.Logging.EventId ChannelCloseWarning;
+        public static readonly Microsoft.Extensions.Logging.EventId ChannelClosed;
+        public static readonly Microsoft.Extensions.Logging.EventId ChannelOpenFailed;
+        public static readonly Microsoft.Extensions.Logging.EventId ChannelOpened;
+        public static readonly Microsoft.Extensions.Logging.EventId ChannelWriteFailed;
+        public static readonly Microsoft.Extensions.Logging.EventId ConfigurationReloadFailed;
+        public static readonly Microsoft.Extensions.Logging.EventId ConfigurationReloaded;
+        public static readonly Microsoft.Extensions.Logging.EventId PacketTrace;
+        public static readonly Microsoft.Extensions.Logging.EventId PointWriteFailed;
+        public static readonly Microsoft.Extensions.Logging.EventId ReconnectFailed;
+        public static readonly Microsoft.Extensions.Logging.EventId ReconnectScheduled;
+        public static readonly Microsoft.Extensions.Logging.EventId ReconnectSucceeded;
+    }
     public class ZeusProtocolException : Zeus.ZeusException
     {
         public ZeusProtocolException(string message) { }

@@ -37,7 +37,7 @@ public sealed class McTests
         await using var host = ZeusHost.Create(builder =>
         {
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-            builder.AddMitsubishiMc3E("plc", "plc-bus");
+            builder.AddMitsubishiMc("plc", "plc-bus");
         });
 
         await host.StartAsync();
@@ -64,7 +64,7 @@ public sealed class McTests
         await using var host = ZeusHost.Create(builder =>
         {
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-            builder.AddMitsubishiMc3E("plc", "plc-bus");
+            builder.AddMitsubishiMc("plc", "plc-bus");
         });
 
         await host.StartAsync();
@@ -97,7 +97,7 @@ public sealed class McTests
         await using var host = ZeusHost.Create(builder =>
         {
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-            builder.AddMitsubishiMc3E("plc", "plc-bus");
+            builder.AddMitsubishiMc("plc", "plc-bus");
         });
 
         await host.StartAsync();
@@ -132,7 +132,7 @@ public sealed class McTests
         await using var host = ZeusHost.Create(builder =>
         {
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-            builder.AddMitsubishiMc3E("plc", "plc-bus");
+            builder.AddMitsubishiMc("plc", "plc-bus");
         });
 
         await host.StartAsync();
@@ -172,7 +172,7 @@ public sealed class McTests
         await using var host = ZeusHost.Create(builder =>
         {
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-            builder.AddMitsubishiMc3E("plc", "plc-bus", new Mc3EOptions
+            builder.AddMitsubishiMc("plc", "plc-bus", new McOptions
             {
                 FrameType = frameType,
                 DataEncoding = encoding,
@@ -229,7 +229,7 @@ public sealed class McTests
         await using var host = ZeusHost.Create(builder =>
         {
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-            builder.AddMitsubishiMc3E("plc", "plc-bus", new Mc3EOptions
+            builder.AddMitsubishiMc("plc", "plc-bus", new McOptions
             {
                 FrameType = frameType,
                 DataEncoding = encoding,
@@ -272,7 +272,7 @@ public sealed class McTests
         await using var host = ZeusHost.Create(builder =>
         {
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-            builder.AddMitsubishiMc3E("plc", "plc-bus", new Mc3EOptions
+            builder.AddMitsubishiMc("plc", "plc-bus", new McOptions
             {
                 FrameType = frameType,
                 DataEncoding = encoding,
@@ -308,7 +308,7 @@ public sealed class McTests
         await using var host = ZeusHost.Create(builder =>
         {
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder());
-            builder.AddMitsubishiMc3E("plc", "plc-bus", new Mc3EOptions
+            builder.AddMitsubishiMc("plc", "plc-bus", new McOptions
             {
                 FrameType = McFrameType.Frame1E,
                 DataEncoding = encoding
@@ -339,7 +339,7 @@ public sealed class McTests
         await using var host = ZeusHost.Create(builder =>
         {
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-            builder.AddMitsubishiMc3E("plc", "plc-bus", new Mc3EOptions
+            builder.AddMitsubishiMc("plc", "plc-bus", new McOptions
             {
                 FrameType = frameType,
                 DataEncoding = encoding
@@ -369,7 +369,7 @@ public sealed class McTests
         await using var host = ZeusHost.Create(builder =>
         {
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-            builder.AddMitsubishiMc3E("plc", "plc-bus");
+            builder.AddMitsubishiMc("plc", "plc-bus");
         });
 
         await host.StartAsync();
@@ -397,7 +397,7 @@ public sealed class McTests
         {
             builder.AddAcquisition(TimeSpan.FromMilliseconds(80));
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-            builder.AddMitsubishiMc3E("plc", "plc-bus", points: map =>
+            builder.AddMitsubishiMc("plc", "plc-bus", points: map =>
             {
                 map.DataRegister("temperature", 100, 0.1, new PointAlarmLimits(low: 5, high: 80))
                     .Writable("temperature");
@@ -431,7 +431,7 @@ public sealed class McTests
         await using var host = ZeusHost.Create(builder =>
         {
             builder.AddVirtualChannel("plc-bus", new McSlaveResponder(memory));
-            builder.AddMitsubishiMc3E("plc", "plc-bus");
+            builder.AddMitsubishiMc("plc", "plc-bus");
         });
 
         await host.StartAsync();

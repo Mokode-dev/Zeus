@@ -223,7 +223,7 @@ public static class ZeusHostBuilderConfigurationExtensions
             "virtual" => Await(host.AddVirtualChannelAsync(name, CreateResponder(channel), cancellationToken)),
             "serial" => Await(host.AddSerialPortAsync(name, channel.PortName!, channel.BaudRate, cancellationToken)),
             "tcp" => Await(host.AddTcpClientAsync(name, channel.Host!, channel.Port, cancellationToken)),
-            "tcp-server" or "tcpserver" => Await(host.AddTcpServerAsync(name, options =>
+            "tcp-server" => Await(host.AddTcpServerAsync(name, options =>
             {
                 if (!string.IsNullOrWhiteSpace(channel.LocalAddress))
                 {
@@ -238,7 +238,7 @@ public static class ZeusHostBuilderConfigurationExtensions
                 options.Port = channel.Port;
                 options.LocalPort = channel.LocalPort;
             }, cancellationToken)),
-            "udp-server" or "udpserver" => Await(host.AddUdpServerAsync(name, options =>
+            "udp-server" => Await(host.AddUdpServerAsync(name, options =>
             {
                 if (!string.IsNullOrWhiteSpace(channel.LocalAddress))
                 {
@@ -354,9 +354,9 @@ public static class ZeusHostBuilderConfigurationExtensions
             "virtual" => string.Join('|', type, ZeusConfigurationLoader.Normalize(channel.Responder), channel.UnitId, ZeusConfigurationLoader.Normalize(channel.Transport), channel.MeterAddress?.Trim(), channel.CommonAddress, channel.SnmpCommunity, channel.SnmpWriteCommunity),
             "serial" => string.Join('|', type, channel.PortName?.Trim(), channel.BaudRate),
             "tcp" => string.Join('|', type, channel.Host?.Trim(), channel.Port),
-            "tcp-server" or "tcpserver" => string.Join('|', "tcp-server", channel.LocalAddress?.Trim(), EffectiveTcpServerPort(channel)),
+            "tcp-server" => string.Join('|', "tcp-server", channel.LocalAddress?.Trim(), EffectiveTcpServerPort(channel)),
             "udp" => string.Join('|', type, channel.Host?.Trim(), channel.Port, channel.LocalPort),
-            "udp-server" or "udpserver" => string.Join('|', "udp-server", channel.LocalAddress?.Trim(), EffectiveUdpServerPort(channel)),
+            "udp-server" => string.Join('|', "udp-server", channel.LocalAddress?.Trim(), EffectiveUdpServerPort(channel)),
             _ => type
         };
     }
@@ -369,7 +369,6 @@ public static class ZeusHostBuilderConfigurationExtensions
                 ZeusConfigurationLoader.Normalize(point.Table),
                 ZeusConfigurationLoader.Normalize(point.DeviceCode),
                 ZeusConfigurationLoader.Normalize(point.Area),
-                ZeusConfigurationLoader.Normalize(point.TagName),
                 ZeusConfigurationLoader.Normalize(point.Tag),
                 point.Topic,
                 point.Oid,
@@ -560,7 +559,7 @@ public static class ZeusHostBuilderConfigurationExtensions
             case "tcp":
                 builder.AddTcpClient(name, channel.Host!, channel.Port);
                 break;
-            case "tcp-server" or "tcpserver":
+            case "tcp-server":
                 builder.AddTcpServer(name, options =>
                 {
                     if (!string.IsNullOrWhiteSpace(channel.LocalAddress))
@@ -579,7 +578,7 @@ public static class ZeusHostBuilderConfigurationExtensions
                     options.LocalPort = channel.LocalPort;
                 });
                 break;
-            case "udp-server" or "udpserver":
+            case "udp-server":
                 builder.AddUdpServer(name, options =>
                 {
                     if (!string.IsNullOrWhiteSpace(channel.LocalAddress))
@@ -606,17 +605,18 @@ public static class ZeusHostBuilderConfigurationExtensions
             return null;
         }
 
-        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "mc" or "mitsubishi-mc" or "mitsubishimc")
+        var responder = ZeusConfigurationLoader.Normalize(channel.Responder);
+        if (responder == "mc")
         {
             return new McSlaveResponder();
         }
 
-        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "s7" or "siemens-s7" or "siemenss7")
+        if (responder == "s7")
         {
             return new S7SlaveResponder();
         }
 
-        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "fins" or "omron-fins" or "omronfins")
+        if (responder == "fins")
         {
             var finsTransport = ZeusConfigurationLoader.Normalize(channel.Transport) == "tcp"
                 ? FinsTransport.Tcp
@@ -624,37 +624,37 @@ public static class ZeusHostBuilderConfigurationExtensions
             return new FinsSlaveResponder(finsTransport);
         }
 
-        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "host-link" or "hostlink" or "omron-host-link" or "omronhostlink")
+        if (responder == "host-link")
         {
             return new HostLinkSlaveResponder(channel.UnitId);
         }
 
-        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "mewtocol" or "panasonic-mewtocol" or "panasonicmewtocol")
+        if (responder == "mewtocol")
         {
             return new MewtocolSlaveResponder(channel.UnitId);
         }
 
-        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "ethernet-ip" or "ethernetip" or "cip" or "allen-bradley" or "allenbradley")
+        if (responder == "ethernet-ip")
         {
             return new EtherNetIpSlaveResponder();
         }
 
-        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "dlt645" or "dlt-645" or "dlt645-2007")
+        if (responder == "dlt645")
         {
             return new Dlt645SlaveResponder(channel.MeterAddress);
         }
 
-        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "iec104" or "iec-104" or "iec60870-5-104" or "iec-60870-5-104")
+        if (responder == "iec104")
         {
             return new Iec104SlaveResponder(new Iec104Options { CommonAddress = channel.CommonAddress });
         }
 
-        if (ZeusConfigurationLoader.Normalize(channel.Responder) == "mqtt")
+        if (responder == "mqtt")
         {
             return new MqttBrokerResponder();
         }
 
-        if (ZeusConfigurationLoader.Normalize(channel.Responder) is "snmp" or "snmp-v2c" or "snmpv2c")
+        if (responder == "snmp")
         {
             return new SnmpAgentResponder(community: channel.SnmpCommunity, writeCommunity: channel.SnmpWriteCommunity);
         }
@@ -756,6 +756,10 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
+    /// <summary>
+    /// 解析 Modbus 封装。设备 <c>type</c> 只接受 <c>modbus-rtu</c> / <c>modbus-tcp</c> / <c>modbus-ascii</c>；
+    /// 虚拟从站 <c>transport</c> 只接受 <c>rtu</c> / <c>tcp</c> / <c>ascii</c>。两者不能混用。
+    /// </summary>
     private static ModbusTransport CreateModbusTransport(string normalizedTypeOrTransport)
     {
         if (ZeusConfigurationLoader.IsModbusTcpDeviceType(normalizedTypeOrTransport) || normalizedTypeOrTransport == "tcp")
@@ -776,7 +780,7 @@ public static class ZeusHostBuilderConfigurationExtensions
             var alarmLimits = CreateAlarmLimits(point);
             switch (table)
             {
-                case "holding" or "holdingregister":
+                case "holding":
                     if (point.Scale is { } holdingScale)
                     {
                         map.HoldingRegister(point.Name, (ushort)point.Address, holdingScale);
@@ -789,7 +793,7 @@ public static class ZeusHostBuilderConfigurationExtensions
                     ApplyAlarmLimits(map, point, alarmLimits);
                     ApplyWritable(map, point);
                     break;
-                case "input" or "inputregister":
+                case "input":
                     if (point.Scale is { } inputScale)
                     {
                         map.InputRegister(point.Name, (ushort)point.Address, inputScale);
@@ -805,7 +809,7 @@ public static class ZeusHostBuilderConfigurationExtensions
                     map.Coil(point.Name, (ushort)point.Address);
                     ApplyWritable(map, point);
                     break;
-                case "discrete" or "discreteinput":
+                case "discrete":
                     map.DiscreteInput(point.Name, (ushort)point.Address);
                     break;
             }
@@ -816,7 +820,7 @@ public static class ZeusHostBuilderConfigurationExtensions
     {
         foreach (var point in points)
         {
-            var deviceCode = ZeusConfigurationLoader.ParseMcDeviceCode(point.DeviceCode ?? point.Table, $"point {point.Name}.deviceCode");
+            var deviceCode = ZeusConfigurationLoader.ParseMcDeviceCode(point.DeviceCode, $"point {point.Name}.deviceCode");
             var alarmLimits = CreateAlarmLimits(point);
             if (ZeusConfigurationLoader.IsMcWordDeviceCode(deviceCode))
             {
@@ -864,7 +868,7 @@ public static class ZeusHostBuilderConfigurationExtensions
         foreach (var point in points)
         {
             var dataType = ZeusConfigurationLoader.ParseFinsDataType(point.DataType, $"point {point.Name}.dataType");
-            var area = ZeusConfigurationLoader.ParseFinsMemoryAreaCode(point.Area ?? point.Table, dataType, $"point {point.Name}.area");
+            var area = ZeusConfigurationLoader.ParseFinsMemoryAreaCode(point.Area, dataType, $"point {point.Name}.area");
             var alarmLimits = CreateAlarmLimits(point);
             if (dataType == FinsDataType.Bit)
             {
@@ -910,7 +914,7 @@ public static class ZeusHostBuilderConfigurationExtensions
         foreach (var point in points)
         {
             var dataType = ZeusConfigurationLoader.ParseHostLinkDataType(point.DataType, $"point {point.Name}.dataType");
-            var area = ZeusConfigurationLoader.ParseHostLinkArea(point.Area ?? point.Table, $"point {point.Name}.area");
+            var area = ZeusConfigurationLoader.ParseHostLinkArea(point.Area, $"point {point.Name}.area");
             var alarmLimits = CreateAlarmLimits(point);
             if (dataType == HostLinkDataType.Bit)
             {
@@ -956,7 +960,7 @@ public static class ZeusHostBuilderConfigurationExtensions
         foreach (var point in points)
         {
             var dataType = ZeusConfigurationLoader.ParseMewtocolDataType(point.DataType, $"point {point.Name}.dataType");
-            var areaText = point.Area ?? point.Table;
+            var areaText = point.Area;
             var alarmLimits = CreateAlarmLimits(point);
             if (ZeusConfigurationLoader.TryParseMewtocolContactArea(areaText, out var contactArea))
             {
@@ -1064,9 +1068,7 @@ public static class ZeusHostBuilderConfigurationExtensions
         foreach (var point in points)
         {
             var dataType = ZeusConfigurationLoader.ParseEtherNetIpDataType(point.DataType, $"point {point.Name}.dataType");
-            var tagName = string.IsNullOrWhiteSpace(point.TagName)
-                ? string.IsNullOrWhiteSpace(point.Tag) ? point.Name : point.Tag!.Trim()
-                : point.TagName!.Trim();
+            var tagName = string.IsNullOrWhiteSpace(point.Tag) ? point.Name : point.Tag.Trim();
             var alarmLimits = CreateAlarmLimits(point);
             map.Tag(point.Name, tagName, dataType, point.Scale, alarmLimits);
             ApplyEtherNetIpAlarmLimits(map, point, alarmLimits);
@@ -1350,7 +1352,7 @@ public static class ZeusHostBuilderConfigurationExtensions
         }
     }
 
-    private static Mc3EOptions CreateMcOptions(DeviceConfiguration device)
+    private static McOptions CreateMcOptions(DeviceConfiguration device)
         => new()
         {
             FrameType = ZeusConfigurationLoader.ParseMcFrameType(device.FrameType, "device.frameType"),

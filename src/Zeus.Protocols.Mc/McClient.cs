@@ -6,7 +6,7 @@ namespace Zeus;
 public sealed class McClient : IAsyncDisposable
 {
     private readonly IChannel _channel;
-    private readonly Mc3EOptions _options;
+    private readonly McOptions _options;
     private readonly TimeSpan _timeout;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _bufferLock = new();
@@ -19,10 +19,10 @@ public sealed class McClient : IAsyncDisposable
     /// <param name="channel">传输通道，通常是 TCP 客户端通道。</param>
     /// <param name="options">MC 帧选项。省略时使用 3E Binary 常见默认值。</param>
     /// <param name="timeout">应答超时，默认 1 秒。</param>
-    public McClient(IChannel channel, Mc3EOptions? options = null, TimeSpan? timeout = null)
+    public McClient(IChannel channel, McOptions? options = null, TimeSpan? timeout = null)
     {
         _channel = channel ?? throw new ArgumentNullException(nameof(channel));
-        _options = CopyOptions(options ?? new Mc3EOptions());
+        _options = CopyOptions(options ?? new McOptions());
         _timeout = timeout ?? TimeSpan.FromSeconds(1);
         _channel.DataReceived += OnDataReceived;
         _channel.StateChanged += OnStateChanged;
@@ -32,7 +32,7 @@ public sealed class McClient : IAsyncDisposable
     public IChannel Channel => _channel;
 
     /// <summary>MC 帧选项。</summary>
-    public Mc3EOptions Options => CopyOptions(_options);
+    public McOptions Options => CopyOptions(_options);
 
     /// <summary>
     /// 发送 MC 命令并返回响应数据区。非零结束码会抛出 <see cref="McException"/>。
@@ -357,7 +357,7 @@ public sealed class McClient : IAsyncDisposable
         throw new ZeusProtocolException($"{operation}数量必须在 {min} 到 {byte.MaxValue} 之间，当前为 {count}。");
     }
 
-    private static Mc3EOptions CopyOptions(Mc3EOptions source)
+    private static McOptions CopyOptions(McOptions source)
         => new()
         {
             FrameType = source.FrameType,

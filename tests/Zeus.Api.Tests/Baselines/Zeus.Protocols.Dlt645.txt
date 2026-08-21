@@ -18,7 +18,7 @@ namespace Zeus
     }
     public sealed class Dlt645Device : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
     {
-        public Dlt645Device(string name, Zeus.IChannel channel, Zeus.Dlt645Options? options = null, System.TimeSpan? timeout = default, Zeus.Dlt645PointMap? pointMap = null) { }
+        public Dlt645Device(string name, Zeus.IChannel channel, Zeus.Dlt645Options? options = null, System.TimeSpan? timeout = default, Zeus.Dlt645PointMap? pointMap = null, Microsoft.Extensions.Logging.ILogger<Zeus.Dlt645Device>? logger = null) { }
         public Zeus.Dlt645Client Client { get; }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { }

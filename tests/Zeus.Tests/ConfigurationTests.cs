@@ -254,13 +254,13 @@ public sealed class ConfigurationTests
         const string json = """
             {
               "channels": [
-                { "name": "plc-link", "type": "virtual", "responder": "mitsubishi-mc" }
+                { "name": "plc-link", "type": "virtual", "responder": "mc" }
               ],
               "devices": [
                 {
                   "name": "plc",
                   "channel": "plc-link",
-                  "type": "mc",
+                  "type": "mitsubishi-mc",
                   "frameType": "4e",
                   "encoding": "ascii",
                   "serialNumber": 4660,

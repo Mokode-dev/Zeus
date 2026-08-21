@@ -42,7 +42,7 @@ namespace Zeus
     }
     public sealed class S7Device : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
     {
-        public S7Device(string name, Zeus.IChannel channel, Zeus.S7Options? options = null, System.TimeSpan? timeout = default, Zeus.S7PointMap? pointMap = null) { }
+        public S7Device(string name, Zeus.IChannel channel, Zeus.S7Options? options = null, System.TimeSpan? timeout = default, Zeus.S7PointMap? pointMap = null, Microsoft.Extensions.Logging.ILogger<Zeus.S7Device>? logger = null) { }
         public Zeus.S7Client Client { get; }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { }

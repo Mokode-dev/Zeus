@@ -41,8 +41,13 @@ namespace Zeus
     public abstract class DeviceBase : Zeus.IDevice
     {
         protected DeviceBase(string name, Zeus.IChannel channel) { }
+        protected DeviceBase(string name, Zeus.IChannel channel, Microsoft.Extensions.Logging.ILogger? logger) { }
         public Zeus.IChannel Channel { get; }
+        protected Microsoft.Extensions.Logging.ILogger Logger { get; }
         public string Name { get; }
+        protected System.IDisposable BeginDeviceScope() { }
+        protected void LogAcquisitionFailed(System.Exception exception, string? pointName = null) { }
+        protected void LogWriteFailed(System.Exception exception, string pointName) { }
     }
     public sealed class DeviceRegistry : Zeus.IDeviceRegistry
     {
@@ -81,6 +86,7 @@ namespace Zeus
         public PointTable(Zeus.IDeviceRegistry? devices, int historyCapacity = 128) { }
         public PointTable(Zeus.IDeviceRegistry? devices, int historyCapacity, int maxHistoryPoints) { }
         public PointTable(Zeus.IDeviceRegistry? devices, int historyCapacity, int maxHistoryPoints, Zeus.IPointHistoryStore? store) { }
+        public PointTable(Zeus.IDeviceRegistry? devices, int historyCapacity, int maxHistoryPoints, Zeus.IPointHistoryStore? store, Microsoft.Extensions.Logging.ILogger? logger) { }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointSnapshot> All { get; }
         public int HistoryCapacity { get; }
         public event System.EventHandler<Zeus.PointChangedEventArgs>? Changed;

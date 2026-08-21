@@ -50,7 +50,7 @@ namespace Zeus
     }
     public sealed class MqttDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
     {
-        public MqttDevice(string name, Zeus.IChannel channel, Zeus.MqttOptions? options = null, System.TimeSpan? timeout = default, Zeus.MqttPointMap? pointMap = null) { }
+        public MqttDevice(string name, Zeus.IChannel channel, Zeus.MqttOptions? options = null, System.TimeSpan? timeout = default, Zeus.MqttPointMap? pointMap = null, Microsoft.Extensions.Logging.ILogger<Zeus.MqttDevice>? logger = null) { }
         public Zeus.MqttClient Client { get; }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
         public System.Threading.Tasks.Task ConnectAsync(System.Threading.CancellationToken cancellationToken = default) { }

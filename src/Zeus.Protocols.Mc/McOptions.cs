@@ -1,9 +1,9 @@
 namespace Zeus;
 
 /// <summary>
-/// Mitsubishi MC Protocol 帧选项。默认使用 3E Binary。
+/// Mitsubishi MC Protocol 帧选项。默认使用 3E Binary，也可切换 1E / 4E 与 ASCII。
 /// </summary>
-public sealed class Mc3EOptions
+public sealed class McOptions
 {
     /// <summary>帧类型，默认 <see cref="McFrameType.Frame3E"/>。</summary>
     public McFrameType FrameType { get; set; } = McFrameType.Frame3E;

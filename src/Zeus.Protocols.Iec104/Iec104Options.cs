@@ -43,13 +43,4 @@ public sealed class Iec104Options
     /// w：最迟在收到这么多 I 格式后必须发送确认，不必等 t2。默认 8，且必须小于 k。
     /// </summary>
     public int AcknowledgeWindow { get; set; } = 8;
-
-    /// <summary>
-    /// 兼容旧名：等价于 <see cref="T3"/>。读取返回 T3；赋值写入 T3。
-    /// </summary>
-    public TimeSpan TestFrameInterval
-    {
-        get => T3;
-        set => T3 = value;
-    }
 }

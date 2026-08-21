@@ -41,7 +41,7 @@ namespace Zeus
     }
     public sealed class SnmpDevice : Zeus.DeviceBase, System.IAsyncDisposable, Zeus.IAcquisitionSource, Zeus.IPointWriter
     {
-        public SnmpDevice(string name, Zeus.IChannel channel, Zeus.SnmpOptions? options = null, System.TimeSpan? timeout = default, Zeus.SnmpPointMap? pointMap = null) { }
+        public SnmpDevice(string name, Zeus.IChannel channel, Zeus.SnmpOptions? options = null, System.TimeSpan? timeout = default, Zeus.SnmpPointMap? pointMap = null, Microsoft.Extensions.Logging.ILogger<Zeus.SnmpDevice>? logger = null) { }
         public Zeus.SnmpClient Client { get; }
         public System.Collections.Generic.IReadOnlyList<Zeus.PointDefinition> Points { get; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { }
